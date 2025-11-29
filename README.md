@@ -73,14 +73,14 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 **Option A: Docker Compose (recommended):**
 
-1. Download the docker-compose.yml file:
+1. Download the compose.yaml file:
    ```bash
-   curl -o docker-compose.yml https://raw.githubusercontent.com/saihgupr/HomeAssistantVersionControlBeta/main/docker-compose.yml
+   curl -o compose.yaml https://raw.githubusercontent.com/saihgupr/HomeAssistantVersionControlBeta/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
    ```bash
-   nano docker-compose.yml
+   nano compose.yaml
    # Update the volume path: /path/to/your/ha/config
    # Update timezone: TZ environment variable (e.g., America/New_York)
    ```
