@@ -130,7 +130,7 @@ app.get('/', (req, res) => {
 
 // Favicon route
 app.get('/favicon.ico', (req, res) => {
-  res.status(204).end();  // No content
+  res.sendFile(path.join(PUBLIC_DIR, 'images', 'favicon.ico'));
 });
 
 // Helper function to call Home Assistant services via Supervisor API
