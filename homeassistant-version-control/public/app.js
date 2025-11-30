@@ -892,9 +892,34 @@ function toggleDiffViewFormat(isSplit) {
   localStorage.setItem('diffViewFormat', newFormat);
   // showNotification(`Diff view: ${isSplit ? 'Side-by-Side' : 'Unified'}`, 'success', 1500);
 
-  // Re-render the currently displayed commit if there is one
-  if (currentlyDisplayedCommitHash) {
-    showCommit(currentlyDisplayedCommitHash);
+  // Re-render the currently displayed view
+  refreshCurrentView();
+}
+
+function refreshCurrentView() {
+  if (!currentSelection) return;
+
+  if (currentSelection.type === 'commit') {
+    showCommit(currentSelection.hash);
+  } else if (currentSelection.type === 'file') {
+    if (currentFileHistory && currentFileHistory.length > 0) {
+      displayFileHistory(currentSelection.file);
+    } else {
+      // No history or unchanged state - need to re-fetch to get content for unchanged view
+      showFileHistory(currentSelection.file);
+    }
+  } else if (currentSelection.type === 'automation') {
+    if (currentAutomationHistory && currentAutomationHistory.length > 0) {
+      displayAutomationHistory();
+    } else {
+      showAutomationHistory(currentSelection.id);
+    }
+  } else if (currentSelection.type === 'script') {
+    if (currentScriptHistory && currentScriptHistory.length > 0) {
+      displayScriptHistory();
+    } else {
+      showScriptHistory(currentSelection.id);
+    }
   }
 }
 
@@ -973,6 +998,9 @@ async function saveSettings() {
     console.error('Error saving settings to server:', error);
     showNotification(t('app.settings_save_error_generic'), 'error', 3000);
   }
+
+  // Re-render current view to apply changes immediately
+  refreshCurrentView();
 
   // Settings saved - close modal
   closeSettings();
