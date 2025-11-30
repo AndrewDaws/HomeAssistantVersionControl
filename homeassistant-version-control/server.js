@@ -730,6 +730,11 @@ app.get('/api/files', async (req, res) => {
         const fullPath = path.join(dir, entry.name);
         const relPath = base ? path.join(base, entry.name) : entry.name;
 
+        // Skip files starting with ._ (macOS resource fork files)
+        if (entry.name.startsWith('._')) {
+          continue;
+        }
+
         if (entry.isDirectory() && !entry.name.startsWith('.git') && !entry.name.startsWith('node_modules')) {
           files.push(...await walkDir(fullPath, relPath));
         } else if (entry.isFile()) {
