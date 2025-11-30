@@ -2506,7 +2506,7 @@ async function loadAutomationHistoryDiff() {
 
   // Update position indicator
   document.getElementById('automationHistoryPosition').textContent =
-    `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${formatDateForBanner(currentCommit.date)} (${currentCommit.hash.substring(0, 7)})`;
+    `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
 
   // Update button states
   document.getElementById('autoPrevBtn').disabled = currentAutomationHistoryIndex === 0;
@@ -2768,7 +2768,7 @@ async function loadScriptHistoryDiff() {
 
   // Update position indicator
   document.getElementById('scriptHistoryPosition').textContent =
-    `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${formatDateForBanner(currentCommit.date)} (${currentCommit.hash.substring(0, 7)})`;
+    `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
 
   // Update button states
   document.getElementById('scriptPrevBtn').disabled = currentScriptHistoryIndex === 0;
@@ -3037,7 +3037,7 @@ async function loadFileHistoryDiff(filePath) {
 
   // Update position indicator
   document.getElementById('historyPosition').textContent =
-    `Version ${currentFileHistoryIndex + 1} of ${currentFileHistory.length} — ${formatDateForBanner(currentCommit.date)} (${currentCommit.hash.substring(0, 7)})`;
+    `Version ${currentFileHistoryIndex + 1} of ${currentFileHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
 
   // Update button states
   document.getElementById('prevBtn').disabled = currentFileHistoryIndex === 0;
