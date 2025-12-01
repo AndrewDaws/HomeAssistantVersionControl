@@ -2289,15 +2289,8 @@ async function showFileHistory(filePath) {
       if (currentFileHistory.length > 0) {
         displayFileHistory(filePath);
       } else {
-        // No changes found - show current version with unchanged diff styling
-        // Get the most recent commit (current hash) for display
-        const mostRecentCommit = data.log.all.length > 0 ? data.log.all[0] : null;
-        const unchangedHtml = renderUnchangedView(currentContent, {
-          startLineNum: 1,
-          commitDate: mostRecentCommit ? mostRecentCommit.date : null,
-          commitHash: mostRecentCommit ? mostRecentCommit.hash : data.currentHash
-        });
-        document.getElementById('rightPanel').innerHTML = unchangedHtml;
+        // No changes found - show empty state
+        document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
         document.getElementById('rightPanelActions').innerHTML = '';
       }
 
@@ -2439,24 +2432,11 @@ async function showAutomationHistory(automationId) {
 
 
       } else {
-        // No changes found - show current version with unchanged diff styling
+        // No changes found - show empty state
         const auto = allAutomations.find(a => a.id === automationId);
         document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
         document.getElementById('rightPanelActions').innerHTML = '';
-
-        const yamlContent = dumpYaml(auto.content);
-        const startLineNum = (auto && auto.line) ? auto.line : 1;
-
-        // Get most recent commit from history for display
-        const mostRecentCommit = data.history.length > 0 ? data.history[0] : null;
-
-        const unchangedHtml = renderUnchangedView(yamlContent, {
-          startLineNum: startLineNum,
-          commitDate: mostRecentCommit ? mostRecentCommit.date : null,
-          commitHash: mostRecentCommit ? mostRecentCommit.hash : null
-        });
-
-        document.getElementById('rightPanel').innerHTML = unchangedHtml;
+        document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
       }
     } else {
       let debugHtml = '';
@@ -2694,24 +2674,11 @@ async function showScriptHistory(scriptId) {
 
 
       } else {
-        // No changes found - show current version with unchanged diff styling
+        // No changes found - show empty state
         const script = allScripts.find(s => s.id === scriptId);
         document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
         document.getElementById('rightPanelActions').innerHTML = '';
-
-        const yamlContent = dumpYaml(script.content);
-        const startLineNum = (script && script.line) ? script.line : 1;
-
-        // Get most recent commit from history for display
-        const mostRecentCommit = data.history.length > 0 ? data.history[0] : null;
-
-        const unchangedHtml = renderUnchangedView(yamlContent, {
-          startLineNum: startLineNum,
-          commitDate: mostRecentCommit ? mostRecentCommit.date : null,
-          commitHash: mostRecentCommit ? mostRecentCommit.hash : null
-        });
-
-        document.getElementById('rightPanel').innerHTML = unchangedHtml;
+        document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
       }
     } else {
       let debugHtml = '';
