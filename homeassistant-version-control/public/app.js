@@ -2245,9 +2245,14 @@ async function showFileHistory(filePath) {
           // In shifted mode, include ALL versions since we compare between consecutive versions
           // In standard mode, filter out versions identical to current
           if (diffMode === 'shifted') {
-            // Always include when in shifted mode
-            commit.content = commitContent;
-            versionsWithChanges.push(commit);
+            // In shifted mode, we compare current commit vs previous commit
+            // If there is no previous commit (oldest version), we exclude it from the list
+            // so the user can't navigate to a version with nothing to compare against
+            if (i < data.log.all.length - 1) {
+              commit.previousHash = data.log.all[i + 1].hash;
+              commit.content = commitContent;
+              versionsWithChanges.push(commit);
+            }
           } else {
             // Check if there are actual visible differences from the CURRENT version
             const diffVsCurrent = generateDiff(commitContent, currentContent, {
@@ -2255,9 +2260,8 @@ async function showFileHistory(filePath) {
               filePath: filePath
             });
 
-            // Skip if identical to live, UNLESS it's the latest commit (index 0)
-            // We always want to show the latest state even if it matches current
-            if (diffVsCurrent === null && i !== 0) continue;
+            // Skip if identical to live
+            if (diffVsCurrent === null) continue;
 
             // Check against the last kept version to avoid consecutive duplicates
             if (lastKeptContent !== null) {
@@ -2384,11 +2388,15 @@ async function showAutomationHistory(automationId) {
         // In shifted mode, include ALL versions since we compare between consecutive versions
         // In standard mode, filter out versions identical to current
         if (diffMode === 'shifted') {
-          // Always include when in shifted mode
-          versionsWithChanges.push({
-            ...commit,
-            yamlContent: commitContent
-          });
+          // In shifted mode, exclude the oldest version
+          if (i < data.history.length - 1) {
+            const previousCommit = data.history[i + 1];
+            versionsWithChanges.push({
+              ...commit,
+              previousContent: dumpYaml(previousCommit.automation),
+              yamlContent: commitContent
+            });
+          }
         } else {
           // Check if there are visible differences compared to the CURRENT version
           const diffVsCurrent = generateDiff(commitContent, currentContent, {
@@ -2541,23 +2549,8 @@ async function loadAutomationHistoryDiff() {
   let compareToContent = '';
 
   if (diffMode === 'shifted') {
-    // Shifted mode: compare current to NEXT older version
-    if (currentAutomationHistoryIndex === currentAutomationHistory.length - 1) {
-      // Oldest version - no older version to compare to
-      // Show the content of this version
-      const oldestContent = currentCommit.yamlContent || dumpYaml(currentCommit.automation);
-      document.getElementById('automationDiffContent').innerHTML = renderUnchangedView(oldestContent, {
-        startLineNum: (auto && auto.line) ? auto.line : 1,
-        commitDate: currentCommit.date,
-        commitHash: currentCommit.hash,
-        label: 'Oldest Version'
-      });
-      document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${auto.id}')" title="This will overwrite the current automation with this version">Confirm Restore</button>`;
-      return;
-    }
-
-    const nextOlderCommit = currentAutomationHistory[currentAutomationHistoryIndex + 1];
-    compareToContent = nextOlderCommit.yamlContent || dumpYaml(nextOlderCommit.automation);
+    // Shifted mode: compare current to NEXT older version (stored in previousContent)
+    compareToContent = currentCommit.previousContent || '';
   } else {
     // Standard mode: compare current to the version being viewed
     compareToContent = currentCommit.yamlContent || dumpYaml(currentCommit.automation);
@@ -2650,11 +2643,15 @@ async function showScriptHistory(scriptId) {
         // In shifted mode, include ALL versions since we compare between consecutive versions
         // In standard mode, filter out versions identical to current
         if (diffMode === 'shifted') {
-          // Always include when in shifted mode
-          versionsWithChanges.push({
-            ...commit,
-            yamlContent: commitContent
-          });
+          // In shifted mode, exclude the oldest version
+          if (i < data.history.length - 1) {
+            const previousCommit = data.history[i + 1];
+            versionsWithChanges.push({
+              ...commit,
+              previousContent: dumpYaml(previousCommit.script),
+              yamlContent: commitContent
+            });
+          }
         } else {
           // Check if there are visible differences compared to the CURRENT version
           const diffVsCurrent = generateDiff(commitContent, currentContent, {
@@ -2807,23 +2804,8 @@ async function loadScriptHistoryDiff() {
   let compareToContent = '';
 
   if (diffMode === 'shifted') {
-    // Shifted mode: compare current to NEXT older version
-    if (currentScriptHistoryIndex === currentScriptHistory.length - 1) {
-      // Oldest version - no older version to compare to
-      // Show the content of this version
-      const oldestContent = currentCommit.yamlContent || dumpYaml(currentCommit.script);
-      document.getElementById('scriptDiffContent').innerHTML = renderUnchangedView(oldestContent, {
-        startLineNum: 1,
-        commitDate: currentCommit.date,
-        commitHash: currentCommit.hash,
-        label: 'Oldest Version'
-      });
-      document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${script.id}')" title="This will overwrite the current script with this version">Confirm Restore</button>`;
-      return;
-    }
-
-    const nextOlderCommit = currentScriptHistory[currentScriptHistoryIndex + 1];
-    compareToContent = nextOlderCommit.yamlContent || dumpYaml(nextOlderCommit.script);
+    // Shifted mode: compare current to NEXT older version (stored in previousContent)
+    compareToContent = currentCommit.previousContent || '';
   } else {
     // Standard mode: compare current to the version being viewed
     compareToContent = currentCommit.yamlContent || dumpYaml(currentCommit.script);
@@ -3080,35 +3062,12 @@ async function loadFileHistoryDiff(filePath) {
   let compareToContent = '';
 
   if (diffMode === 'shifted') {
-    // Shifted mode: compare current to NEXT older version (not the one being viewed)
-    if (currentFileHistoryIndex === currentFileHistory.length - 1) {
-      // This is the oldest version - no older version to compare to
-      // Show the content of this version
-      // Fetch the content for this commit if we don't have it
-      let oldestContent = '';
-      try {
-        const commitResponse = await fetch(`${API}/git/file-at-commit?filePath=${encodeURIComponent(filePath)}&commitHash=${currentCommit.hash}`);
-        const commitData = await commitResponse.json();
-        oldestContent = commitData.success ? commitData.content : '';
-      } catch (e) {
-        console.error('Error fetching oldest version content:', e);
-      }
-
-      document.getElementById('fileDiffContent').innerHTML = renderUnchangedView(oldestContent, {
-        startLineNum: 1,
-        commitDate: currentCommit.date,
-        commitHash: currentCommit.hash,
-        label: 'Oldest Version'
-      });
-      document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreFileVersion('${filePath}')" title="This will overwrite the current file with this version">Confirm Restore</button>`;
-      return;
+    // Shifted mode: compare current to NEXT older version (stored in previousHash)
+    if (currentCommit.previousHash) {
+      const olderResponse = await fetch(`${API}/git/file-at-commit?filePath=${encodeURIComponent(filePath)}&commitHash=${currentCommit.previousHash}`);
+      const olderData = await olderResponse.json();
+      compareToContent = olderData.success ? olderData.content : '';
     }
-
-    // Get the NEXT older version (index + 1 because array is newest first)
-    const nextOlderCommit = currentFileHistory[currentFileHistoryIndex + 1];
-    const olderResponse = await fetch(`${API}/git/file-at-commit?filePath=${encodeURIComponent(filePath)}&commitHash=${nextOlderCommit.hash}`);
-    const olderData = await olderResponse.json();
-    compareToContent = olderData.success ? olderData.content : '';
   } else {
     // Standard mode: compare current to the version being viewed
     const commitResponse = await fetch(`${API}/git/file-at-commit?filePath=${encodeURIComponent(filePath)}&commitHash=${currentCommit.hash}`);
