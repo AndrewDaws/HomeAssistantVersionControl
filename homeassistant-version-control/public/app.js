@@ -2301,6 +2301,10 @@ async function showFileHistory(filePath) {
               <div class="file-history-info">
                 <div class="history-position">Version 1 of 1 — ${formatDateForBanner(mostRecentDate)}</div>
               </div>
+              <div class="file-history-actions">
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
+              </div>
             </div>
             <div id="fileDiffContent"></div>
           </div>
@@ -2479,6 +2483,10 @@ async function showAutomationHistory(automationId) {
             <div class="file-history-header">
               <div class="file-history-info">
                 <div class="history-position">Version 1 of 1 — ${formatDateForBanner(mostRecentDate)}</div>
+              </div>
+              <div class="file-history-actions">
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
               </div>
             </div>
             <div id="automationDiffContent"></div>
@@ -2757,6 +2765,10 @@ async function showScriptHistory(scriptId) {
             <div class="file-history-header">
               <div class="file-history-info">
                 <div class="history-position">Version 1 of 1 — ${formatDateForBanner(mostRecentDate)}</div>
+              </div>
+              <div class="file-history-actions">
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
+                <button class="btn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
               </div>
             </div>
             <div id="scriptDiffContent"></div>
