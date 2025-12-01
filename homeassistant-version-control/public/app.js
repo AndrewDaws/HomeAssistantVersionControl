@@ -2544,12 +2544,14 @@ async function loadAutomationHistoryDiff() {
     // Shifted mode: compare current to NEXT older version
     if (currentAutomationHistoryIndex === currentAutomationHistory.length - 1) {
       // Oldest version - no older version to compare to
-      document.getElementById('automationDiffContent').innerHTML = `
-        <div class="empty" style="padding: 40px; text-align: center;">
-          <div style="font-size: 16px; color: var(--text-primary); margin-bottom: 8px;">Oldest Version</div>
-          <div style="font-size: 14px; color: var(--text-secondary);">No older version to compare current against</div>
-        </div>
-      `;
+      // Show the content of this version
+      const oldestContent = currentCommit.yamlContent || dumpYaml(currentCommit.automation);
+      document.getElementById('automationDiffContent').innerHTML = renderUnchangedView(oldestContent, {
+        startLineNum: (auto && auto.line) ? auto.line : 1,
+        commitDate: currentCommit.date,
+        commitHash: currentCommit.hash,
+        label: 'Oldest Version'
+      });
       document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${auto.id}')" title="This will overwrite the current automation with this version">Confirm Restore</button>`;
       return;
     }
@@ -2808,12 +2810,14 @@ async function loadScriptHistoryDiff() {
     // Shifted mode: compare current to NEXT older version
     if (currentScriptHistoryIndex === currentScriptHistory.length - 1) {
       // Oldest version - no older version to compare to
-      document.getElementById('scriptDiffContent').innerHTML = `
-        <div class="empty" style="padding: 40px; text-align: center;">
-          <div style="font-size: 16px; color: var(--text-primary); margin-bottom: 8px;">Oldest Version</div>
-          <div style="font-size: 14px; color: var(--text-secondary);">No older version to compare current against</div>
-        </div>
-      `;
+      // Show the content of this version
+      const oldestContent = currentCommit.yamlContent || dumpYaml(currentCommit.script);
+      document.getElementById('scriptDiffContent').innerHTML = renderUnchangedView(oldestContent, {
+        startLineNum: 1,
+        commitDate: currentCommit.date,
+        commitHash: currentCommit.hash,
+        label: 'Oldest Version'
+      });
       document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${script.id}')" title="This will overwrite the current script with this version">Confirm Restore</button>`;
       return;
     }
@@ -2878,7 +2882,8 @@ function renderUnchangedView(content, options = {}) {
   const {
     startLineNum = 1,
     commitDate = null,
-    commitHash = null
+    commitHash = null,
+    label = 'Current Version'
   } = options;
 
   // Split content into lines
@@ -2914,7 +2919,7 @@ function renderUnchangedView(content, options = {}) {
       <div class="diff-view-container">
         <div class="segmented-control" style="cursor: default; grid-template-columns: 1fr;">
           <div class="segmented-control-slider" style="width: calc(100% - 8px);"></div>
-          <label style="cursor: default; color: var(--text-primary);">Current Version</label>
+          <label style="cursor: default; color: var(--text-primary);">${label}</label>
         </div>
         <div class="diff-viewer-shell ${currentDiffStyle}">
           <div class="diff-viewer-unified">
@@ -3078,12 +3083,23 @@ async function loadFileHistoryDiff(filePath) {
     // Shifted mode: compare current to NEXT older version (not the one being viewed)
     if (currentFileHistoryIndex === currentFileHistory.length - 1) {
       // This is the oldest version - no older version to compare to
-      document.getElementById('fileDiffContent').innerHTML = `
-        <div class="empty" style="padding: 40px; text-align: center;">
-          <div style="font-size: 16px; color: var(--text-primary); margin-bottom: 8px;">Oldest Version</div>
-          <div style="font-size: 14px; color: var(--text-secondary);">No older version to compare current against</div>
-        </div>
-      `;
+      // Show the content of this version
+      // Fetch the content for this commit if we don't have it
+      let oldestContent = '';
+      try {
+        const commitResponse = await fetch(`${API}/git/file-at-commit?filePath=${encodeURIComponent(filePath)}&commitHash=${currentCommit.hash}`);
+        const commitData = await commitResponse.json();
+        oldestContent = commitData.success ? commitData.content : '';
+      } catch (e) {
+        console.error('Error fetching oldest version content:', e);
+      }
+
+      document.getElementById('fileDiffContent').innerHTML = renderUnchangedView(oldestContent, {
+        startLineNum: 1,
+        commitDate: currentCommit.date,
+        commitHash: currentCommit.hash,
+        label: 'Oldest Version'
+      });
       document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreFileVersion('${filePath}')" title="This will overwrite the current file with this version">Confirm Restore</button>`;
       return;
     }
