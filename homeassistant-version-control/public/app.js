@@ -2404,8 +2404,8 @@ async function showAutomationHistory(automationId) {
             filePath: auto.file
           });
 
-          // Skip if identical to live, UNLESS it's the latest commit (index 0)
-          if (diffVsCurrent === null && i !== 0) continue;
+          // Skip if identical to live
+          if (diffVsCurrent === null) continue;
 
           // Check against the last kept version to avoid consecutive duplicates
           if (lastKeptContent !== null) {
@@ -2659,8 +2659,8 @@ async function showScriptHistory(scriptId) {
             filePath: script.file
           });
 
-          // Skip if identical to live, UNLESS it's the latest commit (index 0)
-          if (diffVsCurrent === null && i !== 0) continue;
+          // Skip if identical to live
+          if (diffVsCurrent === null) continue;
 
           // Check against the last kept version to avoid consecutive duplicates
           if (lastKeptContent !== null) {
