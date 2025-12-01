@@ -2373,15 +2373,17 @@ async function showAutomationHistory(automationId) {
       const auto = allAutomations.find(a => a.id === automationId);
       const currentContent = dumpYaml(auto.content);
 
-      // Filter out versions that don't have any changes compared to the previous version
-      const versionsWithChanges = [];
+      // Initialize with empty history
+      currentAutomationHistory = [];
+      currentAutomationHistoryIndex = 0;
       let lastKeptContent = null;
+      let isFirstVersion = true;
 
+      // Process versions progressively
       for (let i = 0; i < data.history.length; i++) {
         const commit = data.history[i];
         const commitContent = dumpYaml(commit.automation);
 
-        // Automations tab always uses standard mode - compare against current version
         // Check if there are visible differences compared to the CURRENT version
         const diffVsCurrent = generateDiff(commitContent, currentContent, {
           returnNullIfNoChanges: true,
@@ -2397,33 +2399,31 @@ async function showAutomationHistory(automationId) {
             returnNullIfNoChanges: true,
             filePath: auto.file
           });
-          if (diffVsLast === null) continue; // Skip if identical to the previously added history item
+          if (diffVsLast === null) continue;
         }
 
-        versionsWithChanges.push({
+        // Add this version to history
+        currentAutomationHistory.push({
           ...commit,
           yamlContent: commitContent
         });
         lastKeptContent = commitContent;
+
+        // Display immediately when we find the first valid version
+        if (isFirstVersion) {
+          isFirstVersion = false;
+          // Set the panel title
+          document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
+          document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${automationId}')" title="This will overwrite the current automation with this version">Confirm Restore</button>`;
+          displayAutomationHistory();
+        } else {
+          // Update the navigation controls for subsequent versions
+          updateAutomationHistoryNavigation();
+        }
       }
 
-      if (versionsWithChanges.length > 0) {
-        // Store the filtered history
-        currentAutomationHistory = versionsWithChanges;
-        currentAutomationHistoryIndex = 0;
-
-        // Set the panel title
-        document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
-
-        document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${automationId}')" title="This will overwrite the current automation with this version">Confirm Restore</button>`;
-
-        // Display history with navigation
-        displayAutomationHistory();
-
-
-      } else {
-        // No changes found - show empty state
-        const auto = allAutomations.find(a => a.id === automationId);
+      // If no versions with changes were found
+      if (currentAutomationHistory.length === 0) {
         document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
         document.getElementById('rightPanelActions').innerHTML = '';
         document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
@@ -2539,6 +2539,21 @@ function navigateAutomationHistory(direction) {
   }
 }
 
+// Helper function to update navigation controls without reloading the diff
+function updateAutomationHistoryNavigation() {
+  const historyPosition = document.getElementById('automationHistoryPosition');
+  const prevBtn = document.getElementById('autoPrevBtn');
+  const nextBtn = document.getElementById('autoNextBtn');
+
+  if (historyPosition && prevBtn && nextBtn) {
+    const currentCommit = currentAutomationHistory[currentAutomationHistoryIndex];
+    historyPosition.textContent = `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+
+    // Update button states
+    prevBtn.disabled = currentAutomationHistoryIndex === 0;
+    nextBtn.disabled = currentAutomationHistoryIndex === currentAutomationHistory.length - 1;
+  }
+}
 
 
 function displayScripts(scripts) {
@@ -2597,15 +2612,17 @@ async function showScriptHistory(scriptId) {
       const script = allScripts.find(s => s.id === scriptId);
       const currentContent = dumpYaml(script.content);
 
-      // Filter out versions that don't have any changes compared to the previous version
-      const versionsWithChanges = [];
+      // Initialize with empty history
+      currentScriptHistory = [];
+      currentScriptHistoryIndex = 0;
       let lastKeptContent = null;
+      let isFirstVersion = true;
 
+      // Process versions progressively
       for (let i = 0; i < data.history.length; i++) {
         const commit = data.history[i];
         const commitContent = dumpYaml(commit.script);
 
-        // Scripts tab always uses standard mode - compare against current version
         // Check if there are visible differences compared to the CURRENT version
         const diffVsCurrent = generateDiff(commitContent, currentContent, {
           returnNullIfNoChanges: true,
@@ -2621,33 +2638,31 @@ async function showScriptHistory(scriptId) {
             returnNullIfNoChanges: true,
             filePath: script.file
           });
-          if (diffVsLast === null) continue; // Skip if identical to the previously added history item
+          if (diffVsLast === null) continue;
         }
 
-        versionsWithChanges.push({
+        // Add this version to history
+        currentScriptHistory.push({
           ...commit,
           yamlContent: commitContent
         });
         lastKeptContent = commitContent;
+
+        // Display immediately when we find the first valid version
+        if (isFirstVersion) {
+          isFirstVersion = false;
+          // Set the panel title
+          document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
+          document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${scriptId}')" title="This will overwrite the current script with this version">Confirm Restore</button>`;
+          displayScriptHistory();
+        } else {
+          // Update the navigation controls for subsequent versions
+          updateScriptHistoryNavigation();
+        }
       }
 
-      if (versionsWithChanges.length > 0) {
-        // Store the filtered history
-        currentScriptHistory = versionsWithChanges;
-        currentScriptHistoryIndex = 0;
-
-        // Set the panel title
-        document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
-
-        document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${scriptId}')" title="This will overwrite the current script with this version">Confirm Restore</button>`;
-
-        // Display history with navigation
-        displayScriptHistory();
-
-
-      } else {
-        // No changes found - show empty state
-        const script = allScripts.find(s => s.id === scriptId);
+      // If no versions with changes were found
+      if (currentScriptHistory.length === 0) {
         document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
         document.getElementById('rightPanelActions').innerHTML = '';
         document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
@@ -2764,6 +2779,22 @@ function navigateScriptHistory(direction) {
 
   currentScriptHistoryIndex = newIndex;
   loadScriptHistoryDiff();
+}
+
+// Helper function to update navigation controls without reloading the diff
+function updateScriptHistoryNavigation() {
+  const historyPosition = document.getElementById('scriptHistoryPosition');
+  const prevBtn = document.getElementById('scriptPrevBtn');
+  const nextBtn = document.getElementById('scriptNextBtn');
+
+  if (historyPosition && prevBtn && nextBtn) {
+    const currentCommit = currentScriptHistory[currentScriptHistoryIndex];
+    historyPosition.textContent = `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+
+    // Update button states
+    prevBtn.disabled = currentScriptHistoryIndex === 0;
+    nextBtn.disabled = currentScriptHistoryIndex === currentScriptHistory.length - 1;
+  }
 }
 
 // Helper function to dump YAML
