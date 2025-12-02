@@ -5,6 +5,7 @@
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
 > [!IMPORTANT]
+
 > 1.  **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up and possibly delete it** before starting this add-on. This add-on manages its own internal Git repository and may conflict with existing ones.
 > 2.  **Backup Strategy:** While this add-on provides excellent version control, **do not rely on it as your sole backup method**. Always maintain external backups (e.g., Google Drive, Samba) of your Home Assistant instance.
 
@@ -21,7 +22,7 @@ Home Assistant Version Control provides complete version history for your setup.
 ###  Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
 * **Visual Diffs:** Compare the current version against any backup side-by-side. Additions are highlighted in **green**, deletions in **red**.
-* **History Management:** Automatically merges and prunes older snapshots to keep your history clean based on your retention settings.
+* **History Management:** Automatically merges versions older than the specified time period to keep your history clean.
 
 ###  Instant Restore
 * **Granular Control:** Restore specific files or revert your entire configuration.
@@ -29,9 +30,12 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
 ###  Customization
-* **Accent Colors:** Choose from seven preset color palettes.
-* **Themes:** Toggle between Light and Dark modes.
-* **Diff Viewer:** Customize your diff experience with 8 different styles (High Contrast, GitHub Classic, Neon, etc.) and choose between Unified or Side-by-Side views.
+* **Color Theme:** Choose from seven preset color palettes.
+* **Light Themes:** Toggle between Light and Dark modes.
+* **Comparison View:** Customize your comparison experience with 8 different styles (High Contrast, GitHub Classic, Neon, etc.) and choose between Stacked or Side-by-Side layouts.
+* **Comparison Change Mode:**
+  * **On (Default):** Compares your **current live files** against the **version before the selected backup**. This highlights the changes introduced in that backup *plus* any subsequent changes.
+  * **Off:** Compares your **current live files** against the **selected backup**. This shows exactly how your current system differs from that specific point in time.
 
 ---
 
@@ -185,27 +189,13 @@ Reset the repository to a specific commit. **WARNING: This is destructive and wi
 #### `POST /api/restore-commit`
 Restore all files to their state at a specific commit. This creates a new commit on top of the current history, preserving history.
 
-**Parameters (Option 1 - Simple):**
-*   `commitHash` (string, required): The hash of the commit to restore files from and to.
+**Parameters:**
+*   `commitHash` (string, required): The hash of the commit to restore.
 
-**Parameters (Option 2 - Advanced):**
-*   `sourceHash` (string, required): The commit hash to find which files were changed.
-*   `targetHash` (string, required): The commit hash to restore those files to.
-
-> **Note:** Option 2 is used internally by the Timeline's "Diff Change Mode" to restore files to the parent commit version when viewing what a commit changed.
-
-**Example (Simple):**
+**Example:**
 ```json
 {
   "commitHash": "e5f6g7h8"
-}
-```
-
-**Example (Advanced):**
-```json
-{
-  "sourceHash": "e5f6g7h8",
-  "targetHash": "a1b2c3d4"
 }
 ```
 
