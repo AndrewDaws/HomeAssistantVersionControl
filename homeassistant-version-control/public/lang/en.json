@@ -130,7 +130,7 @@
     "show_changed_only_desc": "Filter timeline to show only versions with file changes",
     "debounce_time": "Save Delay",
     "debounce_time_desc": "Time to wait before creating a version after file changes",
-    "history_retention": "Retention Period",
+    "history_retention": "Clean Up History",
     "history_retention_desc": "Merge versions older than a certain time period",
     "retention_type": "Retention Type",
     "retention_value": "Retention Value",
