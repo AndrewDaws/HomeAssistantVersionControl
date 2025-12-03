@@ -96,11 +96,15 @@ docker run -d \
   -p 54001:54001 \
   -v /path/to/your/config:/config \
   -e TZ=America/New_York \
+  -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   --name home-assistant-version-control \
   ghcr.io/saihgupr/ha-version-control:latest
 ```
 
 Replace `/path/to/your/config` with the actual path to your Home Assistant configuration directory.
+
+> [!NOTE]
+> The `SUPERVISOR_TOKEN` is optional. You can omit that line if you don't need Home Assistant restart/reload features. See [Getting Your Supervisor Token](#getting-your-supervisor-token-optional) for details.
 
 **Option C: Build locally:**
 
@@ -113,11 +117,50 @@ docker run -d \
   -p 54001:54001 \
   -v /path/to/your/config:/config \
   -e TZ=America/New_York \
+  -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   --name home-assistant-version-control \
   home-assistant-version-control
 ```
 
+> [!NOTE]
+> The `SUPERVISOR_TOKEN` is optional. You can omit that line if you don't need Home Assistant restart/reload features. See [Getting Your Supervisor Token](#getting-your-supervisor-token-optional) for details.
+
 Access the interface at `http://localhost:54001`.
+
+#### Getting Your Supervisor Token (Optional)
+
+The `SUPERVISOR_TOKEN` environment variable is **completely optional**. 
+
+**Without the token**, all version control features work normally:
+- ✅ Automatic backups and version tracking
+- ✅ Browse history and view diffs
+- ✅ Restore files and entire configurations
+- ❌ Cannot restart Home Assistant from the UI
+- ❌ Automations won't auto-reload after restore (manual reload needed)
+- ❌ Scripts won't auto-reload after restore (manual reload needed)
+
+**With the token**, you additionally get:
+- ✅ Restart Home Assistant from the UI
+- ✅ Auto-reload automations after restore
+- ✅ Auto-reload scripts after restore
+
+**To add the token (optional):**
+
+1. In Home Assistant, go to **Settings** → **People** → click on your user profile
+2. Scroll down to **Long-Lived Access Tokens**
+3. Click **Create Token**
+4. Give it a name (e.g., "Version Control")
+5. Copy the token and add it to your Docker configuration:
+   
+   **For `docker run`**, add this line to your command:
+   ```bash
+   -e SUPERVISOR_TOKEN=your_token_here \
+   ```
+   
+   **For `docker compose`**, uncomment and update this line in `compose.yaml`:
+   ```yaml
+   - SUPERVISOR_TOKEN=your_long_lived_access_token_here
+   ```
 
 ---
 

@@ -9,6 +9,10 @@ services:
     environment:
       # Set your timezone
       - TZ=America/New_York
+      
+      # Optional: Add your Home Assistant Supervisor token to enable HA API features
+      # This allows the addon to restart HA and reload automations/scripts after restore
+      - SUPERVISOR_TOKEN=your_long_lived_access_token_here
     volumes:
       # Mount your Home Assistant config directory
       # This directory will be tracked for changes
