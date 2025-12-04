@@ -1723,12 +1723,9 @@ async function showCommit(hash) {
       const diffData = await diffResponse.json();
 
       // Set panel title
-      const commit = allCommits.find(c => c.hash === hash);
-      if (commit && commit.date) {
-        document.getElementById('rightPanelTitle').textContent = formatDateForLabel(commit.date);
-      } else {
-        document.getElementById('rightPanelTitle').textContent = t('timeline.version_title', { hash: hash.substring(0, 8) });
-      }
+      // Set panel title
+      // Swap: Show hash in title instead of date
+      document.getElementById('rightPanelTitle').textContent = t('timeline.version_title', { hash: hash.substring(0, 8) });
 
       // Clear actions initially, will be set by displayCommitDiff if there are changes
       document.getElementById('rightPanelActions').innerHTML = '';
@@ -1807,6 +1804,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
 
   // Determine if we need to use shifted mode for Timeline
   let compareHash = hash; // Default: compare to the commit being viewed
+  let compareDate = commitDate; // Default: date of the commit being viewed
   let isOldestCommit = false;
 
   if (diffMode === 'shifted') {
@@ -1816,7 +1814,9 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
 
     if (!isOldestCommit && commitIndex !== -1) {
       // Get the next older commit hash
-      compareHash = allCommits[commitIndex + 1].hash;
+      const compareCommit = allCommits[commitIndex + 1];
+      compareHash = compareCommit.hash;
+      compareDate = compareCommit.date;
     }
   }
 
@@ -1859,7 +1859,8 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
       let currentContent = currentData.success ? currentData.content : '';
 
       // Use the new generateDiff function for consistent rendering
-      let rightLabel = `Version ${hash.substring(0, 8)}`;
+      // Swap: Show date in diff label instead of hash
+      let rightLabel = compareDate ? formatDateForBanner(compareDate) : `Version ${hash.substring(0, 8)}`;
 
       // Determine effective comparison hash and label
       let effectiveCompareHash = compareHash;
@@ -1876,7 +1877,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
           // For the "Current" side (left), we also want to show the commit version, not live
           // This is a special case where we override the "Current" content below
         } else {
-          rightLabel = `Version ${compareHash.substring(0, 8)}`;
+          rightLabel = compareDate ? formatDateForBanner(compareDate) : `Version ${compareHash.substring(0, 8)}`;
         }
       }
 
@@ -2643,10 +2644,10 @@ async function loadAutomationHistoryDiff() {
   // Update position indicator
   if (isScanningHistory) {
     document.getElementById('automationHistoryPosition').textContent =
-      `Version ${currentAutomationHistoryIndex + 1} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentAutomationHistoryIndex + 1} — ${currentCommit.hash.substring(0, 8)}`;
   } else {
     document.getElementById('automationHistoryPosition').textContent =
-      `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${currentCommit.hash.substring(0, 8)}`;
   }
 
   // Update button states
@@ -2666,7 +2667,7 @@ async function loadAutomationHistoryDiff() {
 
   const diffHtml = renderDiff(compareToContent, currentContent, document.getElementById('automationDiffContent'), {
     leftLabel: 'Current Version',
-    rightLabel: `Version ${currentCommit.hash.substring(0, 8)}`,
+    rightLabel: formatDateForBanner(currentCommit.date),
     startLineOffset: startLine,
     filePath: 'automations.yaml'
   });
@@ -2689,9 +2690,9 @@ function updateAutomationHistoryNavigation() {
   if (historyPosition && prevBtn && nextBtn) {
     const currentCommit = currentAutomationHistory[currentAutomationHistoryIndex];
     if (isScanningHistory) {
-      historyPosition.textContent = `Version ${currentAutomationHistoryIndex + 1} — ${formatDateForBanner(currentCommit.date)}`;
+      historyPosition.textContent = `Version ${currentAutomationHistoryIndex + 1} — ${currentCommit.hash.substring(0, 8)}`;
     } else {
-      historyPosition.textContent = `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+      historyPosition.textContent = `Version ${currentAutomationHistoryIndex + 1} of ${currentAutomationHistory.length} — ${currentCommit.hash.substring(0, 8)}`;
     }
 
     // Update button states
@@ -2925,10 +2926,10 @@ async function loadScriptHistoryDiff() {
   // Update position indicator
   if (isScanningHistory) {
     document.getElementById('scriptHistoryPosition').textContent =
-      `Version ${currentScriptHistoryIndex + 1} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentScriptHistoryIndex + 1} — ${currentCommit.hash.substring(0, 8)}`;
   } else {
     document.getElementById('scriptHistoryPosition').textContent =
-      `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${currentCommit.hash.substring(0, 8)}`;
   }
 
   // Update button states
@@ -2948,7 +2949,7 @@ async function loadScriptHistoryDiff() {
 
   const diffHtml = renderDiff(compareToContent, currentContent, document.getElementById('scriptDiffContent'), {
     leftLabel: 'Current Version',
-    rightLabel: `Version ${currentCommit.hash.substring(0, 8)}`,
+    rightLabel: formatDateForBanner(currentCommit.date),
     startLineOffset: startLine,
     filePath: 'scripts.yaml'
   });
@@ -2974,9 +2975,9 @@ function updateScriptHistoryNavigation() {
   if (historyPosition && prevBtn && nextBtn) {
     const currentCommit = currentScriptHistory[currentScriptHistoryIndex];
     if (isScanningHistory) {
-      historyPosition.textContent = `Version ${currentScriptHistoryIndex + 1} — ${formatDateForBanner(currentCommit.date)}`;
+      historyPosition.textContent = `Version ${currentScriptHistoryIndex + 1} — ${currentCommit.hash.substring(0, 8)}`;
     } else {
-      historyPosition.textContent = `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+      historyPosition.textContent = `Version ${currentScriptHistoryIndex + 1} of ${currentScriptHistory.length} — ${currentCommit.hash.substring(0, 8)}`;
     }
 
     // Update button states
@@ -3211,10 +3212,10 @@ async function loadFileHistoryDiff(filePath) {
   // Update position indicator
   if (isScanningHistory) {
     document.getElementById('historyPosition').textContent =
-      `Version ${currentFileHistoryIndex + 1} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentFileHistoryIndex + 1} — ${currentCommit.hash.substring(0, 8)}`;
   } else {
     document.getElementById('historyPosition').textContent =
-      `Version ${currentFileHistoryIndex + 1} of ${currentFileHistory.length} — ${formatDateForBanner(currentCommit.date)}`;
+      `Version ${currentFileHistoryIndex + 1} of ${currentFileHistory.length} — ${currentCommit.hash.substring(0, 8)}`;
   }
 
   // Update button states
@@ -3254,7 +3255,7 @@ async function loadFileHistoryDiff(filePath) {
     // Always: current on left, compareToContent on right
     const diffHtml = renderDiff(compareToContent, currentContent, document.getElementById('fileDiffContent'), {
       leftLabel: 'Current Version',
-      rightLabel: `Version ${currentCommit.hash.substring(0, 8)}`,
+      rightLabel: formatDateForBanner(currentCommit.date),
       filePath: filePath
     });
 
