@@ -271,10 +271,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     diffModeShifted.checked = (diffMode === 'shifted');
   }
 
-  // Load compare to current setting (checkbox toggle)
-  const compareToCurrentCheckbox = document.getElementById('compareToCurrent');
-  if (compareToCurrentCheckbox) {
-    compareToCurrentCheckbox.checked = compareToCurrent;
+  // Load compare mode setting (radio buttons)
+  const compareModeCurrent = document.getElementById('compareModeCurrent');
+  const compareModePrevious = document.getElementById('compareModePrevious');
+  if (compareModeCurrent && compareModePrevious) {
+    if (compareToCurrent) {
+      compareModeCurrent.checked = true;
+    } else {
+      compareModePrevious.checked = true;
+    }
   }
 
   // Load diff style setting
@@ -920,9 +925,10 @@ function toggleDiffMode(isChecked) {
   refreshCurrentView();
 }
 
-function toggleCompareToCurrent(isChecked) {
-  compareToCurrent = isChecked;
-  localStorage.setItem('compareToCurrent', isChecked);
+function setCompareMode(mode) {
+  const isCurrent = (mode === 'current');
+  compareToCurrent = isCurrent;
+  localStorage.setItem('compareToCurrent', isCurrent);
 
   // Refresh the current view to apply new setting
   refreshCurrentView();
