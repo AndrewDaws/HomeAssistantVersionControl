@@ -1736,6 +1736,10 @@ async function showCommit(hash) {
     // Update keyboard navigation index to match clicked item
     const clickedIndex = keyboardNav.items.indexOf(element);
     if (clickedIndex !== -1) {
+      // Clear previous keyboard selection visual logic to prevent double highlighting
+      if (keyboardNav.selectedIndex >= 0 && keyboardNav.items[keyboardNav.selectedIndex]) {
+        keyboardNav.items[keyboardNav.selectedIndex].classList.remove('keyboard-selected');
+      }
       keyboardNav.selectedIndex = clickedIndex;
     }
   }
@@ -2316,6 +2320,10 @@ async function showFileHistory(filePath) {
     // Update keyboard navigation index to match clicked item
     const clickedIndex = keyboardNav.items.indexOf(element);
     if (clickedIndex !== -1) {
+      // Clear previous keyboard selection visual logic to prevent double highlighting
+      if (keyboardNav.selectedIndex >= 0 && keyboardNav.items[keyboardNav.selectedIndex]) {
+        keyboardNav.items[keyboardNav.selectedIndex].classList.remove('keyboard-selected');
+      }
       keyboardNav.selectedIndex = clickedIndex;
     }
   }
@@ -2522,6 +2530,10 @@ async function showAutomationHistory(automationId) {
     // Update keyboard navigation index to match clicked item
     const clickedIndex = keyboardNav.items.indexOf(element);
     if (clickedIndex !== -1) {
+      // Clear previous keyboard selection visual logic to prevent double highlighting
+      if (keyboardNav.selectedIndex >= 0 && keyboardNav.items[keyboardNav.selectedIndex]) {
+        keyboardNav.items[keyboardNav.selectedIndex].classList.remove('keyboard-selected');
+      }
       keyboardNav.selectedIndex = clickedIndex;
     }
   }
@@ -2836,6 +2848,10 @@ async function showScriptHistory(scriptId) {
     // Update keyboard navigation index to match clicked item
     const clickedIndex = keyboardNav.items.indexOf(element);
     if (clickedIndex !== -1) {
+      // Clear previous keyboard selection visual logic to prevent double highlighting
+      if (keyboardNav.selectedIndex >= 0 && keyboardNav.items[keyboardNav.selectedIndex]) {
+        keyboardNav.items[keyboardNav.selectedIndex].classList.remove('keyboard-selected');
+      }
       keyboardNav.selectedIndex = clickedIndex;
     }
   }
