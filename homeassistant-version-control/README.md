@@ -18,17 +18,17 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files (both UI and YAML mode).
 * **Efficient Storage:** Uses Git deduplication to minimize disk usage. Typical grow expected less than 5MB per year.
 
-###  Timeline & History
+### Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
 * **Visual Comparisons:** Compare the current version against any backup side-by-side. Additions are highlighted in **green**, deletions in **red**.
 * **History Management:** Automatically merges versions older than the specified time period to keep your history clean.
 
-###  Instant Restore
+### Instant Restore
 * **Granular Control:** Restore specific files or revert your entire configuration.
 * **Smart Reloads:** Automatically reloads Home Assistant when restoring automation or script files to apply changes immediately.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
-###  Customization
+### Customization
 * **Color Theme:** Choose from seven preset color palettes.
 * **Light Themes:** Toggle between Light and Dark modes.
 * **Comparison View:**
@@ -130,14 +130,13 @@ Access the interface at `http://localhost:54001`.
 
 ---
 
-
 ### Restore Actions
 * **Restore Single File:** Click the "Restore" button on any file in the timeline.
 * **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
 
 ---
 
-##  How It Works
+## How It Works
 
 ### The Workflow
 1.  **File Watcher:** The system continuously monitors your `/config` folder for changes to YAML files.
@@ -237,7 +236,6 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -H "Content-Type: application/json" \
   -d '{"hours": 24}'
 ```
-
 
 ---
 

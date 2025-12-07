@@ -237,8 +237,6 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
-
-
 ---
 
 ##  Support
