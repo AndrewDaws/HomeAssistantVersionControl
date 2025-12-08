@@ -176,7 +176,8 @@
     "diff_style_pastel": "Pastel",
     "diff_style_minimal": "Minimal Border",
     "diff_style_split": "Split Highlight",
-    "holiday_mode": "Holiday Mode"
+    "holiday_mode": "Holiday Mode",
+    "enable_holiday_mode": "Enable Holiday Mode"
   },
   "date_buckets": {
     "today": "Today",

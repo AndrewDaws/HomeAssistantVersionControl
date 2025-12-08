@@ -152,19 +152,6 @@
           <div class="settings-group">
             <div class="settings-group-title" data-i18n="settings.group_general">General</div>
 
-            <!-- Holiday Mode Toggle (simple, no special styling) -->
-            <div class="setting-item"
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-              <div>
-                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.holiday_mode">Holiday
-                  Mode</span>
-              </div>
-              <div class="toggle-switch">
-                <input type="checkbox" id="holidayMode" style="display: none;">
-                <label for="holidayMode" class="toggle-slider" onclick="toggleHolidayMode()"></label>
-              </div>
-            </div>
-
             <div id="debounceTimeOptions" style="margin-bottom: 20px;">
               <label style="display: block; margin-bottom: 8px;">
                 <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.debounce_time">Debounce
@@ -416,6 +403,21 @@
               <div style="display: none;">
                 <input type="color" id="picassoPrimaryColor" value="#10b981">
                 <input type="color" id="picassoSecondaryColor" value="#3b82f6">
+              </div>
+            </div>
+          </div>
+
+          <!-- Holiday Mode at the very bottom -->
+          <div class="settings-group holiday-settings-group">
+            <div class="settings-group-title" data-i18n="settings.holiday_mode">Holiday Mode</div>
+            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="color: var(--text-primary); font-size: 14px;"
+                  data-i18n="settings.enable_holiday_mode">Enable Holiday Mode</span>
+              </div>
+              <div class="toggle-switch">
+                <input type="checkbox" id="holidayMode" style="display: none;">
+                <label for="holidayMode" class="toggle-slider" onclick="toggleHolidayMode()"></label>
               </div>
             </div>
           </div>

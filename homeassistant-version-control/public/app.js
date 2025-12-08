@@ -5334,7 +5334,6 @@ function toggleHolidayMode() {
   if (willBeEnabled) {
     document.body.classList.add('holiday-mode');
     createSnowflakes();
-    showHolidayDesignPanel();
     applyHolidayDesign();
     localStorage.setItem('holidayMode', 'true');
   } else {
