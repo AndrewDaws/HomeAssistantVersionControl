@@ -148,30 +148,22 @@
       <div class="modal-content">
         <div class="settings-section">
 
-          <!-- Holiday Mode Toggle -->
-          <div class="settings-group holiday-settings-group">
-            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center;">
+          <!-- Group 2: General -->
+          <div class="settings-group">
+            <div class="settings-group-title" data-i18n="settings.group_general">General</div>
+
+            <!-- Holiday Mode Toggle (simple, no special styling) -->
+            <div class="setting-item"
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
               <div>
-                <span style="color: var(--text-primary); font-size: 14px; display: flex; align-items: center; gap: 8px;"
-                  data-i18n="settings.holiday_mode">
-                  <span style="font-size: 16px;">🎄</span> Holiday Mode
-                </span>
-                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;"
-                  data-i18n="settings.holiday_mode_desc">
-                  Transform the header into a festive gift with falling snow
-                </p>
+                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.holiday_mode">Holiday
+                  Mode</span>
               </div>
               <div class="toggle-switch">
                 <input type="checkbox" id="holidayMode" style="display: none;">
                 <label for="holidayMode" class="toggle-slider" onclick="toggleHolidayMode()"></label>
               </div>
             </div>
-          </div>
-
-          <!-- Group 2: General -->
-          <div class="settings-group">
-            <div class="settings-group-title" data-i18n="settings.group_general">General</div>
-
 
             <div id="debounceTimeOptions" style="margin-bottom: 20px;">
               <label style="display: block; margin-bottom: 8px;">
@@ -236,7 +228,8 @@
             <div class="setting-item" style="margin-bottom: 20px;">
               <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                 <span style="color: var(--text-primary); font-size: 14px;"
-                  data-i18n="settings.history_retention">History Retention</span>
+                  data-i18n="settings.history_retention">History
+                  Retention</span>
                 <div class="toggle-switch">
                   <input type="checkbox" id="historyRetention" style="display: none;" checked>
                   <label for="historyRetention" class="toggle-slider" onclick="handleRetentionToggle()"></label>

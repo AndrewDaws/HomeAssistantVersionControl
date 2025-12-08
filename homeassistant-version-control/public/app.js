@@ -5217,8 +5217,10 @@ const PLAID_PATTERNS = [
 ];
 
 // Generate plaid pattern from color scheme
-function generatePlaidPattern(pattern, size) {
+function generatePlaidPattern(pattern, size, angle, intensity) {
   const { baseColor, accentColor, threadColor } = pattern;
+  // intensity 0 = solid color, 100 = full gradient
+  const gradientStrength = (intensity || 50) / 100 * 30; // max 30% lighten/darken
   return `
     repeating-linear-gradient(
       0deg,
@@ -5244,7 +5246,7 @@ function generatePlaidPattern(pattern, size) {
       ${threadColor} ${size * 2 + 2}px,
       transparent ${size * 2 + 2}px
     ),
-    linear-gradient(135deg, ${baseColor} 0%, ${lightenColor(baseColor, 20)} 25%, ${baseColor} 50%, ${darkenColor(baseColor, 20)} 75%, ${baseColor} 100%)
+    linear-gradient(${angle}deg, ${baseColor} 0%, ${lightenColor(baseColor, gradientStrength)} 25%, ${baseColor} 50%, ${darkenColor(baseColor, gradientStrength)} 75%, ${baseColor} 100%)
   `;
 }
 
@@ -5268,20 +5270,34 @@ function darkenColor(hex, percent) {
   return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
 
+// Helper to blend two colors (0 = color1, 1 = color2)
+function blendColors(color1, color2, ratio) {
+  const c1 = parseInt(color1.replace('#', ''), 16);
+  const c2 = parseInt(color2.replace('#', ''), 16);
+  const R = Math.round((c1 >> 16) * (1 - ratio) + (c2 >> 16) * ratio);
+  const G = Math.round(((c1 >> 8) & 0xFF) * (1 - ratio) + ((c2 >> 8) & 0xFF) * ratio);
+  const B = Math.round((c1 & 0xFF) * (1 - ratio) + (c2 & 0xFF) * ratio);
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
 // Holiday design settings
 let holidayDesign = {
-  currentPlaidIndex: parseInt(localStorage.getItem('holidayPlaidIndex')) || 0,
-  ribbonWidth: parseInt(localStorage.getItem('holidayRibbonWidth')) || 20,
-  ribbonStyle: parseInt(localStorage.getItem('holidayRibbonStyle')) || 1,
-  plaidSize: parseInt(localStorage.getItem('holidayPlaidSize')) || 30,
-  paperShine: parseInt(localStorage.getItem('holidayPaperShine')) || 1,
-  paperShineIntensity: parseInt(localStorage.getItem('holidayPaperShineIntensity')) || 30,
-  bowSize: parseInt(localStorage.getItem('holidayBowSize')) || 80,
-  bowOffset: parseInt(localStorage.getItem('holidayBowOffset')) || 0,
-  bowShadow: parseInt(localStorage.getItem('holidayBowShadow')) || 8,
-  bowShadowSpread: parseInt(localStorage.getItem('holidayBowShadowSpread')) || 15,
+  currentPlaidIndex: parseInt(localStorage.getItem('holidayPlaidIndex')) || 1,
+  ribbonWidth: parseInt(localStorage.getItem('holidayRibbonWidth')) || 19,
+  ribbonStyle: parseInt(localStorage.getItem('holidayRibbonStyle')) || 4,
+  ribbon3D: parseInt(localStorage.getItem('holidayRibbon3D')) || 10,
+  ribbonBrightness: localStorage.getItem('holidayRibbonBrightness') !== null ? parseInt(localStorage.getItem('holidayRibbonBrightness')) : -5,
+  plaidSize: parseInt(localStorage.getItem('holidayPlaidSize')) || 24,
+  paperGradientAngle: parseInt(localStorage.getItem('holidayPaperGradientAngle')) || 177,
+  paperGradientIntensity: parseInt(localStorage.getItem('holidayPaperGradientIntensity')) || 30,
+  paperShine: parseInt(localStorage.getItem('holidayPaperShine')) || 4,
+  paperShineIntensity: parseInt(localStorage.getItem('holidayPaperShineIntensity')) || 10,
+  bowSize: parseInt(localStorage.getItem('holidayBowSize')) || 139,
+  bowOffset: parseInt(localStorage.getItem('holidayBowOffset')) || 53,
+  bowShadow: parseInt(localStorage.getItem('holidayBowShadow')) || 6,
+  bowShadowSpread: parseInt(localStorage.getItem('holidayBowShadowSpread')) || 3,
   bowStyle: parseInt(localStorage.getItem('holidayBowStyle')) || 1,
-  borderEnabled: localStorage.getItem('holidayBorderEnabled') !== 'false',
+  borderEnabled: localStorage.getItem('holidayBorderEnabled') === 'true',
   borderWidth: parseInt(localStorage.getItem('holidayBorderWidth')) || 2,
   borderColor: localStorage.getItem('holidayBorderColor') || '#D4AF37'
 };
@@ -5339,81 +5355,8 @@ function initHolidayMode() {
     document.body.classList.add('holiday-mode');
     createSnowflakes();
     applyHolidayDesign();
-    showHolidayDesignPanel();
+    // showHolidayDesignPanel(); // Panel hidden by default now
   }
-
-  // Add click listener to header for cycling plaid patterns
-  const header = document.querySelector('.header');
-  if (header) {
-    header.addEventListener('click', cycleHolidayPlaid);
-  }
-}
-
-// Cycle to next plaid pattern when header is clicked
-function cycleHolidayPlaid(event) {
-  // Only cycle if holiday mode is active and not clicking a button
-  if (!document.body.classList.contains('holiday-mode')) return;
-  if (event.target.tagName === 'BUTTON' || event.target.closest('button')) return;
-
-  holidayDesign.currentPlaidIndex = (holidayDesign.currentPlaidIndex + 1) % PLAID_PATTERNS.length;
-  localStorage.setItem('holidayPlaidIndex', holidayDesign.currentPlaidIndex);
-
-  const pattern = PLAID_PATTERNS[holidayDesign.currentPlaidIndex];
-
-  // Show pattern name briefly
-  showPatternName(pattern.name);
-
-  // Update panel if visible
-  const panelName = document.getElementById('currentPatternName');
-  if (panelName) {
-    panelName.textContent = pattern.name;
-    panelName.nextElementSibling.textContent = `👆 Tap header to cycle (${holidayDesign.currentPlaidIndex + 1}/${PLAID_PATTERNS.length})`;
-  }
-
-  applyHolidayDesign();
-}
-
-// Show pattern name toast
-function showPatternName(name) {
-  // Remove existing toast
-  const existing = document.getElementById('plaidToast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'plaidToast';
-  toast.textContent = name;
-  toast.style.cssText = `
-    position: fixed;
-    top: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 10001;
-    animation: fadeInOut 1.5s ease forwards;
-  `;
-  document.body.appendChild(toast);
-
-  // Inject animation if not exists
-  if (!document.getElementById('toastAnimation')) {
-    const style = document.createElement('style');
-    style.id = 'toastAnimation';
-    style.textContent = `
-      @keyframes fadeInOut {
-        0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  setTimeout(() => toast.remove(), 1500);
 }
 
 // Create snowflakes
@@ -5486,7 +5429,6 @@ function showHolidayDesignPanel() {
         <div class="holiday-section-title">🎨 Pattern</div>
         <div class="holiday-control" style="text-align:center; padding: 8px 0; background: rgba(255,255,255,0.05); border-radius: 8px;">
           <div style="font-size: 14px; color: #D4AF37; font-weight: 600;" id="currentPatternName">${currentPattern.name}</div>
-          <div style="font-size: 11px; color: #666; margin-top: 4px;">👆 Tap header to cycle (${holidayDesign.currentPlaidIndex + 1}/${PLAID_PATTERNS.length})</div>
         </div>
         <div class="holiday-control">
           <label>Pattern Scale: <span id="plaidSizeVal">${holidayDesign.plaidSize}px</span></label>
@@ -5502,6 +5444,7 @@ function showHolidayDesignPanel() {
           <div style="display: flex; gap: 8px; margin-top: 6px;">
             <button onclick="updateHolidayDesign('bowStyle', 1)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 1 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 1 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 1</button>
             <button onclick="updateHolidayDesign('bowStyle', 2)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 2 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 2 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 2</button>
+            <button onclick="updateHolidayDesign('bowStyle', 3)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 3 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 3 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 3</button>
           </div>
         </div>
         <div class="holiday-control">
@@ -5540,11 +5483,27 @@ function showHolidayDesignPanel() {
           <label>Width: <span id="ribbonWidthVal">${holidayDesign.ribbonWidth}px</span></label>
           <input type="range" min="10" max="40" value="${holidayDesign.ribbonWidth}" oninput="updateHolidayDesign('ribbonWidth', this.value)">
         </div>
+        <div class="holiday-control">
+          <label>3D Effect: <span id="ribbon3DVal">${holidayDesign.ribbon3D}%</span></label>
+          <input type="range" min="0" max="100" value="${holidayDesign.ribbon3D}" oninput="updateHolidayDesign('ribbon3D', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Brightness: <span id="ribbonBrightnessVal">${holidayDesign.ribbonBrightness}%</span></label>
+          <input type="range" min="-50" max="50" value="${holidayDesign.ribbonBrightness}" oninput="updateHolidayDesign('ribbonBrightness', this.value)">
+        </div>
       </div>
       
       <!-- Paper Shine Section -->
       <div class="holiday-section">
         <div class="holiday-section-title">✨ Paper Effect</div>
+        <div class="holiday-control">
+          <label>Gradient Angle: <span id="paperGradientAngleVal">${holidayDesign.paperGradientAngle}°</span></label>
+          <input type="range" min="0" max="360" value="${holidayDesign.paperGradientAngle}" oninput="updateHolidayDesign('paperGradientAngle', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Gradient Intensity: <span id="paperGradientIntensityVal">${holidayDesign.paperGradientIntensity}%</span></label>
+          <input type="range" min="0" max="100" value="${holidayDesign.paperGradientIntensity}" oninput="updateHolidayDesign('paperGradientIntensity', this.value)">
+        </div>
         <div class="holiday-control">
           <label>Effect: <span style="color: #D4AF37;">${PAPER_SHINE_EFFECTS[holidayDesign.paperShine]?.name || 'None'}</span></label>
           <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
@@ -5622,7 +5581,7 @@ function updateHolidayDesign(setting, value) {
   localStorage.setItem('holiday' + setting.charAt(0).toUpperCase() + setting.slice(1), value);
 
   // Refresh panel for certain settings to update button states
-  if (setting === 'bowStyle' || setting === 'borderColor' || setting === 'borderEnabled') {
+  if (setting === 'bowStyle' || setting === 'borderColor' || setting === 'borderEnabled' || setting === 'ribbonStyle' || setting === 'paperShine') {
     showHolidayDesignPanel();
   }
 
@@ -5639,14 +5598,36 @@ function applyHolidayDesign() {
     document.head.appendChild(styleEl);
   }
 
-  const { currentPlaidIndex, ribbonWidth, plaidSize, bowSize, bowOffset, bowShadow, bowShadowSpread, bowStyle, borderEnabled, borderWidth, borderColor } = holidayDesign;
+  const { currentPlaidIndex, ribbonWidth, ribbonStyle, ribbon3D, ribbonBrightness = 0, plaidSize, paperGradientAngle, paperGradientIntensity, paperShine, paperShineIntensity, bowSize, bowOffset, bowShadow, bowShadowSpread, bowStyle, borderEnabled, borderWidth, borderColor } = holidayDesign;
 
   // Get current plaid pattern
   const pattern = PLAID_PATTERNS[currentPlaidIndex];
-  const wrapBg = generatePlaidPattern(pattern, plaidSize);
+  const wrapBg = generatePlaidPattern(pattern, plaidSize, paperGradientAngle, paperGradientIntensity);
+
+  // Get ribbon colors with 3D effect applied
+  const ribbon = RIBBON_STYLES[ribbonStyle - 1] || RIBBON_STYLES[0];
+
+  // Apply brightness to base colors
+  const baseColors = ribbon.colors.map(color => {
+    if (ribbonBrightness > 0) return lightenColor(color, ribbonBrightness);
+    if (ribbonBrightness < 0) return darkenColor(color, Math.abs(ribbonBrightness));
+    return color;
+  });
+
+  const [r0, r1, r2, r3, r4, r5] = baseColors;
+  // ribbon3D 0% = flat (all same color), 100% = full gradient
+  const effect3D = ribbon3D / 100;
+  // Blend colors based on 3D effect (when 0%, all look like r1)
+  const rb0 = effect3D < 0.5 ? blendColors(r1, r0, effect3D * 2) : r0;
+  const rb2 = effect3D < 0.5 ? blendColors(r1, r2, effect3D * 2) : r2;
+  const rb5 = effect3D < 0.5 ? blendColors(r1, r5, effect3D * 2) : r5;
+
+  // Get paper shine effect
+  const shineEffect = PAPER_SHINE_EFFECTS[paperShine];
+  const shineCss = shineEffect && shineEffect.css ? (typeof shineEffect.css === 'function' ? shineEffect.css(paperShineIntensity) + ',' : '') : '';
 
   // Bow image selection
-  const bowImage = bowStyle === 2 ? 'images/holiday_bow_2.png' : 'images/holiday_bow.png';
+  const bowImage = bowStyle === 3 ? 'images/holiday_bow_3.png' : bowStyle === 2 ? 'images/holiday_bow_2.png' : 'images/holiday_bow.png';
 
   // Border style
   const borderStyle = borderEnabled ? `${borderWidth}px solid ${borderColor}` : 'none';
@@ -5655,40 +5636,40 @@ function applyHolidayDesign() {
     /* Dynamic Holiday Styles */
     body.holiday-mode .header {
       background: 
+        /* Paper shine effect */
+        ${shineCss}
         /* Horizontal ribbon */
         linear-gradient(
           to bottom,
           transparent calc(50% - ${ribbonWidth / 2}px),
-          #5A0008 calc(50% - ${ribbonWidth / 2}px),
-          #960011 calc(50% - ${ribbonWidth / 2 - 2}px),
-          #B81520 calc(50% - 2px),
-          #960011 50%,
-          #B81520 calc(50% + 2px),
-          #960011 calc(50% + ${ribbonWidth / 2 - 2}px),
-          #5A0008 calc(50% + ${ribbonWidth / 2}px),
+          ${rb0} calc(50% - ${ribbonWidth / 2}px),
+          ${r1} calc(50% - ${ribbonWidth / 2 - 2}px),
+          ${rb2} calc(50% - 2px),
+          ${r1} 50%,
+          ${rb2} calc(50% + 2px),
+          ${r1} calc(50% + ${ribbonWidth / 2 - 2}px),
+          ${rb0} calc(50% + ${ribbonWidth / 2}px),
           transparent calc(50% + ${ribbonWidth / 2}px)
         ),
         ${wrapBg};
-      cursor: pointer;
+      /* cursor: pointer; removed */
       position: relative;
       border: ${borderStyle} !important;
     }
     
-    body.holiday-mode .header:active {
-      transform: scale(0.995);
-    }
+    /* Active removed */
     
     /* Vertical ribbon */
     body.holiday-mode .header::before {
       width: ${ribbonWidth}px;
       background: linear-gradient(
         to right,
-        #5A0008 0%,
-        #960011 15%,
-        #B81520 40%,
-        #960011 60%,
-        #5A0008 85%,
-        #400006 100%
+        ${rb0} 0%,
+        ${r1} 15%,
+        ${rb2} 40%,
+        ${r1} 60%,
+        ${rb0} 85%,
+        ${rb5} 100%
       );
     }
     
