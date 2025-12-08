@@ -38,8 +38,8 @@
     "js-yaml": "^4.1.0"
   },
   "ha-addon": {
-    "name": "Home Assistant Version Control",
-    "slug": "home-assistant-version-control",
-    "url": "https://github.com/yourusername/havc-addon"
+    "name": "Home Assistant Version Control Beta",
+    "slug": "home-assistant-version-control-beta",
+    "url": "https://github.com/saihgupr/HomeAssistantVersionControlBeta"
   }
 }
