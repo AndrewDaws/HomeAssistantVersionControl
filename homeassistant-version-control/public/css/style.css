@@ -2404,21 +2404,27 @@ body.holiday-mode .snow-container {
     opacity: 0;
     transform: translateY(-20px) translateX(0) rotate(0deg);
   }
+
   5% {
     opacity: 1;
   }
+
   25% {
     transform: translateY(25vh) translateX(15px) rotate(90deg);
   }
+
   50% {
     transform: translateY(50vh) translateX(-10px) rotate(180deg);
   }
+
   75% {
     transform: translateY(75vh) translateX(20px) rotate(270deg);
   }
+
   95% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translateY(100vh) translateX(5px) rotate(360deg);
@@ -2431,21 +2437,27 @@ body.holiday-mode .snow-container {
     opacity: 0;
     transform: translateY(-20px) translateX(0) rotate(0deg);
   }
+
   5% {
     opacity: 0.9;
   }
+
   25% {
     transform: translateY(25vh) translateX(-20px) rotate(-90deg);
   }
+
   50% {
     transform: translateY(50vh) translateX(15px) rotate(-180deg);
   }
+
   75% {
     transform: translateY(75vh) translateX(-15px) rotate(-270deg);
   }
+
   95% {
     opacity: 0.9;
   }
+
   100% {
     opacity: 0;
     transform: translateY(100vh) translateX(10px) rotate(-360deg);
@@ -2457,18 +2469,23 @@ body.holiday-mode .snow-container {
     opacity: 0;
     transform: translateY(-20px) translateX(0) rotate(0deg);
   }
+
   5% {
     opacity: 0.85;
   }
+
   30% {
     transform: translateY(30vh) translateX(25px) rotate(120deg);
   }
+
   60% {
     transform: translateY(60vh) translateX(-5px) rotate(240deg);
   }
+
   95% {
     opacity: 0.85;
   }
+
   100% {
     opacity: 0;
     transform: translateY(100vh) translateX(15px) rotate(360deg);
@@ -2477,10 +2494,9 @@ body.holiday-mode .snow-container {
 
 /* === HOLIDAY HEADER - THE GIFT === */
 body.holiday-mode .header {
-  background: 
+  background:
     /* Gold ribbon horizontal */
-    linear-gradient(
-      to bottom,
+    linear-gradient(to bottom,
       transparent calc(50% - 8px),
       #D4AF37 calc(50% - 8px),
       #F4CF47 calc(50% - 4px),
@@ -2488,11 +2504,9 @@ body.holiday-mode .header {
       #B8960C 50%,
       #D4AF37 calc(50% + 4px),
       #F4CF47 calc(50% + 8px),
-      transparent calc(50% + 8px)
-    ),
+      transparent calc(50% + 8px)),
     /* Plaid pattern - horizontal lines */
-    repeating-linear-gradient(
-      0deg,
+    repeating-linear-gradient(0deg,
       transparent 0px,
       transparent 20px,
       rgba(15, 79, 15, 0.4) 20px,
@@ -2501,11 +2515,9 @@ body.holiday-mode .header {
       transparent 40px,
       rgba(212, 175, 55, 0.3) 40px,
       rgba(212, 175, 55, 0.3) 42px,
-      transparent 42px
-    ),
+      transparent 42px),
     /* Plaid pattern - vertical lines */
-    repeating-linear-gradient(
-      90deg,
+    repeating-linear-gradient(90deg,
       transparent 0px,
       transparent 20px,
       rgba(15, 79, 15, 0.4) 20px,
@@ -2514,12 +2526,11 @@ body.holiday-mode .header {
       transparent 40px,
       rgba(212, 175, 55, 0.3) 40px,
       rgba(212, 175, 55, 0.3) 42px,
-      transparent 42px
-    ),
+      transparent 42px),
     /* Base - rich burgundy red */
     linear-gradient(135deg, #8B1A1A 0%, #A52A2A 25%, #8B1A1A 50%, #6B0F0F 75%, #8B1A1A 100%);
   border: 2px solid #D4AF37;
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(212, 175, 55, 0.3),
     inset 0 0 30px rgba(0, 0, 0, 0.2);
   position: relative;
@@ -2535,43 +2546,13 @@ body.holiday-mode .header::before {
   transform: translateX(-50%);
   width: 16px;
   height: 100%;
-  background: linear-gradient(
-    to right,
-    #D4AF37 0%,
-    #F4CF47 25%,
-    #D4AF37 50%,
-    #B8960C 75%,
-    #D4AF37 100%
-  );
+  background: linear-gradient(to right,
+      #D4AF37 0%,
+      #F4CF47 25%,
+      #D4AF37 50%,
+      #B8960C 75%,
+      #D4AF37 100%);
   z-index: 1;
-}
-
-/* The Bow - positioned at center top */
-body.holiday-mode .header::after {
-  content: '';
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90px;
-  height: 70px;
-  background: 
-    /* Center knot */
-    radial-gradient(ellipse 20px 16px at 50% 70%, #6B0F0F 0%, #8B1A1A 40%, transparent 70%),
-    /* Right loop */
-    radial-gradient(ellipse 35px 28px at 70% 50%, transparent 40%, #8B1A1A 41%, #A52A2A 50%, #8B1A1A 60%, transparent 61%),
-    /* Left loop */
-    radial-gradient(ellipse 35px 28px at 30% 50%, transparent 40%, #8B1A1A 41%, #A52A2A 50%, #8B1A1A 60%, transparent 61%),
-    /* Right loop fill */
-    radial-gradient(ellipse 30px 24px at 72% 48%, #B22222 0%, #8B1A1A 60%, transparent 70%),
-    /* Left loop fill */
-    radial-gradient(ellipse 30px 24px at 28% 48%, #B22222 0%, #8B1A1A 60%, transparent 70%),
-    /* Ribbon tail right */
-    linear-gradient(135deg, transparent 45%, #8B1A1A 45%, #A52A2A 50%, #8B1A1A 55%, transparent 55%),
-    /* Ribbon tail left */
-    linear-gradient(-135deg, transparent 45%, #8B1A1A 45%, #A52A2A 50%, #8B1A1A 55%, transparent 55%);
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
-  z-index: 10;
 }
 
 /* Make header title readable over plaid */
@@ -2591,15 +2572,6 @@ body.holiday-mode .header .btn-subtle {
 body.holiday-mode .header .btn-subtle:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Add some extra top margin to account for the bow */
-body.holiday-mode .header {
-  margin-top: 40px;
-}
-
-body.holiday-mode {
-  padding-top: 12px;
 }
 
 /* Hide snow from settings modal */

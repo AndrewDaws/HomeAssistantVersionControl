@@ -5172,18 +5172,159 @@ const SNOWFLAKE_CHARS = ['❄', '❅', '❆', '✻', '✼', '❉'];
 // Number of snowflakes
 const SNOWFLAKE_COUNT = 28;
 
-// Toggle Holiday Mode
+// 10 Plaid Christmas Wrapping Paper Patterns (original style with color variations)
+const PLAID_PATTERNS = [
+  {
+    name: 'Classic Red & Green',
+    baseColor: '#8B1A1A', accentColor: 'rgba(0, 80, 0, 0.5)', threadColor: 'rgba(212, 175, 55, 0.25)'
+  },
+  {
+    name: 'Forest Green & Red',
+    baseColor: '#0D3D0D', accentColor: 'rgba(139, 26, 26, 0.5)', threadColor: 'rgba(212, 175, 55, 0.25)'
+  },
+  {
+    name: 'Royal Blue & Gold',
+    baseColor: '#0D47A1', accentColor: 'rgba(212, 175, 55, 0.4)', threadColor: 'rgba(255, 255, 255, 0.2)'
+  },
+  {
+    name: 'Burgundy & Gold',
+    baseColor: '#4A0E0E', accentColor: 'rgba(212, 175, 55, 0.4)', threadColor: 'rgba(255, 255, 255, 0.15)'
+  },
+  {
+    name: 'Winter Navy',
+    baseColor: '#1A237E', accentColor: 'rgba(255, 255, 255, 0.3)', threadColor: 'rgba(100, 149, 237, 0.3)'
+  },
+  {
+    name: 'Holly Berry',
+    baseColor: '#1B5E20', accentColor: 'rgba(200, 40, 40, 0.5)', threadColor: 'rgba(255, 255, 255, 0.2)'
+  },
+  {
+    name: 'Silver Frost',
+    baseColor: '#37474F', accentColor: 'rgba(255, 255, 255, 0.25)', threadColor: 'rgba(100, 200, 255, 0.2)'
+  },
+  {
+    name: 'Cranberry',
+    baseColor: '#880E4F', accentColor: 'rgba(255, 255, 255, 0.25)', threadColor: 'rgba(255, 182, 193, 0.3)'
+  },
+  {
+    name: 'Gold Luxe',
+    baseColor: '#8B6914', accentColor: 'rgba(139, 26, 26, 0.4)', threadColor: 'rgba(255, 255, 255, 0.2)'
+  },
+  {
+    name: 'Purple Velvet',
+    baseColor: '#4A148C', accentColor: 'rgba(212, 175, 55, 0.35)', threadColor: 'rgba(255, 255, 255, 0.2)'
+  }
+];
+
+// Generate plaid pattern from color scheme
+function generatePlaidPattern(pattern, size) {
+  const { baseColor, accentColor, threadColor } = pattern;
+  return `
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent ${size}px,
+      ${accentColor} ${size}px,
+      ${accentColor} ${size + 4}px,
+      transparent ${size + 4}px,
+      transparent ${size * 2}px,
+      ${threadColor} ${size * 2}px,
+      ${threadColor} ${size * 2 + 2}px,
+      transparent ${size * 2 + 2}px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent ${size}px,
+      ${accentColor} ${size}px,
+      ${accentColor} ${size + 4}px,
+      transparent ${size + 4}px,
+      transparent ${size * 2}px,
+      ${threadColor} ${size * 2}px,
+      ${threadColor} ${size * 2 + 2}px,
+      transparent ${size * 2 + 2}px
+    ),
+    linear-gradient(135deg, ${baseColor} 0%, ${lightenColor(baseColor, 20)} 25%, ${baseColor} 50%, ${darkenColor(baseColor, 20)} 75%, ${baseColor} 100%)
+  `;
+}
+
+// Helper to lighten a hex color
+function lightenColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.min(255, (num >> 16) + amt);
+  const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+  const B = Math.min(255, (num & 0x0000FF) + amt);
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
+// Helper to darken a hex color
+function darkenColor(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max(0, (num >> 16) - amt);
+  const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+  const B = Math.max(0, (num & 0x0000FF) - amt);
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
+
+// Holiday design settings
+let holidayDesign = {
+  currentPlaidIndex: parseInt(localStorage.getItem('holidayPlaidIndex')) || 0,
+  ribbonWidth: parseInt(localStorage.getItem('holidayRibbonWidth')) || 20,
+  ribbonStyle: parseInt(localStorage.getItem('holidayRibbonStyle')) || 1,
+  plaidSize: parseInt(localStorage.getItem('holidayPlaidSize')) || 30,
+  paperShine: parseInt(localStorage.getItem('holidayPaperShine')) || 1,
+  paperShineIntensity: parseInt(localStorage.getItem('holidayPaperShineIntensity')) || 30,
+  bowSize: parseInt(localStorage.getItem('holidayBowSize')) || 80,
+  bowOffset: parseInt(localStorage.getItem('holidayBowOffset')) || 0,
+  bowShadow: parseInt(localStorage.getItem('holidayBowShadow')) || 8,
+  bowShadowSpread: parseInt(localStorage.getItem('holidayBowShadowSpread')) || 15,
+  bowStyle: parseInt(localStorage.getItem('holidayBowStyle')) || 1,
+  borderEnabled: localStorage.getItem('holidayBorderEnabled') !== 'false',
+  borderWidth: parseInt(localStorage.getItem('holidayBorderWidth')) || 2,
+  borderColor: localStorage.getItem('holidayBorderColor') || '#D4AF37'
+};
+
+// Ribbon gradient styles
+const RIBBON_STYLES = [
+  { name: 'Red Satin', colors: ['#5A0008', '#960011', '#B81520', '#960011', '#5A0008', '#400006'] },
+  { name: 'Gold Satin', colors: ['#B8960C', '#D4AF37', '#F4CF47', '#D4AF37', '#B8960C', '#A07D00'] },
+  { name: 'Green Velvet', colors: ['#0D3D0D', '#1B5E20', '#2E7D32', '#1B5E20', '#0D3D0D', '#052505'] },
+  { name: 'Royal Blue', colors: ['#0D47A1', '#1565C0', '#1976D2', '#1565C0', '#0D47A1', '#052560'] },
+  { name: 'Purple Silk', colors: ['#4A148C', '#6A1B9A', '#7B1FA2', '#6A1B9A', '#4A148C', '#38006b'] },
+  { name: 'Silver Frost', colors: ['#455A64', '#607D8B', '#78909C', '#607D8B', '#455A64', '#37474F'] },
+  { name: 'Rose Gold', colors: ['#8B5A5A', '#C78585', '#E0A0A0', '#C78585', '#8B5A5A', '#6B4040'] },
+  { name: 'Candy Cane', colors: ['#D32F2F', '#FFFFFF', '#D32F2F', '#FFFFFF', '#D32F2F', '#B71C1C'] }
+];
+
+// Paper shine/gradient effects
+const PAPER_SHINE_EFFECTS = [
+  { name: 'None', css: '' },
+  { name: 'Diagonal Shine', css: (i) => `linear-gradient(135deg, transparent 0%, rgba(255,255,255,${i / 100}) 25%, transparent 50%, rgba(255,255,255,${i / 200}) 75%, transparent 100%)` },
+  { name: 'Top Glow', css: (i) => `linear-gradient(to bottom, rgba(255,255,255,${i / 100}) 0%, transparent 30%, transparent 100%)` },
+  { name: 'Center Spotlight', css: (i) => `radial-gradient(ellipse at center, rgba(255,255,255,${i / 100}) 0%, transparent 50%)` },
+  { name: 'Vignette', css: (i) => `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${i / 100}) 100%)` },
+  { name: 'Shimmer', css: (i) => `repeating-linear-gradient(45deg, transparent 0px, transparent 10px, rgba(255,255,255,${i / 200}) 10px, rgba(255,255,255,${i / 200}) 11px)` },
+  { name: 'Glossy', css: (i) => `linear-gradient(to bottom, rgba(255,255,255,${i / 80}) 0%, transparent 40%, transparent 60%, rgba(0,0,0,${i / 150}) 100%)` }
+];
+
+// Toggle Holiday Mode - onclick fires BEFORE checkbox changes, so invert logic
 function toggleHolidayMode() {
   const checkbox = document.getElementById('holidayMode');
-  const isEnabled = checkbox.checked;
+  // Since onclick fires before the checkbox value changes, we check the OPPOSITE
+  const willBeEnabled = !checkbox.checked;
 
-  if (isEnabled) {
+  if (willBeEnabled) {
     document.body.classList.add('holiday-mode');
     createSnowflakes();
+    showHolidayDesignPanel();
+    applyHolidayDesign();
     localStorage.setItem('holidayMode', 'true');
   } else {
     document.body.classList.remove('holiday-mode');
     clearSnowflakes();
+    hideHolidayDesignPanel();
     localStorage.setItem('holidayMode', 'false');
   }
 }
@@ -5197,7 +5338,82 @@ function initHolidayMode() {
     checkbox.checked = true;
     document.body.classList.add('holiday-mode');
     createSnowflakes();
+    applyHolidayDesign();
+    showHolidayDesignPanel();
   }
+
+  // Add click listener to header for cycling plaid patterns
+  const header = document.querySelector('.header');
+  if (header) {
+    header.addEventListener('click', cycleHolidayPlaid);
+  }
+}
+
+// Cycle to next plaid pattern when header is clicked
+function cycleHolidayPlaid(event) {
+  // Only cycle if holiday mode is active and not clicking a button
+  if (!document.body.classList.contains('holiday-mode')) return;
+  if (event.target.tagName === 'BUTTON' || event.target.closest('button')) return;
+
+  holidayDesign.currentPlaidIndex = (holidayDesign.currentPlaidIndex + 1) % PLAID_PATTERNS.length;
+  localStorage.setItem('holidayPlaidIndex', holidayDesign.currentPlaidIndex);
+
+  const pattern = PLAID_PATTERNS[holidayDesign.currentPlaidIndex];
+
+  // Show pattern name briefly
+  showPatternName(pattern.name);
+
+  // Update panel if visible
+  const panelName = document.getElementById('currentPatternName');
+  if (panelName) {
+    panelName.textContent = pattern.name;
+    panelName.nextElementSibling.textContent = `👆 Tap header to cycle (${holidayDesign.currentPlaidIndex + 1}/${PLAID_PATTERNS.length})`;
+  }
+
+  applyHolidayDesign();
+}
+
+// Show pattern name toast
+function showPatternName(name) {
+  // Remove existing toast
+  const existing = document.getElementById('plaidToast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'plaidToast';
+  toast.textContent = name;
+  toast.style.cssText = `
+    position: fixed;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10001;
+    animation: fadeInOut 1.5s ease forwards;
+  `;
+  document.body.appendChild(toast);
+
+  // Inject animation if not exists
+  if (!document.getElementById('toastAnimation')) {
+    const style = document.createElement('style');
+    style.id = 'toastAnimation';
+    style.textContent = `
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  setTimeout(() => toast.remove(), 1500);
 }
 
 // Create snowflakes
@@ -5247,4 +5463,403 @@ function clearSnowflakes() {
   if (container) {
     container.innerHTML = '';
   }
+}
+
+// Show holiday design adjustment panel
+function showHolidayDesignPanel() {
+  // Remove existing panel if any
+  hideHolidayDesignPanel();
+
+  const currentPattern = PLAID_PATTERNS[holidayDesign.currentPlaidIndex];
+
+  const panel = document.createElement('div');
+  panel.id = 'holidayDesignPanel';
+  panel.innerHTML = `
+    <div class="holiday-panel-header">
+      <span>🎁 Present Designer</span>
+      <button onclick="hideHolidayDesignPanel()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">×</button>
+    </div>
+    <div class="holiday-panel-content" style="max-height: 70vh; overflow-y: auto;">
+      
+      <!-- Pattern Section -->
+      <div class="holiday-section">
+        <div class="holiday-section-title">🎨 Pattern</div>
+        <div class="holiday-control" style="text-align:center; padding: 8px 0; background: rgba(255,255,255,0.05); border-radius: 8px;">
+          <div style="font-size: 14px; color: #D4AF37; font-weight: 600;" id="currentPatternName">${currentPattern.name}</div>
+          <div style="font-size: 11px; color: #666; margin-top: 4px;">👆 Tap header to cycle (${holidayDesign.currentPlaidIndex + 1}/${PLAID_PATTERNS.length})</div>
+        </div>
+        <div class="holiday-control">
+          <label>Pattern Scale: <span id="plaidSizeVal">${holidayDesign.plaidSize}px</span></label>
+          <input type="range" min="15" max="60" value="${holidayDesign.plaidSize}" oninput="updateHolidayDesign('plaidSize', this.value)">
+        </div>
+      </div>
+      
+      <!-- Bow Section -->
+      <div class="holiday-section">
+        <div class="holiday-section-title">🎀 Bow</div>
+        <div class="holiday-control">
+          <label>Bow Style:</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button onclick="updateHolidayDesign('bowStyle', 1)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 1 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 1 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 1</button>
+            <button onclick="updateHolidayDesign('bowStyle', 2)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 2 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 2 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 2</button>
+          </div>
+        </div>
+        <div class="holiday-control">
+          <label>Size: <span id="bowSizeVal">${holidayDesign.bowSize}px</span></label>
+          <input type="range" min="40" max="180" value="${holidayDesign.bowSize}" oninput="updateHolidayDesign('bowSize', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Position: <span id="bowOffsetVal">${holidayDesign.bowOffset}px</span></label>
+          <input type="range" min="-30" max="60" value="${holidayDesign.bowOffset}" oninput="updateHolidayDesign('bowOffset', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Shadow Blur: <span id="bowShadowVal">${holidayDesign.bowShadow}px</span></label>
+          <input type="range" min="0" max="30" value="${holidayDesign.bowShadow}" oninput="updateHolidayDesign('bowShadow', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Shadow Spread: <span id="bowShadowSpreadVal">${holidayDesign.bowShadowSpread}px</span></label>
+          <input type="range" min="0" max="40" value="${holidayDesign.bowShadowSpread}" oninput="updateHolidayDesign('bowShadowSpread', this.value)">
+        </div>
+      </div>
+      
+      <!-- Ribbon Section -->
+      <div class="holiday-section">
+        <div class="holiday-section-title">🎗️ Ribbon</div>
+        <div class="holiday-control">
+          <label>Style: <span style="color: #D4AF37;">${RIBBON_STYLES[holidayDesign.ribbonStyle - 1]?.name || 'Red Satin'}</span></label>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+            ${RIBBON_STYLES.map((style, i) => `
+              <button onclick="updateHolidayDesign('ribbonStyle', ${i + 1})" 
+                style="width: 28px; height: 28px; border-radius: 4px; border: 2px solid ${holidayDesign.ribbonStyle === i + 1 ? 'white' : 'transparent'}; 
+                background: linear-gradient(to right, ${style.colors[0]}, ${style.colors[2]}, ${style.colors[4]}); cursor: pointer;" 
+                title="${style.name}"></button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="holiday-control">
+          <label>Width: <span id="ribbonWidthVal">${holidayDesign.ribbonWidth}px</span></label>
+          <input type="range" min="10" max="40" value="${holidayDesign.ribbonWidth}" oninput="updateHolidayDesign('ribbonWidth', this.value)">
+        </div>
+      </div>
+      
+      <!-- Paper Shine Section -->
+      <div class="holiday-section">
+        <div class="holiday-section-title">✨ Paper Effect</div>
+        <div class="holiday-control">
+          <label>Effect: <span style="color: #D4AF37;">${PAPER_SHINE_EFFECTS[holidayDesign.paperShine]?.name || 'None'}</span></label>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+            ${PAPER_SHINE_EFFECTS.map((effect, i) => `
+              <button onclick="updateHolidayDesign('paperShine', ${i})" 
+                style="padding: 4px 8px; border-radius: 4px; border: 2px solid ${holidayDesign.paperShine === i ? '#D4AF37' : '#444'}; 
+                background: ${holidayDesign.paperShine === i ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer; font-size: 10px;" 
+                title="${effect.name}">${effect.name}</button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="holiday-control">
+          <label>Intensity: <span id="paperShineIntensityVal">${holidayDesign.paperShineIntensity}%</span></label>
+          <input type="range" min="10" max="80" value="${holidayDesign.paperShineIntensity}" oninput="updateHolidayDesign('paperShineIntensity', this.value)">
+        </div>
+      </div>
+      
+      <!-- Border Section -->
+      <div class="holiday-section">
+        <div class="holiday-section-title">📦 Border</div>
+        <div class="holiday-control" style="display: flex; justify-content: space-between; align-items: center;">
+          <label style="margin-bottom: 0;">Show Border</label>
+          <label class="toggle-switch-mini">
+            <input type="checkbox" ${holidayDesign.borderEnabled ? 'checked' : ''} onchange="updateHolidayDesign('borderEnabled', this.checked)">
+            <span class="toggle-slider-mini"></span>
+          </label>
+        </div>
+        <div class="holiday-control">
+          <label>Width: <span id="borderWidthVal">${holidayDesign.borderWidth}px</span></label>
+          <input type="range" min="1" max="8" value="${holidayDesign.borderWidth}" oninput="updateHolidayDesign('borderWidth', this.value)">
+        </div>
+        <div class="holiday-control">
+          <label>Color:</label>
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button onclick="updateHolidayDesign('borderColor', '#D4AF37')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#D4AF37' ? 'white' : 'transparent'}; background: #D4AF37; cursor:pointer;" title="Gold"></button>
+            <button onclick="updateHolidayDesign('borderColor', '#960011')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#960011' ? 'white' : 'transparent'}; background: #960011; cursor:pointer;" title="Red"></button>
+            <button onclick="updateHolidayDesign('borderColor', '#1B5E20')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#1B5E20' ? 'white' : 'transparent'}; background: #1B5E20; cursor:pointer;" title="Green"></button>
+            <button onclick="updateHolidayDesign('borderColor', '#FFFFFF')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#FFFFFF' ? '#D4AF37' : '#666'}; background: #FFFFFF; cursor:pointer;" title="White"></button>
+            <button onclick="updateHolidayDesign('borderColor', '#000000')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#000000' ? 'white' : '#666'}; background: #000000; cursor:pointer;" title="Black"></button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  `;
+  document.body.appendChild(panel);
+}
+
+// Hide holiday design panel
+function hideHolidayDesignPanel() {
+  const panel = document.getElementById('holidayDesignPanel');
+  if (panel) {
+    panel.remove();
+  }
+}
+
+// Update holiday design setting
+function updateHolidayDesign(setting, value) {
+  // Handle different value types
+  if (setting === 'borderEnabled') {
+    holidayDesign[setting] = value === true || value === 'true';
+  } else if (setting === 'borderColor') {
+    holidayDesign[setting] = value;
+  } else {
+    holidayDesign[setting] = parseInt(value);
+  }
+
+  // Update display value if it exists
+  const valSpan = document.getElementById(setting + 'Val');
+  if (valSpan && typeof value !== 'boolean') {
+    valSpan.textContent = value + (setting !== 'borderColor' ? 'px' : '');
+  }
+
+  // Save to localStorage
+  localStorage.setItem('holiday' + setting.charAt(0).toUpperCase() + setting.slice(1), value);
+
+  // Refresh panel for certain settings to update button states
+  if (setting === 'bowStyle' || setting === 'borderColor' || setting === 'borderEnabled') {
+    showHolidayDesignPanel();
+  }
+
+  // Apply changes
+  applyHolidayDesign();
+}
+
+// Apply holiday design CSS dynamically
+function applyHolidayDesign() {
+  let styleEl = document.getElementById('holidayDynamicStyle');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'holidayDynamicStyle';
+    document.head.appendChild(styleEl);
+  }
+
+  const { currentPlaidIndex, ribbonWidth, plaidSize, bowSize, bowOffset, bowShadow, bowShadowSpread, bowStyle, borderEnabled, borderWidth, borderColor } = holidayDesign;
+
+  // Get current plaid pattern
+  const pattern = PLAID_PATTERNS[currentPlaidIndex];
+  const wrapBg = generatePlaidPattern(pattern, plaidSize);
+
+  // Bow image selection
+  const bowImage = bowStyle === 2 ? 'images/holiday_bow_2.png' : 'images/holiday_bow.png';
+
+  // Border style
+  const borderStyle = borderEnabled ? `${borderWidth}px solid ${borderColor}` : 'none';
+
+  styleEl.textContent = `
+    /* Dynamic Holiday Styles */
+    body.holiday-mode .header {
+      background: 
+        /* Horizontal ribbon */
+        linear-gradient(
+          to bottom,
+          transparent calc(50% - ${ribbonWidth / 2}px),
+          #5A0008 calc(50% - ${ribbonWidth / 2}px),
+          #960011 calc(50% - ${ribbonWidth / 2 - 2}px),
+          #B81520 calc(50% - 2px),
+          #960011 50%,
+          #B81520 calc(50% + 2px),
+          #960011 calc(50% + ${ribbonWidth / 2 - 2}px),
+          #5A0008 calc(50% + ${ribbonWidth / 2}px),
+          transparent calc(50% + ${ribbonWidth / 2}px)
+        ),
+        ${wrapBg};
+      cursor: pointer;
+      position: relative;
+      border: ${borderStyle} !important;
+    }
+    
+    body.holiday-mode .header:active {
+      transform: scale(0.995);
+    }
+    
+    /* Vertical ribbon */
+    body.holiday-mode .header::before {
+      width: ${ribbonWidth}px;
+      background: linear-gradient(
+        to right,
+        #5A0008 0%,
+        #960011 15%,
+        #B81520 40%,
+        #960011 60%,
+        #5A0008 85%,
+        #400006 100%
+      );
+    }
+    
+    /* Bow */
+    body.holiday-mode .header::after {
+      content: '';
+      position: absolute;
+      top: calc(-${bowSize * 0.35}px + ${bowOffset}px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: ${bowSize}px;
+      height: ${bowSize}px;
+      background-image: url('${bowImage}');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 ${bowShadow}px ${bowShadowSpread}px rgba(0, 0, 0, 0.5));
+    }
+    
+    
+    /* Holiday Design Panel Styles */
+    #holidayDesignPanel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 280px;
+      background: linear-gradient(135deg, rgba(30,30,30,0.98) 0%, rgba(20,20,20,0.98) 100%);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.2);
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+    
+    .holiday-panel-header {
+      background: linear-gradient(90deg, #8B1A1A 0%, #6B0F0F 100%);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .holiday-panel-content {
+      padding: 16px;
+    }
+    
+    .holiday-control {
+      margin-bottom: 16px;
+    }
+    
+    .holiday-control:last-child {
+      margin-bottom: 0;
+    }
+    
+    .holiday-control label {
+      display: block;
+      color: #ccc;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    
+    .holiday-control label span {
+      color: #D4AF37;
+      font-weight: 600;
+    }
+    
+    .holiday-control input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    .holiday-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    
+    .holiday-control select {
+      width: 100%;
+      padding: 8px 12px;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    
+    .holiday-control select:focus {
+      outline: none;
+      border-color: #D4AF37;
+    }
+    
+    .holiday-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .holiday-section:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .holiday-section-title {
+      color: #D4AF37;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .toggle-switch-mini {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+    
+    .toggle-switch-mini input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider-mini {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #333;
+      transition: .3s;
+      border-radius: 22px;
+    }
+    
+    .toggle-slider-mini:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    
+    .toggle-switch-mini input:checked + .toggle-slider-mini {
+      background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
+    }
+    
+    .toggle-switch-mini input:checked + .toggle-slider-mini:before {
+      transform: translateX(18px);
+    }
+  `;
 }
