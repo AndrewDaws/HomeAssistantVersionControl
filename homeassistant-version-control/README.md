@@ -158,7 +158,11 @@ The add-on automatically tracks configuration files while ignoring system files.
 | `secrets.yaml` | Python cache (`__pycache__`) |
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
 | `esphome/*.yaml` | Temporary files |
-| All other `.yaml` and `.yml` files | |
+| All other `.yaml` and `.yml` files | Files in `.gitignore` |
+
+> [!TIP]
+> **Excluding Files (e.g., secrets.yaml):**
+> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to hide, and the add-on will automatically exclude them from version control.
 
 ---
 

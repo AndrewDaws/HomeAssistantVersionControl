@@ -158,7 +158,11 @@ The add-on automatically tracks configuration files while ignoring system files.
 | `secrets.yaml` | Python cache (`__pycache__`) |
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
 | `esphome/*.yaml` | Temporary files |
-| All other `.yaml` and `.yml` files | |
+| All other `.yaml` and `.yml` files | Files in `.gitignore` |
+
+> [!TIP]
+> **Excluding Files (e.g., secrets.yaml):**
+> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to hide, and the add-on will automatically exclude them from version control.
 
 ---
 
@@ -241,6 +245,10 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 ```
 
 ---
+
+## Alternative Options
+
+For a simpler backup approach that stores everything as plain YAML folders, check out [Home Assistant Time Machine](https://github.com/saihgupr/HomeAssistantTimeMachine). It gives you a clean interface to view YAML backups and restore individual items with a click.
 
 ##  Support
 
