@@ -1160,13 +1160,13 @@ function formatDateDisplay(bucket) {
 function formatDateForLabel(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
+  // Use browser default locale and options
+  return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
+    minute: '2-digit'
   });
 }
 
@@ -1676,13 +1676,13 @@ async function displayCommits(commits) {
 
       for (const commit of groups[bucket]) {
         const commitDate = new Date(commit.date);
-        const timeString = commitDate.toLocaleString('en-US', {
+        // Use browser default locale
+        const timeString = commitDate.toLocaleString(undefined, {
           month: 'short',
           day: 'numeric',
           year: 'numeric',
           hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
+          minute: '2-digit'
         });
 
         // Extract just the filename from the commit message
@@ -3392,18 +3392,14 @@ function displayFileHistory(filePath) {
 
 function formatDateForBanner(dateString) {
   const date = new Date(dateString);
-  // Format: Nov 26, 2025 1:00 PM
-  const datePart = date.toLocaleDateString('en-US', {
+  // Use browser default locale
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
-  });
-  const timePart = date.toLocaleTimeString('en-US', {
     hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
+    minute: '2-digit'
   });
-  return `${datePart} ${timePart}`;
 }
 
 function trimEmptyLines(lines) {
