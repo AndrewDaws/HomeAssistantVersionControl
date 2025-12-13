@@ -164,7 +164,7 @@ body {
 }
 
 .title {
-  font-size: 28px;
+  font-size: clamp(22px, 3vw, 28px);
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text-primary);
@@ -173,7 +173,7 @@ body {
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: clamp(12px, 1.5vw, 15px);
   font-weight: 400;
   margin-top: -2px;
 }
@@ -263,9 +263,9 @@ body {
 }
 
 .panel-header {
-  padding: 24px 24px 20px;
+  padding: clamp(16px, 2vh, 24px) 24px clamp(14px, 1.5vh, 20px);
   border-bottom: 1px solid var(--border-subtle);
-  min-height: 85px;
+  min-height: clamp(60px, 8vh, 85px);
   display: flex;
   flex-direction: column;
   justify-content: center;
