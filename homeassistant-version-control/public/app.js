@@ -217,9 +217,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const primaryColorInput = document.getElementById('picassoPrimaryColor');
   const secondaryColorInput = document.getElementById('picassoSecondaryColor');
 
-  // Load saved colors or use defaults
-  const savedPrimaryColor = localStorage.getItem('picassoPrimaryColor') || '#c4ba52';
-  const savedSecondaryColor = localStorage.getItem('picassoSecondaryColor') || '#00abab';
+  // Load saved colors or use defaults (Ocean palette - two blues)
+  const savedPrimaryColor = localStorage.getItem('picassoPrimaryColor') || '#2193b0';
+  const savedSecondaryColor = localStorage.getItem('picassoSecondaryColor') || '#6dd5ed';
 
   primaryColorInput.value = savedPrimaryColor;
   secondaryColorInput.value = savedSecondaryColor;
