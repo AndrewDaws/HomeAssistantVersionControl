@@ -184,6 +184,8 @@
     "diff_style_split": "Split Highlight",
     "holiday_mode": "Holiday Mode",
     "group_cloud_backup": "Cloud Backup",
+    "cloud_provider": "Cloud Provider",
+    "cloud_provider_custom": "Custom",
     "cloud_sync_enabled": "Enable Cloud Sync",
     "cloud_remote_url": "Repository URL",
     "cloud_remote_url_desc": "Create a new private repository, then paste the URL here",
