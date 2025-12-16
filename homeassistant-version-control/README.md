@@ -35,6 +35,12 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Smart Reloads:** Automatically reloads Home Assistant when restoring automation or script files to apply changes immediately.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
+### Cloud Backup
+* **Off-site Backup:** Push your configuration to GitHub, GitLab, or Gitea for secure off-site storage.
+* **Flexible Scheduling:** Choose to push after every commit, hourly, daily, or manually.
+* **Secrets Protection:** Optionally exclude `secrets.yaml` from remote pushes to keep sensitive data local.
+* **Force Push:** Uses force push to keep your remote repository clean and in sync with local history.
+
 ### Customization
 * **Color Theme:** Choose from seven preset color palettes.
 * **Light Themes:** Toggle between Light and Dark modes.
