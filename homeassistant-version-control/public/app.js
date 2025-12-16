@@ -2997,6 +2997,8 @@ async function loadAutomationHistoryDiff() {
   document.getElementById('autoNextBtn').disabled = currentAutomationHistoryIndex === currentAutomationHistory.length - 1;
 
   // Handle deleted automations (which won't be found in allAutomations)
+  let auto = allAutomations.find(a => a.id === currentSelection.id);
+
   if (!auto && currentSelection && currentSelection.type === 'deleted_automation') {
     auto = { content: null, line: 0 };
   }
