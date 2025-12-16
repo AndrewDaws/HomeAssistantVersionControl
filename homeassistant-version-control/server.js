@@ -332,7 +332,17 @@ let runtimeSettings = {
   retentionType: 'time', // 'time' or 'versions'
   retentionValue: 90,
   retentionUnit: 'days', // 'hours', 'days', 'weeks', 'months'
-
+  // Cloud Sync settings
+  cloudSync: {
+    enabled: false,
+    remoteUrl: '',
+    authToken: '',
+    pushFrequency: 'manual', // 'manual', 'every_commit', 'hourly', 'daily'
+    excludeSecrets: true,
+    lastPushTime: null,
+    lastPushStatus: null,
+    lastPushError: null
+  }
 };
 
 // Global lock for cleanup operations
@@ -1835,6 +1845,19 @@ function initializeWatcher() {
           await runRetentionCleanup();
         }
 
+        // Cloud sync push if enabled and configured for every commit
+        if (runtimeSettings.cloudSync.enabled &&
+          runtimeSettings.cloudSync.pushFrequency === 'every_commit' &&
+          runtimeSettings.cloudSync.remoteUrl) {
+          console.log('[watcher] Running cloud sync push after commit...');
+          try {
+            await setupGitRemote(runtimeSettings.cloudSync.remoteUrl, runtimeSettings.cloudSync.authToken);
+            await pushToRemote(runtimeSettings.cloudSync.excludeSecrets);
+          } catch (e) {
+            console.error('[watcher] Cloud sync push failed:', e.message);
+          }
+        }
+
         // Clean up the timer reference
         debounceTimers.delete(filePath);
       } catch (error) {
@@ -2617,11 +2640,57 @@ const server = app.listen(PORT, HOST, (err) => {
   initRepo()
     .then(() => {
       initializeWatcher();
+
+      // Start cloud sync scheduler (check every hour)
+      startCloudSyncScheduler();
     })
     .catch((error) => {
       console.error('[init] Background initialization error:', error);
     });
 });
+
+// Cloud sync scheduler - checks if push is due
+let cloudSyncInterval = null;
+
+function startCloudSyncScheduler() {
+  // Check every hour if a scheduled push is due
+  cloudSyncInterval = setInterval(async () => {
+    try {
+      const settings = runtimeSettings.cloudSync;
+
+      // Skip if not enabled or manual mode
+      if (!settings.enabled || !settings.remoteUrl || settings.pushFrequency === 'manual' || settings.pushFrequency === 'every_commit') {
+        return;
+      }
+
+      const now = new Date();
+      const lastPush = settings.lastPushTime ? new Date(settings.lastPushTime) : null;
+
+      let shouldPush = false;
+
+      if (!lastPush) {
+        // Never pushed, do it now
+        shouldPush = true;
+      } else if (settings.pushFrequency === 'hourly') {
+        // Push if more than 1 hour since last push
+        shouldPush = (now - lastPush) >= 60 * 60 * 1000;
+      } else if (settings.pushFrequency === 'daily') {
+        // Push if more than 24 hours since last push
+        shouldPush = (now - lastPush) >= 24 * 60 * 60 * 1000;
+      }
+
+      if (shouldPush) {
+        console.log(`[cloud-sync scheduler] Running ${settings.pushFrequency} push...`);
+        await setupGitRemote(settings.remoteUrl, settings.authToken);
+        await pushToRemote(settings.excludeSecrets);
+      }
+    } catch (error) {
+      console.error('[cloud-sync scheduler] Error:', error.message);
+    }
+  }, 60 * 60 * 1000); // Check every hour
+
+  console.log('[cloud-sync] Scheduler started (checking hourly for scheduled pushes)');
+}
 
 // Get all automations
 app.get('/api/automations', async (req, res) => {
@@ -2799,6 +2868,256 @@ app.post('/api/script/:id/restore', async (req, res) => {
     }
   } catch (error) {
     console.error('[restore script] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =====================================
+// Cloud Sync Functions
+// =====================================
+
+/**
+ * Set up or update the git remote for cloud sync
+ * @param {string} url - Remote repository URL
+ * @param {string} token - Authentication token
+ * @returns {Object} Result with success status
+ */
+async function setupGitRemote(url, token) {
+  try {
+    // Parse the URL and inject token for HTTPS URLs
+    let authenticatedUrl = url;
+    if (url.startsWith('https://') && token) {
+      // Insert token into URL: https://token@github.com/user/repo.git
+      authenticatedUrl = url.replace('https://', `https://${token}@`);
+    }
+
+    // Check if origin remote exists
+    try {
+      await gitExec(['remote', 'get-url', 'origin']);
+      // Remote exists, update it
+      await gitExec(['remote', 'set-url', 'origin', authenticatedUrl]);
+      console.log('[cloud-sync] Updated existing remote origin');
+    } catch (e) {
+      // Remote doesn't exist, add it
+      await gitExec(['remote', 'add', 'origin', authenticatedUrl]);
+      console.log('[cloud-sync] Added new remote origin');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[cloud-sync] Error setting up remote:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Push to remote repository
+ * @param {boolean} excludeSecrets - Whether to exclude secrets.yaml
+ * @returns {Object} Result with success status
+ */
+async function pushToRemote(excludeSecrets = true) {
+  const secretsPath = path.join(CONFIG_PATH, 'secrets.yaml');
+  const secretsBackupPath = path.join(CONFIG_PATH, '.secrets.yaml.cloudsync.bak');
+  let secretsExisted = false;
+
+  try {
+    // Temporarily hide secrets.yaml if it exists and exclusion is enabled
+    if (excludeSecrets) {
+      try {
+        await fsPromises.access(secretsPath);
+        secretsExisted = true;
+        // Rename secrets.yaml temporarily
+        await fsPromises.rename(secretsPath, secretsBackupPath);
+        // Stage the removal of secrets.yaml for this push
+        await gitExec(['rm', '--cached', '-f', 'secrets.yaml']);
+        console.log('[cloud-sync] Temporarily excluded secrets.yaml from push');
+      } catch (e) {
+        // secrets.yaml doesn't exist, which is fine
+        secretsExisted = false;
+      }
+    }
+
+    // Get current branch
+    let branchName = 'main';
+    try {
+      const branchResult = await gitRevparse(['--abbrev-ref', 'HEAD']);
+      branchName = branchResult.trim() || 'main';
+    } catch (e) {
+      console.log('[cloud-sync] Could not determine branch, using main');
+    }
+
+    // Force push to remote
+    await gitExec(['push', '-f', 'origin', branchName]);
+    console.log(`[cloud-sync] Successfully pushed to origin/${branchName}`);
+
+    // Update status
+    runtimeSettings.cloudSync.lastPushTime = new Date().toISOString();
+    runtimeSettings.cloudSync.lastPushStatus = 'success';
+    runtimeSettings.cloudSync.lastPushError = null;
+    await saveRuntimeSettings();
+
+    return { success: true, branch: branchName };
+
+  } catch (error) {
+    console.error('[cloud-sync] Push failed:', error);
+
+    // Update status
+    runtimeSettings.cloudSync.lastPushTime = new Date().toISOString();
+    runtimeSettings.cloudSync.lastPushStatus = 'error';
+    runtimeSettings.cloudSync.lastPushError = error.message;
+    await saveRuntimeSettings();
+
+    return { success: false, error: error.message };
+
+  } finally {
+    // Restore secrets.yaml if we moved it
+    if (excludeSecrets && secretsExisted) {
+      try {
+        await fsPromises.rename(secretsBackupPath, secretsPath);
+        // Re-add secrets.yaml to git tracking
+        await gitExec(['add', 'secrets.yaml']);
+        console.log('[cloud-sync] Restored secrets.yaml');
+      } catch (e) {
+        console.error('[cloud-sync] Failed to restore secrets.yaml:', e);
+      }
+    }
+  }
+}
+
+/**
+ * Test connection to remote repository
+ * @returns {Object} Result with success status
+ */
+async function testRemoteConnection() {
+  try {
+    // Use ls-remote to test connection without actually pushing
+    await gitExec(['ls-remote', '--exit-code', 'origin']);
+    console.log('[cloud-sync] Remote connection test successful');
+    return { success: true };
+  } catch (error) {
+    console.error('[cloud-sync] Remote connection test failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// =====================================
+// Cloud Sync API Endpoints
+// =====================================
+
+// Get cloud sync status
+app.get('/api/cloud-sync/status', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      enabled: runtimeSettings.cloudSync.enabled,
+      lastPushTime: runtimeSettings.cloudSync.lastPushTime,
+      lastPushStatus: runtimeSettings.cloudSync.lastPushStatus,
+      lastPushError: runtimeSettings.cloudSync.lastPushError,
+      pushFrequency: runtimeSettings.cloudSync.pushFrequency
+    });
+  } catch (error) {
+    console.error('[cloud-sync status] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test cloud sync connection
+app.post('/api/cloud-sync/test', async (req, res) => {
+  try {
+    const { remoteUrl, authToken } = req.body;
+
+    if (!remoteUrl) {
+      return res.status(400).json({ success: false, error: 'Remote URL is required' });
+    }
+
+    // Set up the remote with provided credentials
+    const setupResult = await setupGitRemote(remoteUrl, authToken);
+    if (!setupResult.success) {
+      return res.json({ success: false, error: setupResult.error });
+    }
+
+    // Test the connection
+    const testResult = await testRemoteConnection();
+    res.json(testResult);
+  } catch (error) {
+    console.error('[cloud-sync test] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Push to remote now
+app.post('/api/cloud-sync/push', async (req, res) => {
+  try {
+    if (!runtimeSettings.cloudSync.enabled && !req.body.force) {
+      return res.status(400).json({ success: false, error: 'Cloud sync is not enabled' });
+    }
+
+    // Ensure remote is configured
+    if (!runtimeSettings.cloudSync.remoteUrl) {
+      return res.status(400).json({ success: false, error: 'Remote URL not configured' });
+    }
+
+    // Set up remote (in case settings changed)
+    const setupResult = await setupGitRemote(
+      runtimeSettings.cloudSync.remoteUrl,
+      runtimeSettings.cloudSync.authToken
+    );
+    if (!setupResult.success) {
+      return res.json({ success: false, error: setupResult.error });
+    }
+
+    // Push
+    const pushResult = await pushToRemote(runtimeSettings.cloudSync.excludeSecrets);
+    res.json(pushResult);
+  } catch (error) {
+    console.error('[cloud-sync push] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Save cloud sync settings
+app.post('/api/cloud-sync/settings', async (req, res) => {
+  try {
+    const { enabled, remoteUrl, authToken, pushFrequency, excludeSecrets } = req.body;
+
+    // Update settings
+    if (enabled !== undefined) runtimeSettings.cloudSync.enabled = enabled;
+    if (remoteUrl !== undefined) runtimeSettings.cloudSync.remoteUrl = remoteUrl;
+    if (authToken !== undefined) runtimeSettings.cloudSync.authToken = authToken;
+    if (pushFrequency !== undefined) runtimeSettings.cloudSync.pushFrequency = pushFrequency;
+    if (excludeSecrets !== undefined) runtimeSettings.cloudSync.excludeSecrets = excludeSecrets;
+
+    // Set up remote if URL and token provided
+    if (remoteUrl && enabled) {
+      await setupGitRemote(remoteUrl, authToken || runtimeSettings.cloudSync.authToken);
+    }
+
+    await saveRuntimeSettings();
+    res.json({ success: true, settings: runtimeSettings.cloudSync });
+  } catch (error) {
+    console.error('[cloud-sync settings] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get cloud sync settings (excluding sensitive token)
+app.get('/api/cloud-sync/settings', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      settings: {
+        enabled: runtimeSettings.cloudSync.enabled,
+        remoteUrl: runtimeSettings.cloudSync.remoteUrl,
+        hasAuthToken: !!runtimeSettings.cloudSync.authToken,
+        pushFrequency: runtimeSettings.cloudSync.pushFrequency,
+        excludeSecrets: runtimeSettings.cloudSync.excludeSecrets,
+        lastPushTime: runtimeSettings.cloudSync.lastPushTime,
+        lastPushStatus: runtimeSettings.cloudSync.lastPushStatus,
+        lastPushError: runtimeSettings.cloudSync.lastPushError
+      }
+    });
+  } catch (error) {
+    console.error('[cloud-sync settings] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

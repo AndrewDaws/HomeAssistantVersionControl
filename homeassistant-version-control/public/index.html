@@ -357,6 +357,124 @@
             </div>
           </div>
 
+          <!-- Group: Cloud Backup -->
+          <div class="settings-group">
+            <div class="settings-group-title" data-i18n="settings.group_cloud_backup">Cloud Backup</div>
+
+            <div class="setting-item" style="margin-bottom: 20px;">
+              <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                <span style="color: var(--text-primary); font-size: 14px;"
+                  data-i18n="settings.cloud_sync_enabled">Enable Cloud Sync</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="cloudSyncEnabled" style="display: none;">
+                  <label for="cloudSyncEnabled" class="toggle-slider" onclick="handleCloudSyncToggle()"></label>
+                </div>
+              </label>
+            </div>
+
+            <div id="cloudSyncOptions" style="display: none;">
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px;">
+                  <span style="color: var(--text-primary); font-size: 14px;"
+                    data-i18n="settings.cloud_remote_url">Repository URL</span>
+                </label>
+                <input type="text" id="cloudRemoteUrl" placeholder="https://github.com/user/repo.git" style="
+                  width: 100%;
+                  padding: 10px 12px;
+                  background: var(--bg-tertiary);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-md);
+                  color: var(--text-primary);
+                  font-size: 14px;
+                  box-sizing: border-box;
+                ">
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
+                  data-i18n="settings.cloud_remote_url_desc">
+                  Create a new private repository, then paste the URL here
+                </p>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px;">
+                  <span style="color: var(--text-primary); font-size: 14px;"
+                    data-i18n="settings.cloud_auth_token">Access Token</span>
+                </label>
+                <input type="password" id="cloudAuthToken" placeholder="ghp_xxxx or personal access token" style="
+                  width: 100%;
+                  padding: 10px 12px;
+                  background: var(--bg-tertiary);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-md);
+                  color: var(--text-primary);
+                  font-size: 14px;
+                  box-sizing: border-box;
+                ">
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
+                  data-i18n="settings.cloud_auth_token_desc">
+                  Create a personal access token with repo permissions
+                </p>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px;">
+                  <span style="color: var(--text-primary); font-size: 14px;"
+                    data-i18n="settings.cloud_push_frequency">Push Frequency</span>
+                </label>
+                <select id="cloudPushFrequency" style="
+                  width: 100%;
+                  padding: 10px 12px;
+                  background: var(--bg-tertiary);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-md);
+                  color: var(--text-primary);
+                  font-size: 14px;
+                  -webkit-appearance: none;
+                  appearance: none;
+                ">
+                  <option value="manual" data-i18n="settings.cloud_push_manual">Manual Only</option>
+                  <option value="every_commit" data-i18n="settings.cloud_push_every_commit">After Every Commit</option>
+                  <option value="hourly" data-i18n="settings.cloud_push_hourly">Hourly</option>
+                  <option value="daily" data-i18n="settings.cloud_push_daily">Daily</option>
+                </select>
+              </div>
+
+              <div class="setting-item" style="margin-bottom: 16px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                  <span style="color: var(--text-primary); font-size: 14px;"
+                    data-i18n="settings.cloud_exclude_secrets">Exclude secrets.yaml</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="cloudExcludeSecrets" style="display: none;" checked>
+                    <label for="cloudExcludeSecrets" class="toggle-slider"></label>
+                  </div>
+                </label>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
+                  data-i18n="settings.cloud_exclude_secrets_desc">
+                  Recommended: Keep secrets.yaml out of remote repository
+                </p>
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="btn" onclick="testCloudConnection()" style="flex: 1; background: var(--bg-tertiary);"
+                  data-i18n="settings.cloud_test_connection">
+                  Test Connection
+                </button>
+                <button class="btn" onclick="pushToCloudNow()" style="flex: 1; background: var(--primary);"
+                  data-i18n="settings.cloud_push_now">
+                  Push Now
+                </button>
+              </div>
+
+              <div id="cloudSyncStatus"
+                style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-md); display: none;">
+                <div style="color: var(--text-secondary); font-size: 12px;">
+                  <span data-i18n="settings.cloud_last_push">Last push:</span>
+                  <span id="cloudLastPushTime">Never</span>
+                  <span id="cloudLastPushStatus"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Group 3: Appearance -->
           <div class="settings-group">
             <div class="settings-group-title" data-i18n="settings.group_appearance">Appearance</div>

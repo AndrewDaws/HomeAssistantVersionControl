@@ -987,6 +987,9 @@ function openSettings() {
   const settingsModal = document.getElementById('settingsModal');
 
   document.getElementById('settingsModal').classList.add('active');
+
+  // Load cloud sync settings when modal opens
+  loadCloudSyncSettings();
 }
 
 function closeSettings() {
@@ -1052,6 +1055,9 @@ async function saveSettings() {
     showNotification(t('app.settings_save_error_generic'), 'error', 3000);
   }
 
+  // Save cloud sync settings
+  await saveCloudSyncSettings();
+
   // Re-render current view to apply changes immediately
   refreshCurrentView();
 
@@ -1068,6 +1074,175 @@ function handleRetentionToggle() {
 
   if (historyRetention && retentionOptions) {
     retentionOptions.style.display = historyRetention.checked ? 'block' : 'none';
+  }
+}
+
+// =====================================
+// Cloud Sync Functions
+// =====================================
+
+function handleCloudSyncToggle() {
+  const cloudSyncEnabled = document.getElementById('cloudSyncEnabled');
+  const cloudSyncOptions = document.getElementById('cloudSyncOptions');
+
+  if (cloudSyncEnabled && cloudSyncOptions) {
+    cloudSyncOptions.style.display = cloudSyncEnabled.checked ? 'block' : 'none';
+  }
+}
+
+async function loadCloudSyncSettings() {
+  try {
+    const response = await fetch(`${API}/cloud-sync/settings`);
+    const data = await response.json();
+
+    if (data.success) {
+      const settings = data.settings;
+
+      // Update UI elements
+      const enabledCheckbox = document.getElementById('cloudSyncEnabled');
+      if (enabledCheckbox) {
+        enabledCheckbox.checked = settings.enabled;
+        handleCloudSyncToggle();
+      }
+
+      const remoteUrlInput = document.getElementById('cloudRemoteUrl');
+      if (remoteUrlInput) {
+        remoteUrlInput.value = settings.remoteUrl || '';
+      }
+
+      const pushFrequencySelect = document.getElementById('cloudPushFrequency');
+      if (pushFrequencySelect) {
+        pushFrequencySelect.value = settings.pushFrequency || 'manual';
+      }
+
+      const excludeSecretsCheckbox = document.getElementById('cloudExcludeSecrets');
+      if (excludeSecretsCheckbox) {
+        excludeSecretsCheckbox.checked = settings.excludeSecrets !== false;
+      }
+
+      // Update status
+      updateCloudSyncStatus(settings);
+    }
+  } catch (error) {
+    console.error('Failed to load cloud sync settings:', error);
+  }
+}
+
+async function saveCloudSyncSettings() {
+  try {
+    const enabled = document.getElementById('cloudSyncEnabled').checked;
+    const remoteUrl = document.getElementById('cloudRemoteUrl').value.trim();
+    const authToken = document.getElementById('cloudAuthToken').value.trim();
+    const pushFrequency = document.getElementById('cloudPushFrequency').value;
+    const excludeSecrets = document.getElementById('cloudExcludeSecrets').checked;
+
+    const response = await fetch(`${API}/cloud-sync/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled,
+        remoteUrl,
+        authToken: authToken || undefined, // Only send if provided
+        pushFrequency,
+        excludeSecrets
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      console.log('Cloud sync settings saved');
+    } else {
+      console.error('Failed to save cloud sync settings:', data.error);
+    }
+    return data;
+  } catch (error) {
+    console.error('Error saving cloud sync settings:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function testCloudConnection() {
+  const remoteUrl = document.getElementById('cloudRemoteUrl').value.trim();
+  const authToken = document.getElementById('cloudAuthToken').value.trim();
+
+  if (!remoteUrl) {
+    showNotification('Please enter a repository URL', 'error', 3000);
+    return;
+  }
+
+  showNotification('Testing connection...', 'info', 2000);
+
+  try {
+    const response = await fetch(`${API}/cloud-sync/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remoteUrl, authToken })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification('Connection successful!', 'success', 3000);
+    } else {
+      showNotification(`Connection failed: ${data.error}`, 'error', 5000);
+    }
+  } catch (error) {
+    showNotification(`Connection error: ${error.message}`, 'error', 5000);
+  }
+}
+
+async function pushToCloudNow() {
+  showNotification('Pushing to cloud...', 'info', 2000);
+
+  // Save current settings first
+  await saveCloudSyncSettings();
+
+  try {
+    const response = await fetch(`${API}/cloud-sync/push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: true }) // Allow push even if not enabled
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification('Push successful!', 'success', 3000);
+      // Refresh status
+      loadCloudSyncSettings();
+    } else {
+      showNotification(`Push failed: ${data.error}`, 'error', 5000);
+    }
+  } catch (error) {
+    showNotification(`Push error: ${error.message}`, 'error', 5000);
+  }
+}
+
+function updateCloudSyncStatus(settings) {
+  const statusDiv = document.getElementById('cloudSyncStatus');
+  const lastPushTime = document.getElementById('cloudLastPushTime');
+  const lastPushStatus = document.getElementById('cloudLastPushStatus');
+
+  if (!statusDiv || !lastPushTime || !lastPushStatus) return;
+
+  if (settings.lastPushTime) {
+    statusDiv.style.display = 'block';
+
+    const date = new Date(settings.lastPushTime);
+    const formatted = date.toLocaleString();
+    lastPushTime.textContent = formatted;
+
+    if (settings.lastPushStatus === 'success') {
+      lastPushStatus.textContent = ' ✓';
+      lastPushStatus.style.color = 'var(--success)';
+    } else if (settings.lastPushStatus === 'error') {
+      lastPushStatus.textContent = ' ✗ ' + (settings.lastPushError || 'Error');
+      lastPushStatus.style.color = 'var(--danger)';
+    } else {
+      lastPushStatus.textContent = '';
+    }
+  } else {
+    statusDiv.style.display = 'none';
   }
 }
 
