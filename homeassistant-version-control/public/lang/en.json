@@ -199,6 +199,8 @@
     "cloud_test_connection": "Test Connection",
     "cloud_push_now": "Push Now",
     "cloud_last_push": "Last push:",
+    "cloud_repo_name": "Repository Name",
+    "cloud_repo_name_desc": "A private repository will be created automatically",
     "cloud_github_account": "GitHub Account",
     "cloud_connect_github": "Connect GitHub",
     "cloud_github_enter_code": "Enter this code at:",

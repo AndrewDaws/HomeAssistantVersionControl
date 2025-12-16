@@ -374,12 +374,13 @@
             </div>
 
             <div id="cloudSyncOptions" style="display: none;">
+              <!-- Repository Name -->
               <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px;">
                   <span style="color: var(--text-primary); font-size: 14px;"
-                    data-i18n="settings.cloud_remote_url">Repository URL</span>
+                    data-i18n="settings.cloud_repo_name">Repository Name</span>
                 </label>
-                <input type="text" id="cloudRemoteUrl" placeholder="https://github.com/user/repo.git" style="
+                <input type="text" id="cloudRepoName" value="ha-config-backup" placeholder="ha-config-backup" style="
                   width: 100%;
                   padding: 10px 12px;
                   background: var(--bg-tertiary);
@@ -390,10 +391,13 @@
                   box-sizing: border-box;
                 ">
                 <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
-                  data-i18n="settings.cloud_remote_url_desc">
-                  Create a new private repository, then paste the URL here
+                  data-i18n="settings.cloud_repo_name_desc">
+                  A private repository will be created automatically
                 </p>
               </div>
+
+              <!-- Hidden field for actual URL (set after repo creation) -->
+              <input type="hidden" id="cloudRemoteUrl" value="">
 
               <!-- GitHub Connection -->
               <div style="margin-bottom: 16px;">

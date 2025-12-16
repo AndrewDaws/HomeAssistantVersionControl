@@ -3152,12 +3152,78 @@ app.post('/api/github/disconnect', async (req, res) => {
   try {
     runtimeSettings.cloudSync.authToken = '';
     runtimeSettings.cloudSync.authProvider = '';
+    runtimeSettings.cloudSync.remoteUrl = '';
     await saveRuntimeSettings();
 
     console.log('[github] Disconnected');
     res.json({ success: true });
   } catch (error) {
     console.error('[github disconnect] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create GitHub repository
+app.post('/api/github/create-repo', async (req, res) => {
+  try {
+    const { repoName } = req.body;
+    const token = runtimeSettings.cloudSync.authToken;
+
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Not authenticated with GitHub' });
+    }
+
+    if (!repoName) {
+      return res.status(400).json({ success: false, error: 'Repository name is required' });
+    }
+
+    // Create private repository via GitHub API
+    const response = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl'
+      },
+      body: JSON.stringify({
+        name: repoName,
+        description: 'Home Assistant configuration backup managed by HA Version Control',
+        private: true,
+        auto_init: false // Don't create README, we'll push our own content
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('[github create-repo] Error:', data.message);
+      return res.status(response.status).json({
+        success: false,
+        error: data.message || 'Failed to create repository'
+      });
+    }
+
+    console.log('[github create-repo] Created repository:', data.clone_url);
+
+    // Save the remote URL
+    runtimeSettings.cloudSync.remoteUrl = data.clone_url;
+    await saveRuntimeSettings();
+
+    // Set up the git remote
+    await setupGitRemote(data.clone_url, token);
+
+    res.json({
+      success: true,
+      repo: {
+        name: data.name,
+        full_name: data.full_name,
+        url: data.html_url,
+        clone_url: data.clone_url
+      }
+    });
+  } catch (error) {
+    console.error('[github create-repo] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

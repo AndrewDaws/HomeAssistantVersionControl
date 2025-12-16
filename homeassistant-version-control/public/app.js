@@ -1306,7 +1306,11 @@ async function connectGitHub() {
         if (pollData.success) {
           // Got the token!
           clearInterval(githubPollInterval);
-          showNotification('GitHub connected successfully!', 'success', 3000);
+          showNotification('GitHub connected! Creating repository...', 'success', 3000);
+
+          // Create the repository automatically
+          await createGitHubRepo();
+
           await loadGitHubUser();
           return;
         }
@@ -1393,6 +1397,44 @@ async function disconnectGitHub() {
   } catch (error) {
     console.error('Disconnect error:', error);
     showNotification(`Error: ${error.message}`, 'error', 5000);
+  }
+}
+
+async function createGitHubRepo() {
+  try {
+    const repoName = document.getElementById('cloudRepoName')?.value?.trim() || 'ha-config-backup';
+
+    const response = await fetch(`${API}/github/create-repo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repoName })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification(`Repository "${data.repo.name}" created!`, 'success', 3000);
+
+      // Update the hidden remote URL field
+      const urlField = document.getElementById('cloudRemoteUrl');
+      if (urlField) {
+        urlField.value = data.repo.clone_url;
+      }
+
+      return data.repo;
+    } else {
+      // Check if repo already exists
+      if (data.error && data.error.includes('already exists')) {
+        showNotification('Repository already exists. Using existing repo.', 'info', 3000);
+        return null;
+      }
+      showNotification(`Failed to create repo: ${data.error}`, 'error', 5000);
+      return null;
+    }
+  } catch (error) {
+    console.error('Create repo error:', error);
+    showNotification(`Error: ${error.message}`, 'error', 5000);
+    return null;
   }
 }
 
