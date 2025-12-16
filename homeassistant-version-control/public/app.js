@@ -2797,28 +2797,10 @@ async function showAutomationHistory(automationId) {
   let auto = allAutomations.find(a => a.id === automationId);
   const displayName = auto ? auto.name : (currentSelection?.name || 'Automation');
 
-  // Show immediate loading state in right panel (instant feedback)
+  // Set up the panel title immediately (no loading placeholder - matches Files tab)
   document.getElementById('rightPanelTitle').textContent = displayName;
   document.getElementById('rightPanelActions').innerHTML = '';
-  document.getElementById('rightPanel').innerHTML = `
-    <div class="file-history-viewer">
-      <div class="file-history-header">
-        <div class="file-history-info">
-          <div class="history-position" id="historyPosition">Loading...</div>
-        </div>
-        <div class="file-history-actions">
-          <button class="btn" id="prevBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
-          <button class="btn" id="nextBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
-        </div>
-      </div>
-      <div id="automationDiffContent">
-        <div class="empty" style="padding: 40px; text-align: center; opacity: 0.7;">
-          <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
-          Loading history...
-        </div>
-      </div>
-    </div>
-  `;
+  document.getElementById('rightPanel').innerHTML = '';
 
   try {
     // PROGRESSIVE LOADING: First fetch just commit metadata (fast - no YAML parsing)
@@ -3167,28 +3149,10 @@ async function showScriptHistory(scriptId) {
   let script = allScripts.find(s => s.id === scriptId);
   const displayName = script ? script.name : (currentSelection?.name || 'Script');
 
-  // Show immediate loading state in right panel (instant feedback)
+  // Set up the panel title immediately (no loading placeholder - matches Files tab)
   document.getElementById('rightPanelTitle').textContent = displayName;
   document.getElementById('rightPanelActions').innerHTML = '';
-  document.getElementById('rightPanel').innerHTML = `
-    <div class="file-history-viewer">
-      <div class="file-history-header">
-        <div class="file-history-info">
-          <div class="history-position" id="scriptHistoryPosition">Loading...</div>
-        </div>
-        <div class="file-history-actions">
-          <button class="btn" id="scriptPrevBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
-          <button class="btn" id="scriptNextBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
-        </div>
-      </div>
-      <div id="scriptDiffContent">
-        <div class="empty" style="padding: 40px; text-align: center; opacity: 0.7;">
-          <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
-          Loading history...
-        </div>
-      </div>
-    </div>
-  `;
+  document.getElementById('rightPanel').innerHTML = '';
 
   try {
     // PROGRESSIVE LOADING: First fetch just commit metadata (fast - no YAML parsing)
