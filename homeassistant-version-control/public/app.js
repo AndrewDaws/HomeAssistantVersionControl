@@ -2793,101 +2793,141 @@ async function showAutomationHistory(automationId) {
     currentSelection = { type: 'automation', id: automationId };
   }
 
+  // Get the automation name for immediate display
+  let auto = allAutomations.find(a => a.id === automationId);
+  const displayName = auto ? auto.name : (currentSelection?.name || 'Automation');
+
+  // Show immediate loading state in right panel (instant feedback)
+  document.getElementById('rightPanelTitle').textContent = displayName;
+  document.getElementById('rightPanelActions').innerHTML = '';
+  document.getElementById('rightPanel').innerHTML = `
+    <div class="file-history-viewer">
+      <div class="file-history-header">
+        <div class="file-history-info">
+          <div class="history-position" id="historyPosition">Loading...</div>
+        </div>
+        <div class="file-history-actions">
+          <button class="btn" id="prevBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
+          <button class="btn" id="nextBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
+        </div>
+      </div>
+      <div id="automationDiffContent">
+        <div class="empty" style="padding: 40px; text-align: center; opacity: 0.7;">
+          <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+          Loading history...
+        </div>
+      </div>
+    </div>
+  `;
+
   try {
-    const response = await fetch(`${API}/automation/${encodeURIComponent(automationId)}/history`);
-    const data = await response.json();
+    // PROGRESSIVE LOADING: First fetch just commit metadata (fast - no YAML parsing)
+    const metadataResponse = await fetch(`${API}/automation/${encodeURIComponent(automationId)}/history-metadata`);
+    const metadataResult = await metadataResponse.json();
 
-    if (data.success && data.history.length > 0) {
-      // Get the current automation content for comparison
-      let auto = allAutomations.find(a => a.id === automationId);
-      let currentContent = '';
+    if (!metadataResult.success || metadataResult.commits.length === 0) {
+      document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
+      return;
+    }
 
-      // Handle deleted automations (which won't be found in allAutomations)
-      if (!auto && currentSelection && currentSelection.type === 'deleted_automation') {
-        // Parse the synthetic ID: automations:FILE:ID
-        const parts = automationId.split(':');
-        const file = parts.length >= 2 ? decodeURIComponent(parts[1]) : 'automations.yaml';
+    // Handle deleted automations (which won't be found in allAutomations)
+    if (!auto && currentSelection && currentSelection.type === 'deleted_automation') {
+      const parts = automationId.split(':');
+      const file = parts.length >= 2 ? decodeURIComponent(parts[1]) : 'automations.yaml';
+      auto = {
+        id: automationId,
+        name: currentSelection.name,
+        file: file,
+        content: null
+      };
+    }
 
-        auto = {
-          id: automationId,
-          name: currentSelection.name,
-          file: file,
-          content: null // No current content
-        };
+    // Get current content for comparison
+    let currentContent = '';
+    if (auto && auto.content) {
+      currentContent = dumpYaml(auto.content);
+    }
+
+    // Initialize history state
+    currentAutomationHistory = [];
+    currentAutomationHistoryIndex = 0;
+    let lastKeptContent = null;
+    let isFirstVersion = true;
+    isScanningHistory = true;
+
+    // PROGRESSIVE LOADING: Fetch content PER COMMIT (like Files tab)
+    for (let i = 0; i < metadataResult.commits.length; i++) {
+      const commit = metadataResult.commits[i];
+
+      // Fetch content for this specific commit
+      const contentResponse = await fetch(`${API}/automation/${encodeURIComponent(automationId)}/at-commit?commitHash=${encodeURIComponent(commit.hash)}`);
+      const contentResult = await contentResponse.json();
+
+      if (!contentResult.success || !contentResult.automation) {
+        continue; // Skip commits where automation doesn't exist
       }
 
-      if (auto && auto.content) {
-        currentContent = dumpYaml(auto.content);
-      }
+      const commitContent = dumpYaml(contentResult.automation);
 
-      // Initialize with empty history
-      currentAutomationHistory = [];
-      currentAutomationHistoryIndex = 0;
-      let lastKeptContent = null;
-      let isFirstVersion = true;
-      isScanningHistory = true;
+      // Check if there are visible differences compared to the CURRENT version
+      const diffVsCurrent = generateDiff(commitContent, currentContent, {
+        returnNullIfNoChanges: true,
+        filePath: auto?.file
+      });
 
-      // Process versions progressively
-      for (let i = 0; i < data.history.length; i++) {
-        const commit = data.history[i];
-        const commitContent = dumpYaml(commit.automation);
+      // Skip if identical to live
+      if (diffVsCurrent === null) continue;
 
-        // Check if there are visible differences compared to the CURRENT version
-        const diffVsCurrent = generateDiff(commitContent, currentContent, {
+      // Check against the last kept version to avoid consecutive duplicates
+      if (lastKeptContent !== null) {
+        const diffVsLast = generateDiff(commitContent, lastKeptContent, {
           returnNullIfNoChanges: true,
-          filePath: auto.file
+          filePath: auto?.file
         });
-
-        // Skip if identical to live
-        if (diffVsCurrent === null) continue;
-
-        // Check against the last kept version to avoid consecutive duplicates
-        if (lastKeptContent !== null) {
-          const diffVsLast = generateDiff(commitContent, lastKeptContent, {
-            returnNullIfNoChanges: true,
-            filePath: auto.file
-          });
-          if (diffVsLast === null) continue;
-        }
-
-        // Add this version to history
-        currentAutomationHistory.push({
-          ...commit,
-          yamlContent: commitContent
-        });
-        lastKeptContent = commitContent;
-
-        // Display immediately when we find the first valid version
-        if (isFirstVersion) {
-          isFirstVersion = false;
-          // Set the panel title
-          document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
-          document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${automationId}')" title="${t('diff.tooltip_overwrite_automation')}">${t('timeline.restore_commit')}</button>`;
-          displayAutomationHistory();
-        } else {
-          // Update the navigation controls for subsequent versions
-          updateAutomationHistoryNavigation();
-        }
+        if (diffVsLast === null) continue;
       }
 
-      // Scanning complete
-      isScanningHistory = false;
-      if (currentAutomationHistory.length > 0) {
+      // Add this version to history
+      currentAutomationHistory.push({
+        hash: commit.hash,
+        date: commit.date,
+        message: commit.message,
+        author: commit.author,
+        automation: contentResult.automation,
+        yamlContent: commitContent
+      });
+      lastKeptContent = commitContent;
+
+      // Display immediately when we find the first valid version (INSTANT!)
+      if (isFirstVersion) {
+        isFirstVersion = false;
+        document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
+        document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreAutomationVersion('${automationId}')" title="${t('diff.tooltip_overwrite_automation')}">${t('timeline.restore_commit')}</button>`;
+        displayAutomationHistory();
+      } else {
+        // Update the navigation controls for subsequent versions
         updateAutomationHistoryNavigation();
       }
+    }
 
-      // If no versions with changes were found, show current content as a no-change diff
-      if (currentAutomationHistory.length === 0) {
-        // Use the hash from the most recent commit in the full history
-        const mostRecentHash = data.history.length > 0 ? data.history[0].hash : '';
-        const mostRecentCommitDate = data.history.length > 0 ? data.history[0].date : new Date();
+    // Scanning complete
+    isScanningHistory = false;
+    if (currentAutomationHistory.length > 0) {
+      updateAutomationHistoryNavigation();
+    }
 
-        document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
-        document.getElementById('itemsSubtitle').textContent = '';
-        document.getElementById('rightPanelActions').innerHTML = '';
+    // If no versions with changes were found, show current content as a no-change diff
+    if (currentAutomationHistory.length === 0) {
+      // Use the hash from the most recent commit in the full history
+      const mostRecentHash = metadataResult.commits.length > 0 ? metadataResult.commits[0].hash : '';
+      const mostRecentCommitDate = metadataResult.commits.length > 0 ? metadataResult.commits[0].date : new Date();
 
-        // Create a diff view container with header matching the change view
-        document.getElementById('rightPanel').innerHTML = `
+      document.getElementById('rightPanelTitle').textContent = auto ? auto.name : 'Automation';
+      document.getElementById('itemsSubtitle').textContent = '';
+      document.getElementById('rightPanelActions').innerHTML = '';
+
+      // Create a diff view container with header matching the change view
+      document.getElementById('rightPanel').innerHTML = `
           <div class="file-history-viewer">
             <div class="file-history-header">
               <div class="file-history-info">
@@ -2902,52 +2942,18 @@ async function showAutomationHistory(automationId) {
           </div>
         `;
 
-        // Render the current content as a no-change diff
-        renderDiff(currentContent, currentContent, document.getElementById('automationDiffContent'), {
-          leftLabel: 'Current Version',
-          rightLabel: 'Current Version',
-          filePath: auto.file
-        });
-      }
-    } else {
-      let debugHtml = '';
-      if (data.debugMessages && data.debugMessages.length > 0) {
-        debugHtml = `
-              <div class="debug-info" style="margin-top: 20px; padding: 10px; background-color: #333; border-radius: 5px;">
-                <h4>Debug Information:</h4>
-                <ul style="list-style-type: none; padding: 0; font-size: 0.8em;">
-                  ${data.debugMessages.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
-                </ul>
-              </div>
-            `;
-      }
-      document.getElementById('rightPanel').innerHTML = `
-            <div class="empty">${t('history.no_changes')}</div>
-            ${debugHtml}
-          `;
-
-
+      // Render the current content as a no-change diff
+      renderDiff(currentContent, currentContent, document.getElementById('automationDiffContent'), {
+        leftLabel: 'Current Version',
+        rightLabel: 'Current Version',
+        filePath: auto?.file
+      });
     }
   } catch (error) {
     console.error('Error loading automation history:', error);
-    let debugHtml = '';
-    // If the error is from the fetch itself, data.debugMessages might not exist
-    if (error.debugMessages && error.debugMessages.length > 0) {
-      debugHtml = `
-            <div class="debug-info" style="margin-top: 20px; padding: 10px; background-color: #333; border-radius: 5px;">
-              <h4>Debug Information:</h4>
-              <ul style="list-style-type: none; padding: 0; font-size: 0.8em;">
-                ${error.debugMessages.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
-              </ul>
-            </div>
-          `;
-    }
     document.getElementById('rightPanel').innerHTML = `
           <div class="empty">${t('history.error_loading', { error: error.message })}</div>
-          ${debugHtml}
         `;
-
-
   }
 }
 
@@ -3157,100 +3163,139 @@ async function showScriptHistory(scriptId) {
     currentSelection = { type: 'script', id: scriptId };
   }
 
+  // Get the script name for immediate display
+  let script = allScripts.find(s => s.id === scriptId);
+  const displayName = script ? script.name : (currentSelection?.name || 'Script');
+
+  // Show immediate loading state in right panel (instant feedback)
+  document.getElementById('rightPanelTitle').textContent = displayName;
+  document.getElementById('rightPanelActions').innerHTML = '';
+  document.getElementById('rightPanel').innerHTML = `
+    <div class="file-history-viewer">
+      <div class="file-history-header">
+        <div class="file-history-info">
+          <div class="history-position" id="scriptHistoryPosition">Loading...</div>
+        </div>
+        <div class="file-history-actions">
+          <button class="btn" id="scriptPrevBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">◀</button>
+          <button class="btn" id="scriptNextBtn" disabled style="border: 1px solid var(--border-subtle); min-width: 36px; padding: 8px 12px;">▶</button>
+        </div>
+      </div>
+      <div id="scriptDiffContent">
+        <div class="empty" style="padding: 40px; text-align: center; opacity: 0.7;">
+          <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+          Loading history...
+        </div>
+      </div>
+    </div>
+  `;
+
   try {
-    const response = await fetch(`${API}/script/${encodeURIComponent(scriptId)}/history`);
-    const data = await response.json();
+    // PROGRESSIVE LOADING: First fetch just commit metadata (fast - no YAML parsing)
+    const metadataResponse = await fetch(`${API}/script/${encodeURIComponent(scriptId)}/history-metadata`);
+    const metadataResult = await metadataResponse.json();
 
-    if (data.success && data.history.length > 0) {
-      // Get the current script content for comparison
-      let script = allScripts.find(s => s.id === scriptId);
-      let currentContent = '';
+    if (!metadataResult.success || metadataResult.commits.length === 0) {
+      document.getElementById('rightPanel').innerHTML = `<div class="empty">${t('history.no_changes')}</div>`;
+      return;
+    }
 
-      // Handle deleted scripts
-      if (!script && currentSelection && currentSelection.type === 'deleted_script') {
-        // Parse ID
-        const parts = scriptId.split(':');
-        const file = parts.length >= 2 ? decodeURIComponent(parts[1]) : 'scripts.yaml';
-        script = {
-          id: scriptId,
-          name: currentSelection.name,
-          file: file,
-          content: null
-        };
+    // Handle deleted scripts
+    if (!script && currentSelection && currentSelection.type === 'deleted_script') {
+      const parts = scriptId.split(':');
+      const file = parts.length >= 2 ? decodeURIComponent(parts[1]) : 'scripts.yaml';
+      script = {
+        id: scriptId,
+        name: currentSelection.name,
+        file: file,
+        content: null
+      };
+    }
+
+    // Get current content for comparison
+    let currentContent = '';
+    if (script && script.content) {
+      currentContent = dumpYaml(script.content);
+    }
+
+    // Initialize history state
+    currentScriptHistory = [];
+    currentScriptHistoryIndex = 0;
+    let lastKeptContent = null;
+    let isFirstVersion = true;
+    isScanningHistory = true;
+
+    // PROGRESSIVE LOADING: Fetch content PER COMMIT (like Files tab)
+    for (let i = 0; i < metadataResult.commits.length; i++) {
+      const commit = metadataResult.commits[i];
+
+      // Fetch content for this specific commit
+      const contentResponse = await fetch(`${API}/script/${encodeURIComponent(scriptId)}/at-commit?commitHash=${encodeURIComponent(commit.hash)}`);
+      const contentResult = await contentResponse.json();
+
+      if (!contentResult.success || !contentResult.script) {
+        continue; // Skip commits where script doesn't exist
       }
 
-      if (script && script.content) {
-        currentContent = dumpYaml(script.content);
-      }
+      const commitContent = dumpYaml(contentResult.script);
 
-      // Initialize with empty history
-      currentScriptHistory = [];
-      currentScriptHistoryIndex = 0;
-      let lastKeptContent = null;
-      let isFirstVersion = true;
-      isScanningHistory = true;
+      // Check if there are visible differences compared to the CURRENT version
+      const diffVsCurrent = generateDiff(commitContent, currentContent, {
+        returnNullIfNoChanges: true,
+        filePath: script?.file
+      });
 
-      // Process versions progressively
-      for (let i = 0; i < data.history.length; i++) {
-        const commit = data.history[i];
-        const commitContent = dumpYaml(commit.script);
+      // Skip if identical to live
+      if (diffVsCurrent === null) continue;
 
-        // Check if there are visible differences compared to the CURRENT version
-        const diffVsCurrent = generateDiff(commitContent, currentContent, {
+      // Check against the last kept version to avoid consecutive duplicates
+      if (lastKeptContent !== null) {
+        const diffVsLast = generateDiff(commitContent, lastKeptContent, {
           returnNullIfNoChanges: true,
-          filePath: script.file
+          filePath: script?.file
         });
-
-        // Skip if identical to live
-        if (diffVsCurrent === null) continue;
-
-        // Check against the last kept version to avoid consecutive duplicates
-        if (lastKeptContent !== null) {
-          const diffVsLast = generateDiff(commitContent, lastKeptContent, {
-            returnNullIfNoChanges: true,
-            filePath: script.file
-          });
-          if (diffVsLast === null) continue;
-        }
-
-        // Add this version to history
-        currentScriptHistory.push({
-          ...commit,
-          yamlContent: commitContent
-        });
-        lastKeptContent = commitContent;
-
-        // Display immediately when we find the first valid version
-        if (isFirstVersion) {
-          isFirstVersion = false;
-          // Set the panel title
-          document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
-          document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${scriptId}')" title="${t('diff.tooltip_overwrite_script')}">${t('timeline.restore_commit')}</button>`;
-          displayScriptHistory();
-        } else {
-          // Update the navigation controls for subsequent versions
-          updateScriptHistoryNavigation();
-        }
+        if (diffVsLast === null) continue;
       }
 
-      // Scanning complete
-      isScanningHistory = false;
-      if (currentScriptHistory.length > 0) {
+      // Add this version to history
+      currentScriptHistory.push({
+        hash: commit.hash,
+        date: commit.date,
+        message: commit.message,
+        author: commit.author,
+        script: contentResult.script,
+        yamlContent: commitContent
+      });
+      lastKeptContent = commitContent;
+
+      // Display immediately when we find the first valid version (INSTANT!)
+      if (isFirstVersion) {
+        isFirstVersion = false;
+        document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
+        document.getElementById('rightPanelActions').innerHTML = `<button class="btn restore" onclick="restoreScriptVersion('${scriptId}')" title="${t('diff.tooltip_overwrite_script')}">${t('timeline.restore_commit')}</button>`;
+        displayScriptHistory();
+      } else {
+        // Update the navigation controls for subsequent versions
         updateScriptHistoryNavigation();
       }
+    }
 
-      // If no versions with changes were found, show current content as a no-change diff
-      if (currentScriptHistory.length === 0) {
-        // Use the hash from the most recent commit in the full history
-        const mostRecentHash = data.history.length > 0 ? data.history[0].hash : '';
-        const mostRecentCommitDate = data.history.length > 0 ? data.history[0].date : new Date();
+    // Scanning complete
+    isScanningHistory = false;
+    if (currentScriptHistory.length > 0) {
+      updateScriptHistoryNavigation();
+    }
 
-        document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
-        document.getElementById('itemsSubtitle').textContent = '';
-        document.getElementById('rightPanelActions').innerHTML = '';
+    // If no versions with changes were found, show current content as a no-change diff
+    if (currentScriptHistory.length === 0) {
+      const mostRecentHash = metadataResult.commits.length > 0 ? metadataResult.commits[0].hash : '';
+      const mostRecentCommitDate = metadataResult.commits.length > 0 ? metadataResult.commits[0].date : new Date();
 
-        // Create a diff view container with header matching the change view
-        document.getElementById('rightPanel').innerHTML = `
+      document.getElementById('rightPanelTitle').textContent = script ? script.name : 'Script';
+      document.getElementById('itemsSubtitle').textContent = '';
+      document.getElementById('rightPanelActions').innerHTML = '';
+
+      document.getElementById('rightPanel').innerHTML = `
           <div class="file-history-viewer">
             <div class="file-history-header">
               <div class="file-history-info">
@@ -3265,52 +3310,17 @@ async function showScriptHistory(scriptId) {
           </div>
         `;
 
-        // Render the current content as a no-change diff
-        renderDiff(currentContent, currentContent, document.getElementById('scriptDiffContent'), {
-          leftLabel: 'Current Version',
-          rightLabel: 'Current Version',
-          filePath: script.file
-        });
-      }
-    } else {
-      let debugHtml = '';
-      if (data.debugMessages && data.debugMessages.length > 0) {
-        debugHtml = `
-              <div class="debug-info" style="margin-top: 20px; padding: 10px; background-color: #333; border-radius: 5px;">
-                <h4>Debug Information:</h4>
-                <ul style="list-style-type: none; padding: 0; font-size: 0.8em;">
-                  ${data.debugMessages.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
-                </ul>
-              </div>
-            `;
-      }
-      document.getElementById('rightPanel').innerHTML = `
-            <div class="empty">${t('history.no_changes')}</div>
-            ${debugHtml}
-          `;
-
-
+      renderDiff(currentContent, currentContent, document.getElementById('scriptDiffContent'), {
+        leftLabel: 'Current Version',
+        rightLabel: 'Current Version',
+        filePath: script?.file
+      });
     }
   } catch (error) {
     console.error('Error loading script history:', error);
-    let debugHtml = '';
-    // If the error is from the fetch itself, data.debugMessages might not exist
-    if (error.debugMessages && error.debugMessages.length > 0) {
-      debugHtml = `
-            <div class="debug-info" style="margin-top: 20px; padding: 10px; background-color: #333; border-radius: 5px;">
-              <h4>Debug Information:</h4>
-              <ul style="list-style-type: none; padding: 0; font-size: 0.8em;">
-                ${error.debugMessages.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
-              </ul>
-            </div>
-          `;
-    }
     document.getElementById('rightPanel').innerHTML = `
           <div class="empty">${t('history.error_loading', { error: error.message })}</div>
-          ${debugHtml}
         `;
-
-
   }
 }
 

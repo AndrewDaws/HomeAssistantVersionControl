@@ -41,7 +41,11 @@ import {
   getScriptDiff,
   restoreAutomation,
   restoreScript,
-  getConfigFilePaths
+  getConfigFilePaths,
+  getAutomationHistoryMetadata,
+  getAutomationAtCommit,
+  getScriptHistoryMetadata,
+  getScriptAtCommit
 } from './automation-parser.js';
 
 // Override console.log and console.error to add timestamps
@@ -2661,6 +2665,62 @@ app.get('/api/script/:id/history', async (req, res) => {
     res.json({ success, history, debugMessages });
   } catch (error) {
     console.error('[script history] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get automation history metadata (fast - no YAML parsing)
+app.get('/api/automation/:id/history-metadata', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await getAutomationHistoryMetadata(id, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[automation history-metadata] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get automation content at specific commit
+app.get('/api/automation/:id/at-commit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commitHash } = req.query;
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+    const result = await getAutomationAtCommit(id, commitHash, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[automation at-commit] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get script history metadata (fast - no YAML parsing)
+app.get('/api/script/:id/history-metadata', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await getScriptHistoryMetadata(id, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[script history-metadata] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get script content at specific commit
+app.get('/api/script/:id/at-commit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commitHash } = req.query;
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+    const result = await getScriptAtCommit(id, commitHash, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[script at-commit] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

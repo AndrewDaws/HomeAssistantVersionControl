@@ -633,6 +633,188 @@ export async function getAutomationHistory(automationId, configPath) {
 }
 
 /**
+ * Get just the commit metadata for an automation's file (fast, no YAML parsing)
+ * This enables progressive loading by returning commit list quickly
+ * @param {string} automationId - The automation ID
+ * @param {string} configPath - The config path
+ * @returns {Object} List of commit metadata (hash, date, message)
+ */
+export async function getAutomationHistoryMetadata(automationId, configPath) {
+  const [, encodedPath, identifier] = automationId.split(':');
+  const gitFilePath = decodeURIComponent(encodedPath).replace(/^\//, '');
+
+  try {
+    const isRepo = await gitCheckIsRepo();
+    if (!isRepo) {
+      return { success: false, commits: [], error: 'Not a Git repository' };
+    }
+
+    const log = await gitLog({ file: gitFilePath });
+
+    if (log.all.length === 0) {
+      return { success: false, commits: [], error: 'No history found' };
+    }
+
+    // Return just the metadata without parsing content
+    const commits = log.all.map(commit => ({
+      hash: commit.hash,
+      date: commit.date,
+      message: commit.message,
+      author: commit.author_name
+    }));
+
+    return {
+      success: true,
+      commits,
+      identifier,
+      gitFilePath
+    };
+  } catch (error) {
+    console.error('[getAutomationHistoryMetadata] Error:', error);
+    return { success: false, commits: [], error: error.message };
+  }
+}
+
+/**
+ * Get a specific automation's content at a specific commit
+ * @param {string} automationId - The automation ID  
+ * @param {string} commitHash - The commit hash
+ * @param {string} configPath - The config path
+ * @returns {Object} The automation content at that commit
+ */
+export async function getAutomationAtCommit(automationId, commitHash, configPath) {
+  const [, encodedPath, identifier] = automationId.split(':');
+  const gitFilePath = decodeURIComponent(encodedPath).replace(/^\//, '');
+
+  try {
+    const content = await gitShowFileAtCommit(commitHash, gitFilePath);
+    const data = yaml.load(content);
+
+    if (!data) {
+      return { success: false, automation: null, error: 'No YAML data' };
+    }
+
+    // Helper to find by ID or Key/Index
+    const findAutomation = (collection, isArray) => {
+      if (isArray) {
+        const found = collection.find(item => item && item.id === identifier);
+        if (found) return found;
+        if (!isNaN(parseInt(identifier))) {
+          return collection[parseInt(identifier)];
+        }
+      } else {
+        const found = Object.values(collection).find(item => item && item.id === identifier);
+        if (found) return found;
+        return collection[identifier];
+      }
+      return null;
+    };
+
+    let auto = null;
+    if (data.automations) {
+      auto = findAutomation(data.automations, Array.isArray(data.automations));
+    } else {
+      auto = findAutomation(data, Array.isArray(data));
+    }
+
+    return { success: !!auto, automation: auto };
+  } catch (error) {
+    console.error(`[getAutomationAtCommit] Error at commit ${commitHash}:`, error);
+    return { success: false, automation: null, error: error.message };
+  }
+}
+
+/**
+ * Get just the commit metadata for a script's file (fast, no YAML parsing)
+ * @param {string} scriptId - The script ID
+ * @param {string} configPath - The config path
+ * @returns {Object} List of commit metadata
+ */
+export async function getScriptHistoryMetadata(scriptId, configPath) {
+  const [, encodedPath, identifier] = scriptId.split(':');
+  const gitFilePath = decodeURIComponent(encodedPath).replace(/^\//, '');
+
+  try {
+    const isRepo = await gitCheckIsRepo();
+    if (!isRepo) {
+      return { success: false, commits: [], error: 'Not a Git repository' };
+    }
+
+    const log = await gitLog({ file: gitFilePath });
+
+    if (log.all.length === 0) {
+      return { success: false, commits: [], error: 'No history found' };
+    }
+
+    const commits = log.all.map(commit => ({
+      hash: commit.hash,
+      date: commit.date,
+      message: commit.message,
+      author: commit.author_name
+    }));
+
+    return {
+      success: true,
+      commits,
+      identifier,
+      gitFilePath
+    };
+  } catch (error) {
+    console.error('[getScriptHistoryMetadata] Error:', error);
+    return { success: false, commits: [], error: error.message };
+  }
+}
+
+/**
+ * Get a specific script's content at a specific commit
+ * @param {string} scriptId - The script ID
+ * @param {string} commitHash - The commit hash
+ * @param {string} configPath - The config path
+ * @returns {Object} The script content at that commit
+ */
+export async function getScriptAtCommit(scriptId, commitHash, configPath) {
+  const [, encodedPath, identifier] = scriptId.split(':');
+  const gitFilePath = decodeURIComponent(encodedPath).replace(/^\//, '');
+
+  try {
+    const content = await gitShowFileAtCommit(commitHash, gitFilePath);
+    const data = yaml.load(content);
+
+    if (!data) {
+      return { success: false, script: null, error: 'No YAML data' };
+    }
+
+    // Helper to find by ID or Key/Index
+    const findScript = (collection, isArray) => {
+      if (isArray) {
+        const found = collection.find(item => item && item.id === identifier);
+        if (found) return found;
+        if (!isNaN(parseInt(identifier))) {
+          return collection[parseInt(identifier)];
+        }
+      } else {
+        const found = Object.values(collection).find(item => item && item.id === identifier);
+        if (found) return found;
+        return collection[identifier];
+      }
+      return null;
+    };
+
+    let script = null;
+    if (data.scripts) {
+      script = findScript(data.scripts, Array.isArray(data.scripts));
+    } else {
+      script = findScript(data, Array.isArray(data));
+    }
+
+    return { success: !!script, script };
+  } catch (error) {
+    console.error(`[getScriptAtCommit] Error at commit ${commitHash}:`, error);
+    return { success: false, script: null, error: error.message };
+  }
+}
+
+/**
  * Get the history of changes for a specific script
  * @param {string} scriptId - The script ID
  * @returns {Array} List of commits that affected this script
