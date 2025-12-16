@@ -325,22 +325,23 @@ let configOptions = {
 };
 
 // Runtime settings loaded from file
-let runtimeSettings = {
-  debounceTime: 5, // time value
-  debounceTimeUnit: 'seconds', // 'seconds', 'minutes', 'hours', 'days'
-  historyRetention: false,
-  retentionType: 'time', // 'time' or 'versions'
-  retentionValue: 90,
-  retentionUnit: 'days', // 'hours', 'days', 'weeks', 'months'
-  // Cloud Sync settings
+const runtimeSettings = {
+  debounceTime: 300,
+  debounceTimeUnit: 'seconds',
+  historyRetention: true,
+  retentionType: 'count', // 'count' or 'age'
+  retentionValue: 1000,
+  retentionUnit: 'days', // for age type
+  // Cloud Sync Settings
   cloudSync: {
     enabled: false,
     remoteUrl: '',
-    authToken: '',
+    authProvider: '', // 'github' or 'generic'
+    authToken: '', // OAuth token or PAT
     pushFrequency: 'manual', // 'manual', 'every_commit', 'hourly', 'daily'
-    excludeSecrets: true,
+    includeSecrets: false, // Default to FALSE (exclude by default)
     lastPushTime: null,
-    lastPushStatus: null,
+    lastPushStatus: null, // 'success', 'failed'
     lastPushError: null
   }
 };
@@ -1852,7 +1853,7 @@ function initializeWatcher() {
           console.log('[watcher] Running cloud sync push after commit...');
           try {
             await setupGitRemote(runtimeSettings.cloudSync.remoteUrl, runtimeSettings.cloudSync.authToken);
-            await pushToRemote(runtimeSettings.cloudSync.excludeSecrets);
+            await pushToRemote(runtimeSettings.cloudSync.includeSecrets);
           } catch (e) {
             console.error('[watcher] Cloud sync push failed:', e.message);
           }
@@ -2682,7 +2683,7 @@ function startCloudSyncScheduler() {
       if (shouldPush) {
         console.log(`[cloud-sync scheduler] Running ${settings.pushFrequency} push...`);
         await setupGitRemote(settings.remoteUrl, settings.authToken);
-        await pushToRemote(settings.excludeSecrets);
+        await pushToRemote(settings.includeSecrets);
       }
     } catch (error) {
       console.error('[cloud-sync scheduler] Error:', error.message);
@@ -2911,31 +2912,69 @@ async function setupGitRemote(url, token) {
 }
 
 /**
- * Push to remote repository
- * @param {boolean} excludeSecrets - Whether to exclude secrets.yaml
- * @returns {Object} Result with success status
+ * Configure secrets.yaml tracking based on settings
+ * @param {boolean} include - Whether to include secrets.yaml
  */
-async function pushToRemote(excludeSecrets = true) {
-  const secretsPath = path.join(CONFIG_PATH, 'secrets.yaml');
-  const secretsBackupPath = path.join(CONFIG_PATH, '.secrets.yaml.cloudsync.bak');
-  let secretsExisted = false;
+async function configureSecretsTracking(include) {
+  const secretsPath = 'secrets.yaml';
+  const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
 
   try {
-    // Temporarily hide secrets.yaml if it exists and exclusion is enabled
-    if (excludeSecrets) {
+    // 1. Manage .gitignore
+    let gitignoreContent = '';
+    try {
+      gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+    } catch (e) {
+      // File doesn't exist, start empty
+    }
+
+    const hasRule = gitignoreContent.split('\n').some(line => line.trim() === secretsPath);
+
+    if (!include && !hasRule) {
+      // Add to gitignore
+      const newContent = gitignoreContent + (gitignoreContent.endsWith('\n') || !gitignoreContent ? '' : '\n') + secretsPath + '\n';
+      await fsPromises.writeFile(gitignorePath, newContent);
+      console.log('[cloud-sync] Added secrets.yaml to .gitignore');
+    } else if (include && hasRule) {
+      // Remove from gitignore
+      const newContent = gitignoreContent.split('\n').filter(line => line.trim() !== secretsPath).join('\n');
+      await fsPromises.writeFile(gitignorePath, newContent);
+      console.log('[cloud-sync] Removed secrets.yaml from .gitignore');
+    }
+
+    // 2. Manage Git Index (Tracked/Untracked)
+    const isTracked = (await gitExec(['ls-files', secretsPath])).trim() !== '';
+
+    if (!include && isTracked) {
+      // Stop tracking (keep file on disk)
+      await gitExec(['rm', '--cached', secretsPath]);
+      // Commit this metadata change so the remote knows it was deleted/untracked
+      await gitExec(['commit', '-m', 'Stop tracking secrets.yaml for cloud sync']);
+      console.log('[cloud-sync] Untracked secrets.yaml');
+    } else if (include && !isTracked) {
+      // Start tracking
       try {
-        await fsPromises.access(secretsPath);
-        secretsExisted = true;
-        // Rename secrets.yaml temporarily
-        await fsPromises.rename(secretsPath, secretsBackupPath);
-        // Stage the removal of secrets.yaml for this push
-        await gitExec(['rm', '--cached', '-f', 'secrets.yaml']);
-        console.log('[cloud-sync] Temporarily excluded secrets.yaml from push');
+        await gitExec(['add', secretsPath]);
+        // We don't commit immediately here, wait for next auto-commit or manual push
       } catch (e) {
-        // secrets.yaml doesn't exist, which is fine
-        secretsExisted = false;
+        // File might not exist
       }
     }
+
+  } catch (error) {
+    console.error('[cloud-sync] Error configuring secrets:', error);
+  }
+}
+
+/**
+ * Push to remote repository
+ * @param {boolean} includeSecrets - Whether to include secrets.yaml
+ * @returns {Object} Result with success status
+ */
+async function pushToRemote(includeSecrets = false) {
+  try {
+    // Ensure secrets configuration is correct before pushing
+    await configureSecretsTracking(includeSecrets);
 
     // Get current branch
     let branchName = 'main';
@@ -2969,18 +3008,6 @@ async function pushToRemote(excludeSecrets = true) {
 
     return { success: false, error: error.message };
 
-  } finally {
-    // Restore secrets.yaml if we moved it
-    if (excludeSecrets && secretsExisted) {
-      try {
-        await fsPromises.rename(secretsBackupPath, secretsPath);
-        // Re-add secrets.yaml to git tracking
-        await gitExec(['add', 'secrets.yaml']);
-        console.log('[cloud-sync] Restored secrets.yaml');
-      } catch (e) {
-        console.error('[cloud-sync] Failed to restore secrets.yaml:', e);
-      }
-    }
   }
 }
 
@@ -3189,7 +3216,7 @@ app.post('/api/github/create-repo', async (req, res) => {
       },
       body: JSON.stringify({
         name: repoName,
-        description: 'Home Assistant configuration backup managed by HA Version Control',
+        description: 'Home Assistant configuration backup managed by Home Assistant Version Control',
         private: true,
         auto_init: false // Don't create README, we'll push our own content
       })
@@ -3251,11 +3278,15 @@ app.get('/api/cloud-sync/status', async (req, res) => {
 });
 
 // Test cloud sync connection
+// Test cloud sync connection
 app.post('/api/cloud-sync/test', async (req, res) => {
   try {
     const { remoteUrl, authToken } = req.body;
 
-    if (!remoteUrl) {
+    // Use provided URL or fall back to stored URL
+    const targetUrl = remoteUrl || runtimeSettings.cloudSync.remoteUrl;
+
+    if (!targetUrl) {
       return res.status(400).json({ success: false, error: 'Remote URL is required' });
     }
 
@@ -3263,7 +3294,7 @@ app.post('/api/cloud-sync/test', async (req, res) => {
     const token = authToken || runtimeSettings.cloudSync.authToken;
 
     // Set up the remote with provided credentials
-    const setupResult = await setupGitRemote(remoteUrl, token);
+    const setupResult = await setupGitRemote(targetUrl, token);
     if (!setupResult.success) {
       return res.json({ success: false, error: setupResult.error });
     }
@@ -3299,7 +3330,7 @@ app.post('/api/cloud-sync/push', async (req, res) => {
     }
 
     // Push
-    const pushResult = await pushToRemote(runtimeSettings.cloudSync.excludeSecrets);
+    const pushResult = await pushToRemote(runtimeSettings.cloudSync.includeSecrets);
     res.json(pushResult);
   } catch (error) {
     console.error('[cloud-sync push] Error:', error);
@@ -3310,14 +3341,14 @@ app.post('/api/cloud-sync/push', async (req, res) => {
 // Save cloud sync settings
 app.post('/api/cloud-sync/settings', async (req, res) => {
   try {
-    const { enabled, remoteUrl, authToken, pushFrequency, excludeSecrets } = req.body;
+    const { enabled, remoteUrl, authToken, pushFrequency, includeSecrets } = req.body;
 
     // Update settings
     if (enabled !== undefined) runtimeSettings.cloudSync.enabled = enabled;
     if (remoteUrl !== undefined) runtimeSettings.cloudSync.remoteUrl = remoteUrl;
     if (authToken !== undefined) runtimeSettings.cloudSync.authToken = authToken;
     if (pushFrequency !== undefined) runtimeSettings.cloudSync.pushFrequency = pushFrequency;
-    if (excludeSecrets !== undefined) runtimeSettings.cloudSync.excludeSecrets = excludeSecrets;
+    if (includeSecrets !== undefined) runtimeSettings.cloudSync.includeSecrets = includeSecrets;
 
     // Set up remote if URL and token provided
     if (remoteUrl && enabled) {
@@ -3342,7 +3373,7 @@ app.get('/api/cloud-sync/settings', async (req, res) => {
         remoteUrl: runtimeSettings.cloudSync.remoteUrl,
         hasAuthToken: !!runtimeSettings.cloudSync.authToken,
         pushFrequency: runtimeSettings.cloudSync.pushFrequency,
-        excludeSecrets: runtimeSettings.cloudSync.excludeSecrets,
+        includeSecrets: runtimeSettings.cloudSync.includeSecrets,
         lastPushTime: runtimeSettings.cloudSync.lastPushTime,
         lastPushStatus: runtimeSettings.cloudSync.lastPushStatus,
         lastPushError: runtimeSettings.cloudSync.lastPushError

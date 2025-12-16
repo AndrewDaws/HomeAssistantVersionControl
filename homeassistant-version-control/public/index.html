@@ -380,7 +380,8 @@
                   <span style="color: var(--text-primary); font-size: 14px;"
                     data-i18n="settings.cloud_repo_name">Repository Name</span>
                 </label>
-                <input type="text" id="cloudRepoName" value="ha-config-backup" placeholder="ha-config-backup" style="
+                <input type="text" id="cloudRepoName" value="ha-version-control-backup"
+                  placeholder="ha-version-control-backup" style="
                   width: 100%;
                   padding: 10px 12px;
                   background: var(--bg-tertiary);
@@ -438,13 +439,12 @@
                 <div id="githubConnected"
                   style="display: none; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
                   <div style="display: flex; align-items: center; gap: 12px;">
-                    <img id="githubAvatar" src="" alt="" style="width: 40px; height: 40px; border-radius: 50%;">
-                    <div style="flex: 1;">
-                      <div id="githubUsername" style="color: var(--text-primary); font-weight: 500;"></div>
-                      <div style="color: var(--success); font-size: 12px;">✓ Connected</div>
-                    </div>
+                    <img id="githubAvatar" src="" alt="" style="width: 32px; height: 32px; border-radius: 50%;">
+                    <div id="githubUsername" style="color: var(--text-primary); font-weight: 500;"></div>
+                    <div style="color: var(--success); font-size: 12px; margin-left: auto; margin-right: 12px;">✓
+                      Connected</div>
                     <button class="btn" onclick="disconnectGitHub()"
-                      style="background: var(--danger); padding: 6px 12px; font-size: 12px;"
+                      style="background: var(--danger); padding: 4px 10px; font-size: 12px;"
                       data-i18n="settings.cloud_disconnect">Disconnect</button>
                   </div>
                 </div>
@@ -477,15 +477,15 @@
               <div class="setting-item" style="margin-bottom: 16px;">
                 <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                   <span style="color: var(--text-primary); font-size: 14px;"
-                    data-i18n="settings.cloud_exclude_secrets">Exclude secrets.yaml</span>
+                    data-i18n="settings.cloud_include_secrets">Include secrets.yaml</span>
                   <div class="toggle-switch">
-                    <input type="checkbox" id="cloudExcludeSecrets" style="display: none;" checked>
-                    <label for="cloudExcludeSecrets" class="toggle-slider"></label>
+                    <input type="checkbox" id="cloudIncludeSecrets" style="display: none;">
+                    <label for="cloudIncludeSecrets" class="toggle-slider"></label>
                   </div>
                 </label>
                 <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
-                  data-i18n="settings.cloud_exclude_secrets_desc">
-                  Recommended: Keep secrets.yaml out of remote repository
+                  data-i18n="settings.cloud_include_secrets_desc">
+                  Warning: This will upload your sensitive secrets to the cloud.
                 </p>
               </div>
 

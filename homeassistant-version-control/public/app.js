@@ -1115,9 +1115,9 @@ async function loadCloudSyncSettings() {
         pushFrequencySelect.value = settings.pushFrequency || 'manual';
       }
 
-      const excludeSecretsCheckbox = document.getElementById('cloudExcludeSecrets');
-      if (excludeSecretsCheckbox) {
-        excludeSecretsCheckbox.checked = settings.excludeSecrets !== false;
+      const includeSecretsCheckbox = document.getElementById('cloudIncludeSecrets');
+      if (includeSecretsCheckbox) {
+        includeSecretsCheckbox.checked = settings.includeSecrets === true;
       }
 
       // Update status
@@ -1136,7 +1136,7 @@ async function saveCloudSyncSettings() {
     const enabled = document.getElementById('cloudSyncEnabled').checked;
     const remoteUrl = document.getElementById('cloudRemoteUrl').value.trim();
     const pushFrequency = document.getElementById('cloudPushFrequency').value;
-    const excludeSecrets = document.getElementById('cloudExcludeSecrets').checked;
+    const includeSecrets = document.getElementById('cloudIncludeSecrets').checked;
 
     const response = await fetch(`${API}/cloud-sync/settings`, {
       method: 'POST',
@@ -1145,7 +1145,7 @@ async function saveCloudSyncSettings() {
         enabled,
         remoteUrl,
         pushFrequency,
-        excludeSecrets
+        includeSecrets
       })
     });
 
@@ -1163,16 +1163,17 @@ async function saveCloudSyncSettings() {
 }
 
 async function testCloudConnection() {
-  const remoteUrl = document.getElementById('cloudRemoteUrl').value.trim();
+  const remoteUrlInput = document.getElementById('cloudRemoteUrl');
+  const remoteUrl = remoteUrlInput ? remoteUrlInput.value.trim() : '';
 
-  if (!remoteUrl) {
-    showNotification('Please enter a repository URL', 'error', 3000);
-    return;
-  }
+  // Backend now handles fallback to stored URL, so we can proceed even if empty here.
+  // Only show error if we confirm backend has no URL via API response.
 
   showNotification('Testing connection...', 'info', 2000);
 
   try {
+    // Pass empty authToken if hidden input doesn't exist (it doesn't anymore)
+    // Backend will use stored token.
     const response = await fetch(`${API}/cloud-sync/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1187,7 +1188,8 @@ async function testCloudConnection() {
       showNotification(`Connection failed: ${data.error}`, 'error', 5000);
     }
   } catch (error) {
-    showNotification(`Connection error: ${error.message}`, 'error', 5000);
+    console.error('Test connection error:', error);
+    showNotification(`Error: ${error.message}`, 'error', 5000);
   }
 }
 
