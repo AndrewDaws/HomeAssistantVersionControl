@@ -55,6 +55,34 @@ const diffStyleOptions = [
   { id: 'style-8', name: 'Split Highlight', description: 'Word-level emphasis' }
 ];
 
+// Cycle through diff styles
+function cycleDiffStyle() {
+  const currentIndex = diffStyleOptions.findIndex(s => s.id === currentDiffStyle);
+  const nextIndex = (currentIndex + 1) % diffStyleOptions.length;
+  const nextStyle = diffStyleOptions[nextIndex];
+
+  currentDiffStyle = nextStyle.id;
+  localStorage.setItem('diffStyle', currentDiffStyle);
+
+  // Apply immediately if possible, or refresh view
+  const diffShell = document.querySelector('.diff-viewer-shell');
+  if (diffShell) {
+    // Remove old style class
+    diffStyleOptions.forEach(s => diffShell.classList.remove(s.id));
+    // Add new style class
+    diffShell.classList.add(currentDiffStyle);
+  }
+
+  // Update settings UI if open
+  const styleSelect = document.getElementById('diffStyle');
+  if (styleSelect) {
+    styleSelect.value = currentDiffStyle;
+  }
+
+  // Show ephemeral notification
+  showNotification(`Diff Style: ${nextStyle.name}`, 'info', 1500);
+}
+
 // Cross-browser clipboard helper (Safari doesn't support navigator.clipboard after async operations)
 async function copyToClipboard(text) {
   // Try modern clipboard API first
@@ -4642,9 +4670,9 @@ function generateDiff(oldText, newText, options = {}) {
     }
 
     return `
-      <div class="segmented-control" style="cursor: default; grid-template-columns: 1fr;">
+      <div class="segmented-control" style="cursor: pointer; grid-template-columns: 1fr;" onclick="cycleDiffStyle()" title="Click to cycle diff styles">
         <div class="segmented-control-slider" style="width: calc(100% - 8px);"></div>
-        <label style="cursor: default; color: var(--text-primary);">${leftLabel}</label>
+        <label style="cursor: pointer; color: var(--text-primary);">${leftLabel}</label>
       </div>
       <div class="diff-viewer-shell ${currentDiffStyle}">
         <div class="diff-viewer-unified">
@@ -4661,11 +4689,11 @@ function generateDiff(oldText, newText, options = {}) {
   if (diffViewFormat === 'split') {
     return `
       ${styleSwitcherHtml}
-      <div class="segmented-control" style="cursor: default;">
+      <div class="segmented-control" style="cursor: pointer;" onclick="cycleDiffStyle()" title="Click to cycle diff styles">
         <input type="radio" name="diffHeaderSplit" id="diffHeaderLeft" checked disabled>
-        <label for="diffHeaderLeft" style="cursor: default;">${leftLabel}</label>
+        <label for="diffHeaderLeft" style="cursor: pointer;">${leftLabel}</label>
         <input type="radio" name="diffHeaderSplit" id="diffHeaderRight" disabled>
-        <label for="diffHeaderRight" style="cursor: default;">${rightLabel}</label>
+        <label for="diffHeaderRight" style="cursor: pointer;">${rightLabel}</label>
         <div class="segmented-control-slider"></div>
       </div>
       <div class="diff-viewer-shell ${currentDiffStyle}">
@@ -4678,7 +4706,7 @@ function generateDiff(oldText, newText, options = {}) {
     // Unified format (default)
     return `
       ${styleSwitcherHtml}
-      <div class="diff-header-unified">
+      <div class="diff-header-unified" style="cursor: pointer;" onclick="cycleDiffStyle()" title="Click to cycle diff styles">
         <div class="diff-header-text">
           ${leftLabel} vs ${rightLabel}
         </div>
