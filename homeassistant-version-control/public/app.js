@@ -1289,15 +1289,12 @@ async function pushToCloudNow() {
 }
 
 function updateCloudSyncStatus(settings) {
-  const statusDiv = document.getElementById('cloudSyncStatus');
   const lastPushTime = document.getElementById('cloudLastPushTime');
   const lastPushStatus = document.getElementById('cloudLastPushStatus');
 
-  if (!statusDiv || !lastPushTime || !lastPushStatus) return;
+  if (!lastPushTime || !lastPushStatus) return;
 
   if (settings.lastPushTime) {
-    statusDiv.style.display = 'block';
-
     const date = new Date(settings.lastPushTime);
     const formatted = date.toLocaleString();
     lastPushTime.textContent = formatted;
@@ -1312,7 +1309,8 @@ function updateCloudSyncStatus(settings) {
       lastPushStatus.textContent = '';
     }
   } else {
-    statusDiv.style.display = 'none';
+    lastPushTime.textContent = 'Never';
+    lastPushStatus.textContent = '';
   }
 }
 
