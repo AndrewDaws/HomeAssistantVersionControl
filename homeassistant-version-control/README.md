@@ -62,14 +62,14 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/saihgupr/ha-addons)
+    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/DiggingForDinos/ha-addons)
 
     **Or manually add it:**
     - Navigate to **Settings** → **Add-ons** → **Add-on Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
-      https://github.com/saihgupr/ha-addons
+      https://github.com/DiggingForDinos/ha-addons
       ```
 
 2.  **Install the Add-on:**
@@ -87,7 +87,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://raw.githubusercontent.com/saihgupr/HomeAssistantVersionControlBeta/main/compose.yaml
+   curl -o compose.yaml https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -122,7 +122,7 @@ Replace `/path/to/your/config` with the actual path to your Home Assistant confi
 **Option C: Build locally:**
 
 ```bash
-git clone https://github.com/saihgupr/HomeAssistantVersionControlBeta.git
+git clone https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta.git
 cd HomeAssistantVersionControlBeta/homeassistant-version-control
 docker build --build-arg BUILD_FROM=alpine:latest -t home-assistant-version-control .
 
@@ -270,6 +270,6 @@ curl -X POST http://homeassistant.local:54001/api/cloud-sync/push \
 
 ##  Support
 
-Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControlBeta/issues).
+Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta/issues).
 
 **If you find this add-on helpful, please ⭐ star the repository!**
