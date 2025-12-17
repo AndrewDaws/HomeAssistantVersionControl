@@ -326,7 +326,7 @@ let configOptions = {
 
 // Runtime settings loaded from file
 let runtimeSettings = {
-  debounceTime: 5,
+  debounceTime: 3,
   debounceTimeUnit: 'seconds',
   historyRetention: false,
   retentionType: 'age', // 'count' or 'age'

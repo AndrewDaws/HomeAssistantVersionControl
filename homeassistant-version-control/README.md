@@ -36,7 +36,7 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
 ### Cloud Backup
-*Every change synced to the cloud.* Push your configuration to GitHub, GitLab, or Gitea for secure off-site storage.
+*Every change synced to the cloud.* Push your configuration to GitHub or Gitea for secure off-site storage.
 * **Automatic Sync:** Choose to push after every commit, hourly, daily, or manually.
 * **Clean History:** Uses force push to keep your remote repository in sync with local history.
 * **Secrets Protection:** `secrets.yaml` is excluded from Git by default (both locally and remotely) to prevent accidental storing of credentials. This can be toggled in the Cloud settings.
@@ -154,7 +154,7 @@ Access the interface at `http://localhost:54001`.
 ### The Workflow
 1.  **File Watcher:** The system continuously monitors your `/config` folder for changes to YAML files.
 2.  **Stabilization:** When a change is detected, it waits **2 seconds** to ensure Home Assistant has finished writing the file (preventing corruption).
-3.  **Debounce:** It then waits for your configured **Debounce Time** (default 5s) to batch related edits into a single commit.
+3.  **Debounce:** It then waits for your configured **Debounce Time** (default 3s) to batch related edits into a single commit.
 4.  **Snapshot:** A Git commit is created with a timestamp.
 5.  **Cleanup:** If enabled, old snapshots are consolidated periodically.
 
