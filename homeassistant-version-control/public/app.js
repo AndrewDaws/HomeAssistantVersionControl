@@ -1335,8 +1335,7 @@ function updateCloudSyncStatus(settings) {
     lastPushTime.textContent = formatted;
 
     if (settings.lastPushStatus === 'success') {
-      lastPushStatus.textContent = ' ✓';
-      lastPushStatus.style.color = 'var(--success)';
+      lastPushStatus.textContent = '';
     } else if (settings.lastPushStatus === 'error') {
       lastPushStatus.textContent = ' ✗ ' + (settings.lastPushError || 'Error');
       lastPushStatus.style.color = 'var(--danger)';
@@ -1514,6 +1513,10 @@ async function loadGitHubUser() {
       document.getElementById('githubNotConnected').style.display = 'none';
       document.getElementById('githubConnecting').style.display = 'none';
       document.getElementById('githubConnected').style.display = 'block';
+
+      // Hide "A private repository will be created automatically" since we're already connected
+      const repoDesc = document.getElementById('cloudRepoNameDesc');
+      if (repoDesc) repoDesc.style.display = 'none';
 
       document.getElementById('githubAvatar').src = data.user.avatar_url;
       document.getElementById('githubUsername').textContent = data.user.name || data.user.login;
