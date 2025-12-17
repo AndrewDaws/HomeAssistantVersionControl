@@ -1385,14 +1385,7 @@ async function connectGitHub() {
     document.getElementById('githubUserCode').textContent = data.user_code;
 
     // Auto-copy to clipboard (with Safari fallback)
-    try {
-      await copyToClipboard(data.user_code);
-      showNotification('Code copied to clipboard! Paste it on GitHub.', 'success', 4000);
-    } catch (err) {
-      console.warn('Clipboard write failed:', err);
-      // Show the code prominently so user can manually copy
-      showNotification(`Copy this code: ${data.user_code}`, 'info', 10000);
-    }
+    // Don't auto-copy - user will tap the code to copy (works in Safari Web Apps)
 
     // Start polling for token
     isGitHubPolling = true;
@@ -1505,7 +1498,7 @@ async function copyGitHubCode() {
 
   try {
     await copyToClipboard(code);
-    showNotification('Code copied! Paste it on GitHub.', 'success', 3000);
+    showNotification('Code copied! Paste into GitHub', 'success', 3000);
 
     // Visual feedback
     const wrapper = document.getElementById('githubUserCodeWrapper');
