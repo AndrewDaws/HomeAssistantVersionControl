@@ -1,6 +1,6 @@
 # Home Assistant Version Control Beta
 
-**Automatic backup, history tracking, and instant restore for your Home Assistant configuration.**
+**The ultimate undo button for Home Assistant.**
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
@@ -36,10 +36,10 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
 ### Cloud Backup
-* **Off-site Backup:** Push your configuration to GitHub, GitLab, or Gitea for secure off-site storage.
-* **Flexible Scheduling:** Choose to push after every commit, hourly, daily, or manually.
+*Every change synced to the cloud.* Push your configuration to GitHub, GitLab, or Gitea for secure off-site storage.
+* **Automatic Sync:** Choose to push after every commit, hourly, daily, or manually.
 * **Secrets Protection:** Optionally exclude `secrets.yaml` from remote pushes to keep sensitive data local.
-* **Force Push:** Uses force push to keep your remote repository clean and in sync with local history.
+* **Clean History:** Uses force push to keep your remote repository in sync with local history.
 
 ### Customization
 * **Color Theme:** Choose from seven preset color palettes.
