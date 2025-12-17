@@ -1575,7 +1575,7 @@ async function disconnectGitHub() {
 
 async function createGitHubRepo() {
   try {
-    const repoName = document.getElementById('cloudRepoName')?.value?.trim() || 'ha-config-backup';
+    const repoName = document.getElementById('cloudRepoName')?.value?.trim() || 'VersionControlBackup';
 
     const response = await fetch(`${API}/github/create-repo`, {
       method: 'POST',
