@@ -42,8 +42,14 @@ const fontSizeOptions = [
   { name: 'XL', size: '16px' }
 ];
 
+const REPO_NAME_KEY = 'cloudRepoName';
+const DEBOUNCE_TIME_KEY = 'debounceTime';
+const DEBOUNCE_UNIT_KEY = 'debounceTimeUnit';
+
 // Diff style management
+
 let currentDiffStyle = localStorage.getItem('diffStyle') || 'style-2';
+// Date format is now auto-detected via browser locale with dateStyle/timeStyle
 const diffStyleOptions = [
   { id: 'style-2', name: 'High Contrast', description: 'Bold and bright' },
   { id: 'style-1', name: 'GitHub Classic', description: 'Subtle, clean look' },
@@ -1358,8 +1364,7 @@ function updateCloudSyncStatus(settings) {
   if (!lastPushTime || !lastPushStatus) return;
 
   if (settings.lastPushTime) {
-    const date = new Date(settings.lastPushTime);
-    const formatted = date.toLocaleString();
+    const formatted = getFormattedDate(settings.lastPushTime);
     lastPushTime.textContent = formatted;
 
     if (settings.lastPushStatus === 'success') {
@@ -1725,17 +1730,27 @@ function formatDateDisplay(bucket) {
   }
 }
 
+// Generic date formatter using browser/system locale defaults
+function getFormattedDate(dateInput) {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+
+  // Using dateStyle and timeStyle allows the browser to pick the best format
+  // based on the user's system locale (Short/Medium dates, 12h vs 24h time)
+  // This is smarter than hardcoding unit components.
+  try {
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+  } catch (e) {
+    // Fallback for older browsers
+    return date.toLocaleString();
+  }
+}
+
 function formatDateForLabel(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  // Use browser default locale and options
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  });
+  return getFormattedDate(dateString);
 }
 
 // File path utilities
@@ -2863,9 +2878,7 @@ function displayDeletedFiles(files) {
   }
 
   leftPanel.innerHTML = files.map(file => {
-    const lastSeen = new Date(file.lastSeenDate).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
+    const lastSeen = getFormattedDate(file.lastSeenDate);
     const fileId = 'deleted-file-' + file.path.replace(/[:/\.]/g, '-');
     return `
       <div class="file deleted" id="${fileId}" onclick="selectDeletedFile('${escapeHtml(file.path)}', '${file.lastSeenHash}')">
@@ -2916,9 +2929,7 @@ function displayDeletedAutomations(automations) {
   }
 
   leftPanel.innerHTML = automations.map(auto => {
-    const lastSeen = new Date(auto.lastSeenDate).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
+    const lastSeen = getFormattedDate(auto.lastSeenDate);
     // Use the existing full ID from the API
     const syntheticId = auto.id;
     const autoId = 'deleted-auto-' + auto.id.replace(/[:/\.]/g, '-');
@@ -2970,9 +2981,7 @@ function displayDeletedScripts(scripts) {
   }
 
   leftPanel.innerHTML = scripts.map(script => {
-    const lastSeen = new Date(script.lastSeenDate).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
+    const lastSeen = getFormattedDate(script.lastSeenDate);
     // Use the existing full ID from the API
     const syntheticId = script.id;
     const scriptItemId = 'deleted-script-' + script.id.replace(/[:/\.]/g, '-');
@@ -4058,7 +4067,7 @@ function renderUnchangedView(content, options = {}) {
   });
 
   // Format commit date like "Nov 30, 2025 1:04 PM (2ec8a8d)"
-  const formattedDate = commitDate ? formatDateForBanner(commitDate) : new Date().toLocaleDateString();
+  const formattedDate = commitDate ? formatDateForBanner(commitDate) : getFormattedDate(new Date());
   const hashDisplay = commitHash ? ` (${commitHash.substring(0, 7)})` : '';
 
   // Wrap in file-history-viewer with header banner
@@ -4209,15 +4218,7 @@ function displayFileHistory(filePath) {
 }
 
 function formatDateForBanner(dateString) {
-  const date = new Date(dateString);
-  // Use browser default locale
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  });
+  return getFormattedDate(dateString);
 }
 
 function trimEmptyLines(lines) {
@@ -4356,7 +4357,7 @@ function navigateFileHistory(direction) {
 
 async function restoreFileVersion(filePath) {
   const currentCommit = currentFileHistory[currentFileHistoryIndex];
-  const commitDate = new Date(currentCommit.date).toLocaleString();
+  const commitDate = getFormattedDate(currentCommit.date);
   console.log(`[UI] User clicked restore for ${filePath} at commit ${currentCommit.hash.substring(0, 8)}`);
 
   // Restore directly without confirmation
@@ -5458,7 +5459,7 @@ async function showCommitRestorePreview(commitHash, commitDate) {
 
     // If commitDate is not provided, try to get it from the commit object
     if (!commitDate && commit) {
-      commitDate = new Date(commit.date).toLocaleString();
+      commitDate = getFormattedDate(commit.date);
     }
 
     // Show modal immediately with loading state

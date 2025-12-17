@@ -3134,8 +3134,9 @@ app.post('/api/github/device-flow/initiate', async (req, res) => {
     const data = await response.json();
 
     if (data.error) {
-      console.error('[github device flow] Error:', data.error_description);
-      return res.status(400).json({ success: false, error: data.error_description });
+      const errorMsg = data.error_description || data.error || 'Unknown GitHub error';
+      console.error('[github device flow] Error:', errorMsg);
+      return res.status(400).json({ success: false, error: errorMsg });
     }
 
     console.log('[github device flow] Initiated, user_code:', data.user_code);
@@ -3264,9 +3265,21 @@ app.post('/api/github/disconnect', async (req, res) => {
     runtimeSettings.cloudSync.authToken = '';
     runtimeSettings.cloudSync.authProvider = '';
     runtimeSettings.cloudSync.remoteUrl = '';
+    runtimeSettings.cloudSync.lastPushTime = null;
+    runtimeSettings.cloudSync.lastPushStatus = null;
+    runtimeSettings.cloudSync.lastPushError = null;
     await saveRuntimeSettings();
 
-    console.log('[github] Disconnected');
+    // Also remove the git remote to clear any embedded tokens
+    try {
+      await gitExec(['remote', 'remove', 'origin']);
+      console.log('[github] Removed git remote origin');
+    } catch (e) {
+      // Remote might not exist, that's okay
+      console.log('[github] No git remote to remove');
+    }
+
+    console.log('[github] Disconnected and cleared all cloud sync settings');
     res.json({ success: true });
   } catch (error) {
     console.error('[github disconnect] Error:', error);
