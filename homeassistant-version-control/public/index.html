@@ -459,28 +459,33 @@
                   </div>
 
                   <!-- Connecting State (Device Flow) -->
-                  <div id="githubConnecting"
-                    style="display: none; padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
-                    <div style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">Enter this code at
-                      <a href="https://github.com/login/device" target="_blank"
-                        style="color: var(--primary);">github.com/login/device</a>
-                    </div>
-                    <div id="githubUserCodeWrapper" onclick="copyGitHubCode()"
-                      style="cursor: pointer; padding: 14px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center; transition: filter 0.1s ease;"
-                      onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='brightness(1)'"
-                      onmousedown="this.style.filter='brightness(0.9)'" onmouseup="this.style.filter='brightness(1.1)'">
-                      <div id="githubUserCode"
-                        style="font-size: 24px; font-weight: 600; letter-spacing: 3px; color: var(--text-primary); font-family: monospace;">
+                  <div id="githubConnecting" style="display: none;">
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                      <div style="color: var(--text-primary); font-size: 14px; margin-bottom: 8px;">Enter this code at
+                        <a href="https://github.com/login/device" target="_blank"
+                          style="color: var(--primary);">github.com/login/device</a>
                       </div>
-                      <div style="color: var(--text-tertiary); font-size: 11px; margin-top: 6px;">
-                        Tap to copy
+                      <div id="githubUserCodeWrapper" onclick="copyGitHubCode()"
+                        style="cursor: pointer; padding: 14px; background: rgb(32,32,32); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center; transition: filter 0.1s ease;"
+                        onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='brightness(1)'"
+                        onmousedown="this.style.filter='brightness(0.9)'"
+                        onmouseup="this.style.filter='brightness(1.1)'">
+                        <div id="githubUserCode"
+                          style="font-size: 24px; font-weight: 600; letter-spacing: 3px; color: var(--text-primary); font-family: monospace;">
+                        </div>
+                        <div style="color: var(--text-tertiary); font-size: 11px; margin-top: 6px;">
+                          Tap to copy
+                        </div>
                       </div>
                     </div>
-                    <p style="color: var(--text-secondary); font-size: 12px; margin: 8px 0 0 0;"
-                      data-i18n="settings.cloud_github_waiting">Waiting for authorization...</p>
-                    <button class="btn" onclick="cancelGitHubConnect()"
-                      style="width: 100%; margin-top: 10px; background: var(--bg-secondary); border: 1px solid var(--border-subtle);"
-                      data-i18n="app.cancel">Cancel</button>
+                    <div
+                      style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 0 2px;">
+                      <span style="color: var(--text-secondary); font-size: 12px;"
+                        data-i18n="settings.cloud_github_waiting">Waiting for authorization...</span>
+                      <span onclick="cancelGitHubConnect()"
+                        style="color: var(--text-tertiary); font-size: 12px; cursor: pointer;"
+                        data-i18n="app.cancel">Cancel</span>
+                    </div>
                   </div>
 
                   <!-- Connected State -->
