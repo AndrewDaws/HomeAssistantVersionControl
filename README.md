@@ -11,7 +11,9 @@ Home Assistant Version Control provides complete version history for your setup.
 ---
 
 ## What's New
-* **Cloud Backup:** Push your configuration to GitHub, GitLab, or Gitea for off-site backup. Supports automatic push after each commit, hourly, or daily schedules.
+- **Cloud Backup:** Push your changes to Gitea or GitHub with a single click. Exclude sensitive data automatically.
+- **Secrets Protection:** Optionally exclude `secrets.yaml` from remote pushes to keep sensitive data local.
+- **Visual Diffs:** See exactly what changed before you commit.
 * **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
 * **Progressive History Loading:** Versions now load faster, displaying results as they're found.
 

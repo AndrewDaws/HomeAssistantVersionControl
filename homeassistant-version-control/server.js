@@ -390,7 +390,7 @@ const IGNORED_NESTED_REPOS = [];
  * @param {Array<string>} extraIgnores - Additional paths to ignore
  * @returns {string} .gitignore file content
  */
-function generateGitignoreContent(extraIgnores = []) {
+function generateGitignoreContent(extraIgnores = [], includeSecrets = false) {
 
   const extensions = getConfiguredExtensions();
   const invisiblePattern = configOptions.invisible_files ? '!**/.??*.' : '';
@@ -434,6 +434,11 @@ function generateGitignoreContent(extraIgnores = []) {
     }
   }
 
+  // Explicitly ignore secrets.yaml unless configured to include it
+  // This is handled here to prevent it being overwritten when .gitignore is regenerated
+  if (!includeSecrets) {
+    content += `\n# Limit exposure of secrets\nsecrets.yaml\n`;
+  }
 
   return content;
 }
@@ -460,17 +465,37 @@ function formatCommitMessage(status, fallbackName = null) {
 
 async function loadRuntimeSettings() {
   try {
-    const settingsData = await fsPromises.readFile('/data/runtime-settings.json', 'utf-8');
+    const settingsPath = '/data/runtime-settings.json';
+    // Check if file exists first
+    try {
+      await fsPromises.access(settingsPath, fs.constants.F_OK);
+      console.log(`[init] Found runtime settings file at ${settingsPath}`);
+    } catch (e) {
+      console.log(`[init] No runtime settings file found at ${settingsPath}`);
+      return;
+    }
+
+    const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+    console.log('[init] Raw settings data loaded:', settingsData);
+
     const settings = JSON.parse(settingsData);
     runtimeSettings = { ...runtimeSettings, ...settings };
-    console.log('[init] Loaded runtime settings:', runtimeSettings);
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      console.log('[init] Runtime settings file not found, using defaults.');
-    } else {
-      console.error('[init] Error loading runtime settings:', error.message);
-      console.log('[init] Using default runtime settings due to error.');
+
+    // Ensure cloudSync exists
+    if (!runtimeSettings.cloudSync) {
+      runtimeSettings.cloudSync = {
+        enabled: false,
+        remoteUrl: '',
+        authToken: '',
+        pushFrequency: 'manual',
+        includeSecrets: false
+      };
     }
+
+    console.log('[init] Merged runtime settings:', JSON.stringify(runtimeSettings, null, 2));
+  } catch (error) {
+    console.error('[init] Error loading runtime settings:', error);
+    console.log('[init] using default runtime settings');
   }
 }
 
@@ -479,11 +504,19 @@ async function loadRuntimeSettings() {
  */
 async function saveRuntimeSettings() {
   try {
-    await fsPromises.writeFile('/data/runtime-settings.json', JSON.stringify(runtimeSettings, null, 2), 'utf-8');
-    console.log('[settings] Saved runtime settings');
+    const settingsPath = '/data/runtime-settings.json';
+    console.log(`[settings] Saving settings to ${settingsPath}...`);
+    console.log('[settings] Content:', JSON.stringify(runtimeSettings, null, 2));
+
+    await fsPromises.writeFile(settingsPath, JSON.stringify(runtimeSettings, null, 2), 'utf-8');
+    console.log('[settings] Successfully saved runtime settings');
+
+    // Verify write by reading stats
+    const stats = await fsPromises.stat(settingsPath);
+    console.log(`[settings] File stats: size=${stats.size}, mtime=${stats.mtime}`);
   } catch (error) {
-    console.error('[settings] Failed to save runtime settings:', error.message);
-    throw error;
+    console.error('[settings] Failed to save runtime settings:', error);
+    // Don't throw, just log, so we don't crash requests
   }
 }
 
@@ -661,7 +694,8 @@ async function initRepo() {
 
       // Create .gitignore to limit git to only config files
       const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-      const gitignoreContent = generateGitignoreContent(nestedRepos);
+      const includeSecrets = runtimeSettings.cloudSync ? runtimeSettings.cloudSync.includeSecrets : false;
+      const gitignoreContent = generateGitignoreContent(nestedRepos, includeSecrets);
       try {
         await fsPromises.access(gitignorePath, fs.constants.F_OK);
         console.log('[init] .gitignore already exists in CONFIG_PATH');
@@ -714,7 +748,8 @@ async function initRepo() {
 
     // Create .gitignore to limit git to only config files (only for existing repos)
     const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-    const gitignoreContent = generateGitignoreContent(nestedRepos);
+    const includeSecrets = runtimeSettings.cloudSync ? runtimeSettings.cloudSync.includeSecrets : false;
+    const gitignoreContent = generateGitignoreContent(nestedRepos, includeSecrets);
 
     if (isRepo) {
       try {
@@ -2935,37 +2970,35 @@ async function configureSecretsTracking(include) {
   const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
 
   try {
-    // 1. Manage .gitignore
-    let gitignoreContent = '';
-    let gitignoreChanged = false;
+    // 1. Manage .gitignore using the centralized generator
+    // This ensures consistency with init/update logic
+    const nestedRepos = await findNestedGitRepos();
+    const desiredGitignoreContent = generateGitignoreContent(nestedRepos, include);
+
+    let currentGitignoreContent = '';
     try {
-      gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+      currentGitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
     } catch (e) {
-      // File doesn't exist, start empty
+      // File doesn't exist
     }
 
-    const hasRule = gitignoreContent.split('\n').some(line => line.trim() === secretsPath);
-
-    if (!include && !hasRule) {
-      // Add to gitignore
-      const newContent = gitignoreContent + (gitignoreContent.endsWith('\n') || !gitignoreContent ? '' : '\n') + secretsPath + '\n';
-      await fsPromises.writeFile(gitignorePath, newContent);
+    let gitignoreChanged = false;
+    if (desiredGitignoreContent.trim() !== currentGitignoreContent.trim()) {
+      await fsPromises.writeFile(gitignorePath, desiredGitignoreContent);
       gitignoreChanged = true;
-      console.log('[cloud-sync] Added secrets.yaml to .gitignore');
-    } else if (include && hasRule) {
-      // Remove from gitignore
-      const newContent = gitignoreContent.split('\n').filter(line => line.trim() !== secretsPath).join('\n');
-      await fsPromises.writeFile(gitignorePath, newContent);
-      gitignoreChanged = true;
-      console.log('[cloud-sync] Removed secrets.yaml from .gitignore');
+      console.log(`[cloud-sync] Updated .gitignore (secrets included: ${include})`);
+    } else {
+      console.log('[cloud-sync] .gitignore is up to date');
     }
 
     // 2. Manage Git Index (Tracked/Untracked)
-    const isTracked = (await gitExec(['ls-files', secretsPath])).trim() !== '';
+    const { stdout: trackedFiles } = await gitExec(['ls-files', secretsPath]);
+    const isTracked = trackedFiles.trim() !== '';
     console.log(`[cloud-sync] secrets.yaml tracked: ${isTracked}, include: ${include}`);
 
     if (!include && isTracked) {
       // Stop tracking (keep file on disk)
+      // This will register as a "delete" in git, which when pushed will remove it from the remote
       await gitExec(['rm', '--cached', secretsPath]);
       console.log('[cloud-sync] Untracked secrets.yaml from index');
 
@@ -2999,7 +3032,7 @@ async function configureSecretsTracking(include) {
       // Just stage and commit .gitignore change
       try {
         await gitExec(['add', '.gitignore']);
-        await gitExec(['commit', '-m', 'Update .gitignore for secrets.yaml']);
+        await gitExec(['commit', '-m', 'Update .gitignore configuration']);
         console.log('[cloud-sync] Committed .gitignore update');
       } catch (e) {
         console.log('[cloud-sync] Could not commit .gitignore update:', e.message);
