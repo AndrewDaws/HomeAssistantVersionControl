@@ -3388,6 +3388,7 @@ app.get('/api/cloud-sync/settings', async (req, res) => {
       settings: {
         enabled: runtimeSettings.cloudSync.enabled,
         remoteUrl: runtimeSettings.cloudSync.remoteUrl,
+        authProvider: runtimeSettings.cloudSync.authProvider,
         hasAuthToken: !!runtimeSettings.cloudSync.authToken,
         pushFrequency: runtimeSettings.cloudSync.pushFrequency,
         includeSecrets: runtimeSettings.cloudSync.includeSecrets,

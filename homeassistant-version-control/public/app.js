@@ -1202,7 +1202,7 @@ async function loadCloudSyncSettings() {
   }
 }
 
-async function saveCloudSyncSettings() {
+async function saveCloudSyncSettings(silent = false) {
   const enabled = document.getElementById('cloudSyncEnabled').checked;
   const isGithub = document.getElementById('cloudProviderGithub').checked;
   let remoteUrl = '';
@@ -1247,7 +1247,7 @@ async function saveCloudSyncSettings() {
 
     const data = await response.json();
     if (data.success) {
-      showNotification('Settings saved', 'success');
+      if (!silent) showNotification('Settings saved', 'success');
       // Don't reload settings here - let the caller handle any needed refreshes
       return true;
     } else {
@@ -1296,7 +1296,7 @@ async function pushToCloudNow() {
   showNotification('Pushing to cloud...', 'info', 2000);
 
   // Save current settings first
-  const saveSuccess = await saveCloudSyncSettings();
+  const saveSuccess = await saveCloudSyncSettings(true); // silent - don't show "Settings saved"
 
   if (saveSuccess === false) {
     return;
