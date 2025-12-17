@@ -3002,8 +3002,9 @@ async function configureSecretsTracking(include) {
 
       // Commit this metadata change so the remote knows it was deleted/untracked
       try {
-        await gitExec(['commit', '-m', 'Exclude secrets.yaml from cloud sync']);
-        console.log('[cloud-sync] Committed secrets exclusion');
+        const msg = gitignoreChanged ? 'secrets.yaml, .gitignore' : 'secrets.yaml';
+        await gitExec(['commit', '-m', msg]);
+        console.log(`[cloud-sync] Committed secrets exclusion: ${msg}`);
       } catch (commitError) {
         // Commit might fail if there's nothing to commit (already done)
         console.log('[cloud-sync] Commit skipped (may already be excluded):', commitError.message);
@@ -3021,11 +3022,20 @@ async function configureSecretsTracking(include) {
         // File might not exist
         console.log('[cloud-sync] Could not add secrets.yaml:', e.message);
       }
+
+      // Commit the addition (was previously missing)
+      try {
+        const msg = gitignoreChanged ? 'secrets.yaml, .gitignore' : 'secrets.yaml';
+        await gitExec(['commit', '-m', msg]);
+        console.log(`[cloud-sync] Committed secrets inclusion: ${msg}`);
+      } catch (e) {
+        console.log('[cloud-sync] Commit skipped (may already be tracked):', e.message);
+      }
     } else if (gitignoreChanged) {
       // Just stage and commit .gitignore change
       try {
         await gitExec(['add', '.gitignore']);
-        await gitExec(['commit', '-m', 'Update .gitignore configuration']);
+        await gitExec(['commit', '-m', '.gitignore']);
         console.log('[cloud-sync] Committed .gitignore update');
       } catch (e) {
         console.log('[cloud-sync] Could not commit .gitignore update:', e.message);
