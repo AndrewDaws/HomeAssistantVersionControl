@@ -1499,17 +1499,6 @@ async function copyGitHubCode() {
   try {
     await copyToClipboard(code);
     showNotification('Code copied! Paste into GitHub', 'success', 3000);
-
-    // Visual feedback
-    const wrapper = document.getElementById('githubUserCodeWrapper');
-    if (wrapper) {
-      wrapper.style.borderColor = 'var(--success)';
-      wrapper.style.background = 'rgba(16, 185, 129, 0.1)';
-      setTimeout(() => {
-        wrapper.style.borderColor = 'var(--primary)';
-        wrapper.style.background = 'var(--bg-secondary)';
-      }, 1000);
-    }
   } catch (err) {
     console.error('Copy failed:', err);
     showNotification('Copy failed - please select and copy manually', 'error', 4000);

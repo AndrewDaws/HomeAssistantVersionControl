@@ -466,9 +466,9 @@
                         style="color: var(--primary);">github.com/login/device</a>
                     </div>
                     <div id="githubUserCodeWrapper" onclick="copyGitHubCode()"
-                      style="cursor: pointer; padding: 14px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); transition: all 0.15s ease; text-align: center;"
-                      onmouseover="this.style.borderColor='var(--primary)'"
-                      onmouseout="this.style.borderColor='var(--border-subtle)'">
+                      style="cursor: pointer; padding: 14px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center; transition: filter 0.1s ease;"
+                      onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='brightness(1)'"
+                      onmousedown="this.style.filter='brightness(0.9)'" onmouseup="this.style.filter='brightness(1.1)'">
                       <div id="githubUserCode"
                         style="font-size: 24px; font-weight: 600; letter-spacing: 3px; color: var(--text-primary); font-family: monospace;">
                       </div>
@@ -559,9 +559,8 @@
                   </p>
                 </div>
                 <button onclick="pushToCloudNow()"
-                  style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap;"
-                  onmouseover="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--text-secondary)'"
-                  onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-subtle)'"
+                  style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px; cursor: pointer; transition: filter 0.15s ease; white-space: nowrap;"
+                  onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'"
                   data-i18n="settings.cloud_push_now">
                   Push Now
                 </button>
