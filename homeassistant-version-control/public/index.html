@@ -395,24 +395,59 @@
 
               <!-- Manual Remote URL (Custom Mode) -->
               <div id="customConfigSection" style="margin-bottom: 16px; display: none;">
-                <label style="display: block; margin-bottom: 8px;">
-                  <span style="color: var(--text-primary); font-size: 14px;"
-                    data-i18n="settings.cloud_remote_url">Remote URL</span>
-                </label>
-                <input type="text" id="cloudRemoteUrl" placeholder="https://gitea.com/user/repo.git" style="
-                  width: 100%;
-                  padding: 10px 12px;
-                  background: var(--bg-tertiary);
-                  border: 1px solid var(--border-subtle);
-                  border-radius: var(--radius-md);
-                  color: var(--text-primary);
-                  font-size: 14px;
-                  box-sizing: border-box;
-                ">
-                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
-                  data-i18n="settings.cloud_remote_url_desc">
-                  Supports HTTPS URLs (GitLab, Gitea, Bitbucket, etc.)
-                </p>
+                <!-- Not Connected State -->
+                <div id="customNotConnected">
+                  <label style="display: block; margin-bottom: 8px;">
+                    <span style="color: var(--text-primary); font-size: 14px;"
+                      data-i18n="settings.cloud_remote_url">Remote URL</span>
+                  </label>
+                  <input type="text" id="cloudRemoteUrl" placeholder="https://gitea.com/user/repo.git" style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    background: var(--bg-tertiary);
+                    border: 1px solid var(--border-subtle);
+                    border-radius: var(--radius-md);
+                    color: var(--text-primary);
+                    font-size: 14px;
+                    box-sizing: border-box;
+                    margin-bottom: 8px;
+                  ">
+                  <button class="btn" onclick="testCustomConnection()"
+                    style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <line x1="1.05" y1="12" x2="7" y2="12"></line>
+                      <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+                    </svg>
+                    <span>Test Connection</span>
+                  </button>
+                  <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
+                    data-i18n="settings.cloud_remote_url_desc">
+                    Supports HTTPS URLs (GitLab, Gitea, Bitbucket, etc.)
+                  </p>
+                </div>
+
+                <!-- Connected State -->
+                <div id="customConnected"
+                  style="display: none; padding: 8px 12px; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <line x1="1.05" y1="12" x2="7" y2="12"></line>
+                      <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+                    </svg>
+                    <a id="customRepoLink" href="#" target="_blank"
+                      style="color: var(--text-primary); font-size: 14px; font-weight: 500; text-decoration: none; flex: 1;"
+                      onmouseover="this.style.color='var(--accent-blue)'; this.style.textDecoration='underline'"
+                      onmouseout="this.style.color='var(--text-primary)'; this.style.textDecoration='none'">
+                    </a>
+                    <div style="color: var(--success); font-size: 12px; white-space: nowrap;">✓ Connected</div>
+                    <button class="btn" onclick="disconnectCustom()"
+                      style="background: var(--danger); padding: 2px 8px; font-size: 11px;">Disconnect</button>
+                  </div>
+                </div>
               </div>
 
               <!-- GitHub Configuration Section -->

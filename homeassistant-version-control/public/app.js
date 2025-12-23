@@ -1229,6 +1229,24 @@ async function loadCloudSyncSettings() {
       // Load GitHub user info if connected/relevant
       if (isGithub) {
         loadGitHubUser();
+      } else {
+        // For custom provider, show connected state if we have a custom URL
+        if (settings.customRemoteUrl) {
+          const customNotConnected = document.getElementById('customNotConnected');
+          const customConnected = document.getElementById('customConnected');
+          const repoLink = document.getElementById('customRepoLink');
+
+          if (customNotConnected && customConnected) {
+            customNotConnected.style.display = 'none';
+            customConnected.style.display = 'block';
+
+            if (repoLink) {
+              const repoName = settings.customRemoteUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+              repoLink.textContent = repoName;
+              repoLink.href = settings.customRemoteUrl.replace(/\.git$/, '');
+            }
+          }
+        }
       }
     }
   } catch (error) {
@@ -1331,6 +1349,62 @@ async function testCloudConnection() {
     console.error('Test connection error:', error);
     showNotification(`Error: ${error.message}`, 'error', 5000);
   }
+}
+
+// Test custom repo connection and show connected state
+async function testCustomConnection() {
+  const remoteUrlInput = document.getElementById('cloudRemoteUrl');
+  const remoteUrl = remoteUrlInput ? remoteUrlInput.value.trim() : '';
+
+  if (!remoteUrl) {
+    showNotification('Please enter a remote URL', 'error', 3000);
+    return;
+  }
+
+  showNotification('Testing connection...', 'info', 2000);
+
+  try {
+    // First save the URL
+    await saveCloudSyncSettings(true);
+
+    // Then test the connection
+    const response = await fetch(`${API}/cloud-sync/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remoteUrl })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification('Connection successful!', 'success', 3000);
+
+      // Show connected state
+      document.getElementById('customNotConnected').style.display = 'none';
+      document.getElementById('customConnected').style.display = 'block';
+
+      // Update the repo link
+      const repoLink = document.getElementById('customRepoLink');
+      if (repoLink) {
+        // Extract repo name from URL (last part before .git)
+        const repoName = remoteUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+        repoLink.textContent = repoName;
+        repoLink.href = remoteUrl.replace(/\.git$/, '');
+      }
+    } else {
+      showNotification(`Connection failed: ${data.error}`, 'error', 5000);
+    }
+  } catch (error) {
+    console.error('Test custom connection error:', error);
+    showNotification(`Error: ${error.message}`, 'error', 5000);
+  }
+}
+
+// Disconnect custom repo (show URL input again)
+function disconnectCustom() {
+  document.getElementById('customNotConnected').style.display = 'block';
+  document.getElementById('customConnected').style.display = 'none';
+  showNotification('Custom repo disconnected', 'info', 3000);
 }
 
 async function pushToCloudNow() {
@@ -6709,12 +6783,37 @@ async function handleCloudProviderChange() {
     githubSection.style.display = 'none';
     customSection.style.display = 'block';
 
-    // When switching to Custom, restore the stored Custom URL
+    // When switching to Custom, restore the stored Custom URL and connected state
     try {
       const response = await fetch('/api/cloud-sync/settings');
       const data = await response.json();
-      if (data.success && data.settings.customRemoteUrl && urlInput) {
-        urlInput.value = data.settings.customRemoteUrl;
+      if (data.success && data.settings.customRemoteUrl) {
+        // Restore URL to input
+        if (urlInput) {
+          urlInput.value = data.settings.customRemoteUrl;
+        }
+
+        // Show connected state
+        const customNotConnected = document.getElementById('customNotConnected');
+        const customConnected = document.getElementById('customConnected');
+        const repoLink = document.getElementById('customRepoLink');
+
+        if (customNotConnected && customConnected) {
+          customNotConnected.style.display = 'none';
+          customConnected.style.display = 'block';
+
+          if (repoLink) {
+            const repoName = data.settings.customRemoteUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+            repoLink.textContent = repoName;
+            repoLink.href = data.settings.customRemoteUrl.replace(/\.git$/, '');
+          }
+        }
+      } else {
+        // No custom URL - show input state
+        const customNotConnected = document.getElementById('customNotConnected');
+        const customConnected = document.getElementById('customConnected');
+        if (customNotConnected) customNotConnected.style.display = 'block';
+        if (customConnected) customConnected.style.display = 'none';
       }
     } catch (e) {
       console.log('[handleCloudProviderChange] Could not fetch custom URL:', e);
