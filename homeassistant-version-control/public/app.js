@@ -1249,7 +1249,8 @@ async function loadCloudSyncSettings() {
 
             if (repoLink) {
               const cleanUrl = stripTokenFromUrl(settings.customRemoteUrl);
-              const repoName = cleanUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+              const parts = cleanUrl.replace(/\.git$/, '').split('/').filter(p => p);
+              const repoName = parts.length >= 2 ? parts.slice(-2).join('/') : parts.pop() || 'Repository';
               repoLink.textContent = repoName;
               repoLink.href = cleanUrl.replace(/\.git$/, '');
             }
@@ -1283,7 +1284,9 @@ async function saveCloudSyncSettings(silent = false) {
     remoteUrl = document.getElementById('cloudRemoteUrl').value;
     authProvider = 'generic';
     if (!remoteUrl) {
-      showNotification('Please enter a remote URL', 'error');
+      if (!silent) {
+        // showNotification('Please enter a remote URL', 'error');
+      }
       return false;
     }
   }
@@ -1396,7 +1399,8 @@ async function testCustomConnection() {
       if (repoLink) {
         // Strip token and extract repo name from URL
         const cleanUrl = stripTokenFromUrl(remoteUrl);
-        const repoName = cleanUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+        const parts = cleanUrl.replace(/\.git$/, '').split('/').filter(p => p);
+        const repoName = parts.length >= 2 ? parts.slice(-2).join('/') : parts.pop() || 'Repository';
         repoLink.textContent = repoName;
         repoLink.href = cleanUrl.replace(/\.git$/, '');
       }
@@ -6813,7 +6817,8 @@ async function handleCloudProviderChange() {
 
           if (repoLink) {
             const cleanUrl = stripTokenFromUrl(data.settings.customRemoteUrl);
-            const repoName = cleanUrl.replace(/\.git$/, '').split('/').pop() || 'Repository';
+            const parts = cleanUrl.replace(/\.git$/, '').split('/').filter(p => p);
+            const repoName = parts.length >= 2 ? parts.slice(-2).join('/') : parts.pop() || 'Repository';
             repoLink.textContent = repoName;
             repoLink.href = cleanUrl.replace(/\.git$/, '');
           }
