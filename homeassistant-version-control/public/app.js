@@ -6996,6 +6996,8 @@ async function handleCloudProviderChange() {
   if (isGithub) {
     githubSection.style.display = 'block';
     customSection.style.display = 'none';
+    // Refresh GitHub user state when switching to it
+    loadGitHubUser();
   } else {
     githubSection.style.display = 'none';
     customSection.style.display = 'block';
@@ -7026,6 +7028,9 @@ async function handleCloudProviderChange() {
             const repoName = parts.length >= 2 ? parts[parts.length - 2] : (parts.pop() || 'Repository');
             repoLink.textContent = repoName;
             repoLink.href = cleanUrl.replace(/\.git$/, '');
+
+            // Try to load avatar
+            updateCustomRepoAvatar(data.settings.customRemoteUrl);
           }
         }
       } else {
