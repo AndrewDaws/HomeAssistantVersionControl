@@ -1367,6 +1367,22 @@ async function loadCloudSyncSettings() {
         includeSecretsCheckbox.checked = settings.includeSecrets === true;
       }
 
+      // Hide secrets toggle if secrets.yaml is already in exclude_files (making toggle irrelevant)
+      const secretsToggleContainer = document.getElementById('secretsToggleContainer');
+      if (secretsToggleContainer) {
+        // Check if secrets.yaml is excluded via extensions config
+        try {
+          const extResponse = await fetch('/api/runtime-settings');
+          const extData = await extResponse.json();
+          const excludeFiles = extData?.settings?.extensions?.exclude || [];
+          const secretsExcluded = excludeFiles.includes('secrets.yaml');
+          secretsToggleContainer.style.display = secretsExcluded ? 'none' : 'block';
+        } catch (e) {
+          // Default to showing toggle on error
+          secretsToggleContainer.style.display = 'block';
+        }
+      }
+
       // Update status
       updateCloudSyncStatus(settings);
 
