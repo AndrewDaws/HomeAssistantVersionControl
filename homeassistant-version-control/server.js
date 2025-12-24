@@ -949,7 +949,7 @@ app.post('/api/runtime-settings', async (req, res) => {
       // Regenerate .gitignore with new extensions
       try {
         const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-        const newContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
+        const newContent = generateGitignoreContent(IGNORED_NESTED_REPOS, runtimeSettings.extensions);
         await fsPromises.writeFile(gitignorePath, newContent, 'utf8');
         console.log('[settings] Updated .gitignore with new extensions');
       } catch (error) {
