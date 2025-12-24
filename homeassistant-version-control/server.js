@@ -741,25 +741,18 @@ async function initRepo() {
       throw new Error(`No write permission to CONFIG_PATH: ${CONFIG_PATH}`);
     }
 
-    // Create .gitignore to limit git to only config files (only for existing repos)
+    // Only create .gitignore if it doesn't exist (respect user's custom .gitignore)
     const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-    const includeSecrets = runtimeSettings.cloudSync ? runtimeSettings.cloudSync.includeSecrets : false;
-    const gitignoreContent = generateGitignoreContent(nestedRepos, includeSecrets);
 
     if (isRepo) {
       try {
-        // Check if .gitignore exists and if content matches
-        const existingContent = await fsPromises.readFile(gitignorePath, 'utf8');
-        if (existingContent.trim() === gitignoreContent.trim()) {
-          console.log('[init] .gitignore already exists and is up to date');
-        } else {
-          console.log('[init] Updating .gitignore (content changed)...');
-          await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
-          console.log('[init] Updated .gitignore in CONFIG_PATH');
-        }
+        await fsPromises.access(gitignorePath, fs.constants.F_OK);
+        console.log('[init] .gitignore already exists - respecting user\'s custom patterns');
       } catch (error) {
-        // .gitignore doesn't exist, create it
-        console.log('[init] Creating .gitignore in CONFIG_PATH to limit git to config files only...');
+        // .gitignore doesn't exist, create default one
+        console.log('[init] Creating default .gitignore in CONFIG_PATH...');
+        const includeSecrets = runtimeSettings.cloudSync ? runtimeSettings.cloudSync.includeSecrets : false;
+        const gitignoreContent = generateGitignoreContent(nestedRepos, includeSecrets);
         await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
         console.log('[init] Created .gitignore in CONFIG_PATH');
       }
@@ -1819,45 +1812,29 @@ function initializeWatcher() {
 
         // Clear staging area to prevent accumulation of files from previous changes
         await gitRaw(['reset']);
-        console.log(`[watcher] Adding file: ${relativePath}`);
-        await gitAdd(relativePath);
+
+        // Use git add . to stage all changes - git will respect user's .gitignore
+        console.log(`[watcher] Triggered by: ${relativePath}, running git add .`);
+        await gitAdd('.');
 
         // Check if there are actually changes to commit
         const status = await gitStatus();
         if (status.isClean()) {
-          console.log(`[watcher] No changes to commit for ${relativePath} (already up to date)`);
+          console.log(`[watcher] No changes to commit (repo is clean per .gitignore)`);
           debounceTimers.delete(filePath);
           return;
         }
 
-        // Get all staged files and filter to only include allowed patterns
-        const allStagedFiles = status.files
-          .filter(f => f.index !== ' ' && f.index !== '?');
+        // Get all staged files (git already filtered based on .gitignore)
+        const stagedFiles = status.files
+          .filter(f => f.index !== ' ' && f.index !== '?')
+          .map(f => f.path.trim());
 
-        // Filter out any files that shouldn't be tracked
-        const stagedFiles = allStagedFiles
-          .filter(f => {
-            const filePath = f.path.trim(); // Trim to remove leading/trailing spaces from git status
-            const hasAllowedExt = getConfiguredExtensions().some(ext => filePath.endsWith(ext));
-            const isLovelaceFile = filePath.startsWith('.storage/lovelace');
-            const isGitControlFile = filePath === '.gitignore' || filePath === '.gitconfig';
-            const shouldInclude = hasAllowedExt || isLovelaceFile || isGitControlFile;
-
-            // Debug logging
-            if (!shouldInclude) {
-              console.log(`[watcher] Filtering out file: ${filePath} (hasAllowedExt: ${hasAllowedExt}, isLovelaceFile: ${isLovelaceFile}, isGitControlFile: ${isGitControlFile})`);
-            }
-
-            return shouldInclude;
-          })
-          .map(f => f.path.trim()); // Also trim when extracting the path
-
-        // Debug: show what files passed the filter
-        console.log(`[watcher] Files after filtering: ${stagedFiles.join(', ')} (${stagedFiles.length} file(s))`);
+        console.log(`[watcher] Staged files (respecting .gitignore): ${stagedFiles.join(', ')} (${stagedFiles.length} file(s))`);
 
         // Safety check: if no valid files to commit, clean up and return
         if (stagedFiles.length === 0) {
-          console.log(`[watcher] No valid files to commit after filtering`);
+          console.log(`[watcher] No staged files to commit`);
           await gitRaw(['reset']);
           debounceTimers.delete(filePath);
           return;
@@ -2670,7 +2647,7 @@ const server = app.listen(PORT, HOST, (err) => {
   }
 
   console.log('='.repeat(60));
-  console.log('Home Assistant Version Control v1.0.2');
+  console.log('Home Assistant Version Control v1.0.3');
   console.log('='.repeat(60));
   console.log(`Server running at http://${HOST}:${PORT}`);
 
