@@ -203,6 +203,7 @@
     "cloud_repo_name": "Repository Name",
     "cloud_repo_name_desc": "A private repository will be created automatically",
     "cloud_github_account": "GitHub Account",
+    "cloud_custom_account": "Custom Account",
     "cloud_connect_github": "Connect GitHub",
     "cloud_github_enter_code": "Enter this code at:",
     "cloud_github_waiting": "Waiting for authorization...",

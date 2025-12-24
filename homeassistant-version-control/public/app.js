@@ -1399,6 +1399,8 @@ async function loadCloudSyncSettings() {
           if (customNotConnected && customConnected) {
             customNotConnected.style.display = 'none';
             customConnected.style.display = 'block';
+            const customAccountLabel = document.getElementById('customAccountLabel');
+            if (customAccountLabel) customAccountLabel.style.display = 'block';
 
             if (repoLink) {
               const cleanUrl = stripTokenFromUrl(settings.customRemoteUrl);
@@ -1423,6 +1425,7 @@ async function loadCloudSyncSettings() {
 async function updateCustomRepoAvatar(remoteUrl) {
   const avatarImg = document.getElementById('customRepoAvatar');
   const iconSvg = document.getElementById('customRepoIcon');
+  const repoLink = document.getElementById('customRepoLink');
   if (!avatarImg || !iconSvg || !remoteUrl) return;
 
   // Reset to icon initially (or keep current if reloading)
@@ -1430,32 +1433,57 @@ async function updateCustomRepoAvatar(remoteUrl) {
   // iconSvg.style.display = 'block';
 
   try {
-    // Call backend API to get avatar URL (handles Gitea API auth)
+    // Call backend API to get avatar URL and user info (handles Gitea API auth)
     const response = await fetch(`/api/cloud-sync/avatar?remoteUrl=${encodeURIComponent(remoteUrl)}`);
     const data = await response.json();
 
-    if (data.success && data.avatarUrl) {
-      console.log('Got avatar URL:', data.avatarUrl);
+    if (data.success) {
+      console.log('[Custom] Got user info:', data);
 
-      avatarImg.onload = () => {
-        avatarImg.style.display = 'block';
-        iconSvg.style.display = 'none';
-      };
+      // Update account label based on detected provider
+      const customAccountLabel = document.getElementById('customAccountLabel');
+      if (customAccountLabel) {
+        const labelSpan = customAccountLabel.querySelector('span');
+        if (labelSpan && data.provider) {
+          const providerNames = {
+            'gitea': 'Gitea Account',
+            'gitlab': 'GitLab Account',
+            'custom': 'Custom Account'
+          };
+          labelSpan.textContent = providerNames[data.provider] || 'Custom Account';
+        }
+      }
 
-      avatarImg.onerror = () => {
-        console.warn('Avatar image failed to load');
+      // Update display name if available
+      if (repoLink && data.fullName) {
+        repoLink.textContent = data.fullName;
+      }
+
+      // Update avatar if available
+      if (data.avatarUrl) {
+        avatarImg.onload = () => {
+          avatarImg.style.display = 'block';
+          iconSvg.style.display = 'none';
+        };
+
+        avatarImg.onerror = () => {
+          console.warn('Avatar image failed to load');
+          avatarImg.style.display = 'none';
+          iconSvg.style.display = 'block';
+        };
+
+        avatarImg.src = data.avatarUrl;
+      } else {
         avatarImg.style.display = 'none';
         iconSvg.style.display = 'block';
-      };
-
-      avatarImg.src = data.avatarUrl;
+      }
     } else {
-      console.log('No avatar found via API, falling back to icon');
+      console.log('[Custom] No user info found via API, falling back to defaults');
       avatarImg.style.display = 'none';
       iconSvg.style.display = 'block';
     }
   } catch (e) {
-    console.warn('Error fetching avatar:', e);
+    console.warn('[Custom] Error fetching user info:', e);
     avatarImg.style.display = 'none';
     iconSvg.style.display = 'block';
   }
@@ -1593,6 +1621,8 @@ async function testCustomConnection() {
       // Show connected state
       document.getElementById('customNotConnected').style.display = 'none';
       document.getElementById('customConnected').style.display = 'block';
+      const customAccountLabel = document.getElementById('customAccountLabel');
+      if (customAccountLabel) customAccountLabel.style.display = 'block';
 
       // Update the repo link
       const repoLink = document.getElementById('customRepoLink');
@@ -1621,6 +1651,8 @@ async function testCustomConnection() {
 function disconnectCustom() {
   document.getElementById('customNotConnected').style.display = 'block';
   document.getElementById('customConnected').style.display = 'none';
+  const customAccountLabel = document.getElementById('customAccountLabel');
+  if (customAccountLabel) customAccountLabel.style.display = 'none';
   showNotification('Custom repo disconnected', 'info', 3000);
 }
 

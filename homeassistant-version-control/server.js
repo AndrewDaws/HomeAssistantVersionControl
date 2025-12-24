@@ -3670,8 +3670,6 @@ app.get('/api/cloud-sync/avatar', async (req, res) => {
     }
 
     // Parse URL to get base URL and username
-    // Expected: http(s)://host:port/username/repo.git
-    // We want: http(s)://host:port/api/v1/users/username
     const cleanUrl = remoteUrl.replace(/:\/\/(.*?)@/, '://'); // Strip token for parsing
     const urlObj = new URL(cleanUrl);
     const pathParts = urlObj.pathname.split('/').filter(p => p);
@@ -3681,29 +3679,74 @@ app.get('/api/cloud-sync/avatar', async (req, res) => {
     }
 
     const username = pathParts[0];
-    const apiUrl = `${urlObj.origin}/api/v1/users/${username}`;
-
-    console.log(`[avatar] Fetching Gitea avatar from API: ${apiUrl}`);
-
     const headers = {};
     if (token) {
       headers['Authorization'] = `token ${token}`;
     }
 
-    const apiRes = await fetch(apiUrl, { headers });
-    if (!apiRes.ok) {
-      throw new Error(`Gitea API returned ${apiRes.status}`);
+    // Try to detect provider type by testing different APIs
+    let provider = 'custom';
+    let userData = null;
+
+    // Try Gitea/Forgejo API first (most common for self-hosted)
+    try {
+      const giteaUrl = `${urlObj.origin}/api/v1/users/${username}`;
+      console.log(`[avatar] Trying Gitea API: ${giteaUrl}`);
+      const giteaRes = await fetch(giteaUrl, { headers });
+      if (giteaRes.ok) {
+        userData = await giteaRes.json();
+        provider = 'gitea';
+        console.log(`[avatar] Detected Gitea/Forgejo provider`);
+      }
+    } catch (e) {
+      console.log(`[avatar] Gitea API failed: ${e.message}`);
     }
 
-    const userData = await apiRes.json();
-    if (userData && userData.avatar_url) {
-      res.json({ success: true, avatarUrl: userData.avatar_url });
+    // Try GitLab API if Gitea didn't work
+    if (!userData) {
+      try {
+        const gitlabHeaders = { ...headers };
+        if (token) {
+          gitlabHeaders['PRIVATE-TOKEN'] = token;
+          delete gitlabHeaders['Authorization'];
+        }
+        const gitlabUrl = `${urlObj.origin}/api/v4/users?username=${username}`;
+        console.log(`[avatar] Trying GitLab API: ${gitlabUrl}`);
+        const gitlabRes = await fetch(gitlabUrl, { headers: gitlabHeaders });
+        if (gitlabRes.ok) {
+          const users = await gitlabRes.json();
+          if (Array.isArray(users) && users.length > 0) {
+            userData = users[0];
+            provider = 'gitlab';
+            console.log(`[avatar] Detected GitLab provider`);
+          }
+        }
+      } catch (e) {
+        console.log(`[avatar] GitLab API failed: ${e.message}`);
+      }
+    }
+
+    if (userData) {
+      res.json({
+        success: true,
+        provider: provider,
+        avatarUrl: userData.avatar_url || null,
+        username: userData.login || userData.username || username,
+        fullName: userData.full_name || userData.name || userData.login || userData.username || username
+      });
     } else {
-      res.json({ success: false, error: 'No avatar_url in response' });
+      // Couldn't detect provider, return basic info
+      res.json({
+        success: true,
+        provider: 'custom',
+        avatarUrl: null,
+        username: username,
+        fullName: username
+      });
     }
 
   } catch (error) {
-    console.warn(`[avatar] Failed to fetch avatar: ${error.message}`);
+    console.warn(`[avatar] Failed to fetch user info: ${error.message}`);
     res.json({ success: false, error: error.message });
   }
 });
