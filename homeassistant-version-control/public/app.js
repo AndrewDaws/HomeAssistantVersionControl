@@ -1476,13 +1476,13 @@ async function saveCloudSyncSettings(silent = false) {
     } else {
       console.error('[saveCloudSyncSettings] Error from server:', data.error);
       if (!silent) {
-        showNotification('Error saving settings: ' + data.error, 'error');
+        // showNotification('Error saving settings: ' + data.error, 'error');
       }
       return false;
     }
   } catch (error) {
     console.error('[saveCloudSyncSettings] Exception:', error);
-    showNotification('Error saving settings', 'error');
+    // showNotification('Error saving settings', 'error');
     return false;
   }
 }
