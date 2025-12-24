@@ -3162,7 +3162,8 @@ app.post('/api/github/device-flow/initiate', async (req, res) => {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl/1.0.0'
       },
       body: JSON.stringify({
         client_id: GITHUB_CLIENT_ID,
@@ -3207,7 +3208,8 @@ app.post('/api/github/device-flow/poll', async (req, res) => {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl/1.0.0'
       },
       body: JSON.stringify({
         client_id: GITHUB_CLIENT_ID,

@@ -1687,6 +1687,15 @@ function updateCloudSyncStatus(settings) {
 let isGitHubPolling = false;
 
 async function connectGitHub() {
+  // Stop any existing polling immediately
+  if (isGitHubPolling) {
+    isGitHubPolling = false;
+    await new Promise(r => setTimeout(r, 500)); // Give it a moment to stop
+  }
+
+  const btn = document.getElementById('connectGithubBtn');
+  if (btn) btn.disabled = true;
+
   try {
     // Show connecting state
     document.getElementById('githubNotConnected').style.display = 'none';
@@ -1812,6 +1821,9 @@ async function connectGitHub() {
 function cancelGitHubConnect() {
   isGitHubPolling = false;
   console.log('[Frontend] Cancelling GitHub connect.');
+
+  const btn = document.getElementById('connectGithubBtn');
+  if (btn) btn.disabled = false;
 
   document.getElementById('githubNotConnected').style.display = 'block';
   document.getElementById('githubConnecting').style.display = 'none';
