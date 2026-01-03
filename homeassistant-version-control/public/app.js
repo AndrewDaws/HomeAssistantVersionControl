@@ -6562,7 +6562,7 @@ async function handleCloudProviderChange() {
 
     // When switching to Custom, restore the stored Custom URL and connected state
     try {
-      const response = await fetch(`${API} /cloud-sync/settings`);
+      const response = await fetch(`${API}/cloud-sync/settings`);
       const data = await response.json();
       if (data.success && data.settings.customRemoteUrl) {
         // Restore URL to input
