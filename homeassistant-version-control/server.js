@@ -1959,6 +1959,11 @@ function initializeWatcher() {
     await handleFileEvent(filePath, 'added');
   });
 
+  // Watch for files being deleted
+  watcher.on('unlink', async (filePath) => {
+    await handleFileEvent(filePath, 'deleted');
+  });
+
   watcher.on('ready', () => {
     console.log('[init] File watcher ready and watching for changes');
   });
