@@ -3145,7 +3145,8 @@ async function pushToRemote(includeSecrets = false) {
 async function testRemoteConnection() {
   try {
     // Use ls-remote to test connection without actually pushing
-    await gitExec(['ls-remote', '--exit-code', 'origin']);
+    // Note: Don't use --exit-code as it fails on empty repos (exit code 2)
+    await gitExec(['ls-remote', 'origin']);
     console.log('[cloud-sync] Remote connection test successful');
     return { success: true };
   } catch (error) {
