@@ -68,7 +68,7 @@ console.error = function (...args) {
 
 const app = express();
 const PORT = process.env.PORT || 54001;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || '::';
 
 // Ensure HOME is set for git
 if (!process.env.HOME) {
