@@ -2586,6 +2586,12 @@ body.winter-mode .snow-container {
   font-weight: 500;
 }
 
+.context-menu-separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
 /* Soft Reset Modal */
 .soft-reset-modal {
   max-width: 420px;

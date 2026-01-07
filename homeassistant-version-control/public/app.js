@@ -6642,6 +6642,10 @@ function showTimelineContextMenu(event, commitHash) {
   menu.id = 'timeline-context-menu';
   menu.className = 'context-menu';
   menu.innerHTML = `
+    <div class="context-menu-item" onclick="restoreAllFilesFromContext('${commitHash}')">
+      <span class="context-menu-text">Restore All Files Here</span>
+    </div>
+    <div class="context-menu-separator"></div>
     <div class="context-menu-item" onclick="confirmSoftReset('${commitHash}', ${commitsToRemove})">
       <span class="context-menu-text">Soft Reset Here</span>
     </div>
@@ -6668,19 +6672,31 @@ function hideTimelineContextMenu() {
   }
 }
 
+function restoreAllFilesFromContext(commitHash) {
+  hideTimelineContextMenu();
+  showHardResetConfirmation(commitHash);
+}
+
 function confirmSoftReset(commitHash, commitsToRemove) {
   console.log('[confirmSoftReset] Called with:', commitHash, commitsToRemove);
   hideTimelineContextMenu();
 
-  // Get commit info for display
+  // Get commit info for display (same format as hard reset)
   const commit = allCommits.find(c => c.hash === commitHash);
-  const commitDate = commit ? new Date(commit.date).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  }) : commitHash.substring(0, 8);
+  let formattedDate = 'Unknown';
+  if (commit) {
+    const dateObj = new Date(commit.date);
+    const options = {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true
+    };
+    formattedDate = dateObj.toLocaleString('en-US', options).replace(/,/g, '');
+  }
 
   // Check if this is the most recent commit
   if (commitsToRemove === 0) {
@@ -6692,17 +6708,14 @@ function confirmSoftReset(commitHash, commitsToRemove) {
   const modalHTML = `
     <div class="modal-backdrop active" id="soft-reset-modal" onclick="if(event.target === this) closeSoftResetDialog()">
       <div class="modal-content hard-reset-dialog">
-        <h3>Soft Reset Timeline</h3>
+        <h3>Soft Reset Timeline?</h3>
         
-        <p>This will remove <strong>${commitsToRemove} version${commitsToRemove > 1 ? 's' : ''}</strong> from the timeline.</p>
-        <p>Resetting to: <strong>${commitDate}</strong></p>
-        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 12px;">
-          Your files will <strong>not</strong> be changed. Only the version history will be affected.
-        </p>
+        <p>This will remove ${commitsToRemove} version${commitsToRemove > 1 ? 's' : ''} and reset the timeline to ${formattedDate}.</p>
+        <p>Your files will not be changed.</p>
         
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeSoftResetDialog()">Cancel</button>
-          <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Reset Timeline</button>
+          <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Soft Reset</button>
         </div>
       </div>
     </div>
