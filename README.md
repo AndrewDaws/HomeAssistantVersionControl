@@ -286,6 +286,14 @@ curl -X POST http://homeassistant.local:54001/api/cloud-sync/push \
 
 ---
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**TL;DR:** New features → target the `develop` branch. Bug fixes → `main` is fine.
+
+---
+
 ##  Support
 
 Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta/issues).
