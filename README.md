@@ -133,6 +133,109 @@ Access the interface at `http://localhost:54001`.
 
 ---
 
+## Configuration
+
+### Runtime Settings
+
+The application can be configured through the web UI Settings page or via environment variables for containerized deployments.
+
+#### Available Settings
+
+| Setting | Description | Default |
+| :--- | :--- | :--- |
+| **Debounce Time** | Time to wait after detecting changes before creating a commit | `5 seconds` |
+| **History Retention** | Automatically merge old commits to keep history clean | `Disabled` |
+| **Retention Type** | Keep history based on time or number of versions | `time` |
+| **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
+| **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
+
+#### Environment Variable Configuration
+
+For containerized deployments (especially when not persisting the `/data` directory), you can configure runtime settings using environment variables. This is particularly useful for:
+- Docker/Podman deployments without persistent data volumes
+- Infrastructure-as-code configurations
+- Automated deployments with predefined settings
+
+**Precedence order (per-setting):**
+1. **Settings file** (`/data/runtime-settings.json`) - highest priority
+2. **Environment variables** - middle priority
+3. **Default values** - fallback
+
+#### Environment Variable Reference
+
+| Environment Variable | Setting | Type | Valid Values | Default |
+| :--- | :--- | :--- | :--- | :--- |
+| `DEBOUNCE_TIME` | Debounce Time | Number | ≥ 0 | `5` |
+| `DEBOUNCE_TIME_UNIT` | Debounce Time Unit | String | `seconds`, `minutes`, `hours`, `days` | `seconds` |
+| `HISTORY_RETENTION` | History Retention | Boolean | `true`, `false`, `yes`, `no`, `1`, `0` | `false` |
+| `RETENTION_TYPE` | Retention Type | String | `time`, `versions` | `time` |
+| `RETENTION_VALUE` | Retention Value | Number | ≥ 1 | `90` |
+| `RETENTION_UNIT` | Retention Unit | String | `hours`, `days`, `weeks`, `months` | `days` |
+
+**Notes:**
+- Boolean values are case-insensitive and accept: `true`/`false`, `yes`/`no`, `1`/`0`
+- String values (units, types) are case-insensitive: `SECONDS` and `seconds` are equivalent
+- Invalid values trigger warnings in logs and fall back to defaults
+- Empty values are ignored
+
+#### Docker Examples
+
+**Docker Compose with environment variables:**
+```yaml
+version: '3.8'
+services:
+  havc:
+    image: ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
+    ports:
+      - "54001:54001"
+    volumes:
+      - /path/to/your/config:/config
+    environment:
+      - TZ=America/New_York
+      - DEBOUNCE_TIME=10
+      - DEBOUNCE_TIME_UNIT=minutes
+      - HISTORY_RETENTION=true
+      - RETENTION_TYPE=time
+      - RETENTION_VALUE=30
+      - RETENTION_UNIT=days
+```
+
+**Docker Run with environment variables:**
+```bash
+docker run -d \
+  -p 54001:54001 \
+  -v /path/to/your/config:/config \
+  -e TZ=America/New_York \
+  -e DEBOUNCE_TIME=10 \
+  -e DEBOUNCE_TIME_UNIT=minutes \
+  -e HISTORY_RETENTION=true \
+  -e RETENTION_TYPE=time \
+  -e RETENTION_VALUE=30 \
+  -e RETENTION_UNIT=days \
+  --name home-assistant-version-control \
+  ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
+```
+
+**Validation and Logging:**
+
+When the container starts, you'll see detailed logging showing where each setting value came from:
+```
+[init] Runtime settings loaded:
+[init]   debounceTime: 10 (env: DEBOUNCE_TIME)
+[init]   debounceTimeUnit: 'minutes' (env: DEBOUNCE_TIME_UNIT)
+[init]   historyRetention: true (env: HISTORY_RETENTION)
+[init]   retentionType: 'time' (default)
+[init]   retentionValue: 30 (env: RETENTION_VALUE)
+[init]   retentionUnit: 'days' (default)
+```
+
+Invalid values will trigger warnings:
+```
+[init] Warning: Invalid DEBOUNCE_TIME='abc', Expected integer, got: 'abc'. Using default: 5
+```
+
+---
+
 ### Restore Actions
 * **Restore Single File:** Click the "Restore" button on any file in the timeline.
 * **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
