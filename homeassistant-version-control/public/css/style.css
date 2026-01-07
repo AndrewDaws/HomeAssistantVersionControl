@@ -903,8 +903,7 @@ input:checked+.toggle-slider:before {
 }
 
 .modal-header {
-  padding: 24px 28px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 24px 28px 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -940,7 +939,7 @@ input:checked+.toggle-slider:before {
 }
 
 .modal-content {
-  padding: 24px 28px;
+  padding: 16px 28px 24px;
   overflow-y: auto;
   flex: 1;
 }
