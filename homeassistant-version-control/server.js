@@ -1780,8 +1780,26 @@ app.post('/api/git/soft-reset', async (req, res) => {
 
     // 3. Perform soft reset
     try {
+      // Log current HEAD before reset
+      const headBefore = (await gitRaw(['rev-parse', 'HEAD'])).trim();
+      console.log(`[soft-reset] HEAD before reset: ${headBefore.substring(0, 8)}`);
+
       await gitRaw(['reset', '--soft', commitHash]);
-      console.log(`[soft-reset] Successfully reset to ${commitHash.substring(0, 8)}`);
+      console.log(`[soft-reset] Executed git reset --soft to ${commitHash.substring(0, 8)}`);
+
+      // Verify HEAD actually changed
+      const headAfter = (await gitRaw(['rev-parse', 'HEAD'])).trim();
+      console.log(`[soft-reset] HEAD after reset: ${headAfter.substring(0, 8)}`);
+
+      if (headBefore === headAfter) {
+        console.error('[soft-reset] WARNING: HEAD did not change!');
+      }
+
+      // 4. Unstage all changes so file watcher doesn't immediately re-commit them
+      // Soft reset stages all the changes from removed commits, which the file watcher 
+      // would pick up and commit again. We need to unstage them.
+      await gitRaw(['reset']);
+      console.log('[soft-reset] Unstaged changes to prevent auto-re-commit');
     } catch (error) {
       console.error('[soft-reset] Reset failed:', error);
       return res.status(500).json({
@@ -1790,7 +1808,7 @@ app.post('/api/git/soft-reset', async (req, res) => {
       });
     }
 
-    // 4. Get the commit date for the response
+    // 5. Get the commit date for the response
     let commitDate = '';
     try {
       const dateStr = (await gitRaw(['show', '-s', '--format=%aI', commitHash])).trim();

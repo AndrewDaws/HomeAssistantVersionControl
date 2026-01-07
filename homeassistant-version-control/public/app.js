@@ -6643,10 +6643,10 @@ function showTimelineContextMenu(event, commitHash) {
   menu.className = 'context-menu';
   menu.innerHTML = `
     <div class="context-menu-item" onclick="confirmSoftReset('${commitHash}', ${commitsToRemove})">
-      <span class="context-menu-icon">↩️</span>
-      <span class="context-menu-text">Soft Reset to Here</span>
+      <span class="context-menu-text">Soft Reset Here</span>
     </div>
   `;
+  console.log('[context-menu] Menu created for commit:', commitHash, 'commits to remove:', commitsToRemove);
 
   // Position menu at cursor
   menu.style.left = event.pageX + 'px';
@@ -6669,6 +6669,7 @@ function hideTimelineContextMenu() {
 }
 
 function confirmSoftReset(commitHash, commitsToRemove) {
+  console.log('[confirmSoftReset] Called with:', commitHash, commitsToRemove);
   hideTimelineContextMenu();
 
   // Get commit info for display
@@ -6687,47 +6688,41 @@ function confirmSoftReset(commitHash, commitsToRemove) {
     return;
   }
 
-  // Create confirmation dialog
-  const overlay = document.createElement('div');
-  overlay.id = 'soft-reset-overlay';
-  overlay.className = 'modal-overlay';
-  overlay.onclick = (e) => {
-    if (e.target === overlay) closeSoftResetDialog();
-  };
-
-  overlay.innerHTML = `
-    <div class="modal soft-reset-modal">
-      <div class="modal-header">
+  // Create confirmation dialog (same pattern as hard reset modal)
+  const modalHTML = `
+    <div class="modal-backdrop active" id="soft-reset-modal" onclick="if(event.target === this) closeSoftResetDialog()">
+      <div class="modal-content hard-reset-dialog">
         <h3>Soft Reset Timeline</h3>
-        <button class="modal-close" onclick="closeSoftResetDialog()">×</button>
-      </div>
-      <div class="modal-body">
+        
         <p>This will remove <strong>${commitsToRemove} version${commitsToRemove > 1 ? 's' : ''}</strong> from the timeline.</p>
-        <p style="margin-top: 12px;">Resetting to: <strong>${commitDate}</strong></p>
-        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">
+        <p>Resetting to: <strong>${commitDate}</strong></p>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 12px;">
           Your files will <strong>not</strong> be changed. Only the version history will be affected.
         </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeSoftResetDialog()">Cancel</button>
-        <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Reset Timeline</button>
+        
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeSoftResetDialog()">Cancel</button>
+          <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Reset Timeline</button>
+        </div>
       </div>
     </div>
   `;
 
-  document.body.appendChild(overlay);
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  console.log('[confirmSoftReset] Dialog created');
 }
 
 function closeSoftResetDialog() {
-  const overlay = document.getElementById('soft-reset-overlay');
-  if (overlay) {
-    overlay.remove();
+  const modal = document.getElementById('soft-reset-modal');
+  if (modal) {
+    modal.remove();
   }
 }
 
 async function executeSoftReset(commitHash) {
   closeSoftResetDialog();
 
+  console.log('[soft-reset] Starting soft reset to:', commitHash);
   showNotification('Resetting timeline...', 'info', 2000);
 
   try {
@@ -6738,6 +6733,7 @@ async function executeSoftReset(commitHash) {
     });
 
     const data = await response.json();
+    console.log('[soft-reset] Server response:', data);
 
     if (data.success) {
       showNotification(`Timeline reset! ${data.commitsRemoved} version(s) removed.`, 'success', 4000);
