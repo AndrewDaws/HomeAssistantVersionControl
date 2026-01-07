@@ -330,6 +330,138 @@ let runtimeSettings = {
 
 };
 
+// Schema for runtime settings with validation rules and environment variable mapping
+const RUNTIME_SETTINGS_SCHEMA = {
+  debounceTime: {
+    type: 'number',
+    min: 0,
+    envKey: 'DEBOUNCE_TIME'
+  },
+  debounceTimeUnit: {
+    type: 'enum',
+    values: ['seconds', 'minutes', 'hours', 'days'],
+    envKey: 'DEBOUNCE_TIME_UNIT'
+  },
+  historyRetention: {
+    type: 'boolean',
+    envKey: 'HISTORY_RETENTION'
+  },
+  retentionType: {
+    type: 'enum',
+    values: ['time', 'versions'],
+    envKey: 'RETENTION_TYPE'
+  },
+  retentionValue: {
+    type: 'number',
+    min: 1,
+    envKey: 'RETENTION_VALUE'
+  },
+  retentionUnit: {
+    type: 'enum',
+    values: ['hours', 'days', 'weeks', 'months'],
+    envKey: 'RETENTION_UNIT'
+  }
+};
+
+/**
+ * Parse and validate an environment variable value based on schema
+ * @param {string} key - The setting key (e.g., 'debounceTime')
+ * @param {object} schema - The schema definition for this setting
+ * @param {string} rawValue - The raw string value from process.env
+ * @returns {object} - { valid: boolean, value: any, error: string }
+ */
+function parseEnvVarValue(key, schema, rawValue) {
+  const trimmed = rawValue.trim();
+
+  // Skip empty values
+  if (trimmed === '') {
+    return { valid: false, error: 'Empty value' };
+  }
+
+  switch (schema.type) {
+    case 'number': {
+      const parsed = parseInt(trimmed, 10);
+
+      // Check if parsing failed or if there's extraneous content
+      if (isNaN(parsed) || trimmed !== String(parsed)) {
+        return { valid: false, error: `Expected integer, got: '${rawValue}'` };
+      }
+
+      // Check minimum bound
+      if (schema.min !== undefined && parsed < schema.min) {
+        return { valid: false, error: `Expected >= ${schema.min}, got: ${parsed}` };
+      }
+
+      // Check maximum bound if defined
+      if (schema.max !== undefined && parsed > schema.max) {
+        return { valid: false, error: `Expected <= ${schema.max}, got: ${parsed}` };
+      }
+
+      return { valid: true, value: parsed };
+    }
+
+    case 'boolean': {
+      const normalized = trimmed.toLowerCase();
+      const truthyValues = ['true', '1', 'yes'];
+      const falsyValues = ['false', '0', 'no'];
+
+      if (truthyValues.includes(normalized)) {
+        return { valid: true, value: true };
+      }
+      if (falsyValues.includes(normalized)) {
+        return { valid: true, value: false };
+      }
+
+      return { valid: false, error: `Expected boolean (true/false/1/0/yes/no), got: '${rawValue}'` };
+    }
+
+    case 'enum': {
+      const normalized = trimmed.toLowerCase();
+      const match = schema.values.find(v => v.toLowerCase() === normalized);
+
+      if (match) {
+        return { valid: true, value: match }; // Return canonical casing from schema
+      }
+
+      return { valid: false, error: `Expected one of [${schema.values.join(', ')}], got: '${rawValue}'` };
+    }
+
+    default:
+      return { valid: false, error: `Unknown schema type: ${schema.type}` };
+  }
+}
+
+/**
+ * Load runtime settings from environment variables
+ * @returns {object} - { settings: object, sources: object }
+ */
+function loadSettingsFromEnv() {
+  const settings = {};
+  const sources = {};
+
+  for (const [key, schema] of Object.entries(RUNTIME_SETTINGS_SCHEMA)) {
+    const envValue = process.env[schema.envKey];
+
+    // Skip if env var is not set
+    if (envValue === undefined) {
+      continue;
+    }
+
+    const result = parseEnvVarValue(key, schema, envValue);
+
+    if (result.valid) {
+      settings[key] = result.value;
+      sources[key] = `env: ${schema.envKey}`;
+    } else {
+      // Log warning for invalid env var value
+      const defaultValue = runtimeSettings[key];
+      console.log(`[init] Warning: Invalid ${schema.envKey}='${envValue}', ${result.error}. Using default: ${defaultValue}`);
+    }
+  }
+
+  return { settings, sources };
+}
+
 // Global lock for cleanup operations
 let cleanupLock = false;
 
@@ -443,18 +575,47 @@ function formatCommitMessage(status, fallbackName = null) {
 }
 
 async function loadRuntimeSettings() {
+  // Track the source of each setting for logging
+  const settingSources = {};
+
+  // Initialize all settings as defaults
+  for (const key of Object.keys(runtimeSettings)) {
+    settingSources[key] = 'default';
+  }
+
+  // Layer 1: Apply environment variables
+  const envResult = loadSettingsFromEnv();
+  runtimeSettings = { ...runtimeSettings, ...envResult.settings };
+  Object.assign(settingSources, envResult.sources);
+
+  // Layer 2: Apply file settings (highest precedence)
   try {
     const settingsData = await fsPromises.readFile('/data/runtime-settings.json', 'utf-8');
-    const settings = JSON.parse(settingsData);
-    runtimeSettings = { ...runtimeSettings, ...settings };
-    console.log('[init] Loaded runtime settings:', runtimeSettings);
+    const fileSettings = JSON.parse(settingsData);
+
+    // Track which settings came from the file
+    for (const key of Object.keys(fileSettings)) {
+      if (runtimeSettings.hasOwnProperty(key)) {
+        settingSources[key] = 'file';
+      }
+    }
+
+    runtimeSettings = { ...runtimeSettings, ...fileSettings };
   } catch (error) {
     if (error.code === 'ENOENT') {
-      console.log('[init] Runtime settings file not found, using defaults.');
+      console.log('[init] Runtime settings file not found, using environment variables and defaults.');
     } else {
       console.error('[init] Error loading runtime settings:', error.message);
-      console.log('[init] Using default runtime settings due to error.');
+      console.log('[init] Using environment variables and defaults due to error.');
     }
+  }
+
+  // Log final configuration with sources
+  console.log('[init] Runtime settings loaded:');
+  for (const [key, value] of Object.entries(runtimeSettings)) {
+    const source = settingSources[key] || 'unknown';
+    const displayValue = typeof value === 'string' ? `'${value}'` : value;
+    console.log(`[init]   ${key}: ${displayValue} (${source})`);
   }
 }
 
