@@ -44,10 +44,14 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' }}
-            type=sha,prefix={{branch}}-
+            # Tag as latest on main branch push or full release
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || (github.event_name == 'release' && !github.event.release.prerelease) }}
+            # Tag as beta on develop branch push or pre-release
+            type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' || (github.event_name == 'release' && github.event.release.prerelease) }}
+            # Branch tagging
             type=ref,event=branch
+            # Commit SHA tagging (simple sha for pushes only)
+            type=sha,enable=${{ github.event_name == 'push' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
