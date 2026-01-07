@@ -3352,9 +3352,10 @@ app.post('/api/github/device-flow/poll', async (req, res) => {
     if (data.access_token) {
       console.log('[github device flow] Token received successfully');
 
-      // Save the token to cloud sync settings
+      // Save the token to cloud sync settings and enable sync
       runtimeSettings.cloudSync.authToken = data.access_token;
       runtimeSettings.cloudSync.authProvider = 'github';
+      runtimeSettings.cloudSync.enabled = true; // Auto-enable when connected
       await saveRuntimeSettings();
 
       res.json({
