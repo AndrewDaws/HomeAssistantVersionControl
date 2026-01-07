@@ -2536,3 +2536,62 @@ body.winter-mode .snow-container {
 .modal-overlay {
   z-index: 1000;
 }
+
+/* === Context Menu === */
+.context-menu {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 2000;
+  min-width: 180px;
+  padding: 6px;
+  animation: context-menu-appear 0.15s ease-out;
+}
+
+@keyframes context-menu-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+}
+
+.context-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.context-menu-icon {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.context-menu-text {
+  font-weight: 500;
+}
+
+/* Soft Reset Modal */
+.soft-reset-modal {
+  max-width: 420px;
+}
+
+.soft-reset-modal .modal-body p {
+  line-height: 1.5;
+}

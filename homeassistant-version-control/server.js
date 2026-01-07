@@ -1739,6 +1739,91 @@ app.post('/api/git/hard-reset', async (req, res) => {
   }
 });
 
+// Soft reset to a specific commit (removes commits from history but keeps files unchanged)
+app.post('/api/git/soft-reset', async (req, res) => {
+  try {
+    const { commitHash } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+
+    console.log(`[soft-reset] Soft resetting to commit ${commitHash.substring(0, 8)}`);
+
+    // 1. Validate commit exists
+    let commitExists;
+    try {
+      commitExists = await gitRaw(['cat-file', '-t', commitHash]);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: `Commit ${commitHash.substring(0, 8)} not found`
+      });
+    }
+
+    if (!commitExists.trim().startsWith('commit')) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid commit: ${commitHash.substring(0, 8)}`
+      });
+    }
+
+    // 2. Count how many commits will be removed
+    let commitsToRemove = 0;
+    try {
+      const logOutput = await gitRaw(['log', '--oneline', `${commitHash}..HEAD`]);
+      commitsToRemove = logOutput.trim().split('\n').filter(l => l).length;
+    } catch (error) {
+      // If this fails, we can still proceed
+      console.log('[soft-reset] Could not count commits to remove:', error.message);
+    }
+
+    // 3. Perform soft reset
+    try {
+      await gitRaw(['reset', '--soft', commitHash]);
+      console.log(`[soft-reset] Successfully reset to ${commitHash.substring(0, 8)}`);
+    } catch (error) {
+      console.error('[soft-reset] Reset failed:', error);
+      return res.status(500).json({
+        success: false,
+        error: `Soft reset failed: ${error.message}`
+      });
+    }
+
+    // 4. Get the commit date for the response
+    let commitDate = '';
+    try {
+      const dateStr = (await gitRaw(['show', '-s', '--format=%aI', commitHash])).trim();
+      const date = new Date(dateStr);
+      const datePart = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const timePart = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      commitDate = `${datePart} ${timePart}`;
+    } catch (error) {
+      commitDate = commitHash.substring(0, 8);
+    }
+
+    res.json({
+      success: true,
+      commitHash: commitHash.substring(0, 8),
+      commitsRemoved: commitsToRemove,
+      commitDate: commitDate,
+      message: `Soft reset to ${commitDate}. ${commitsToRemove} commit(s) removed from history.`
+    });
+
+  } catch (error) {
+    console.error('[soft-reset] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 // Git status
 app.get('/api/git/status', async (req, res) => {

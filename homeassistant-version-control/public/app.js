@@ -2674,7 +2674,7 @@ async function displayCommits(commits) {
         fileName = fileName.replace(/^["']|["']$/g, '');
 
         html += `
-              <div class="commit" onclick="showCommit('${commit.hash}')" id="commit-${commit.hash}">
+              <div class="commit" onclick="showCommit('${commit.hash}')" oncontextmenu="showTimelineContextMenu(event, '${commit.hash}')" id="commit-${commit.hash}">
                 <div class="commit-time">${timeString}</div>
                 <div class="commit-file" title="${fileName}">${fileName}</div>
               </div>
@@ -6606,4 +6606,148 @@ async function handleCloudProviderChange() {
   // Auto-save settings when provider changes (silent - no notification)
   // This ensures Push Now immediately uses the new provider
   await saveCloudSyncSettings(true);
+}
+
+// ============================
+// Timeline Context Menu (Right-click)
+// ============================
+
+let contextMenuTarget = null;
+
+function showTimelineContextMenu(event, commitHash) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  contextMenuTarget = commitHash;
+
+  // Remove any existing context menu
+  hideTimelineContextMenu();
+
+  // Get commit info for display
+  const commit = allCommits.find(c => c.hash === commitHash);
+  const commitDate = commit ? new Date(commit.date).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }) : commitHash.substring(0, 8);
+
+  // Count commits that will be removed
+  const commitIndex = allCommits.findIndex(c => c.hash === commitHash);
+  const commitsToRemove = commitIndex; // Commits before this one in the array (newer)
+
+  // Create context menu
+  const menu = document.createElement('div');
+  menu.id = 'timeline-context-menu';
+  menu.className = 'context-menu';
+  menu.innerHTML = `
+    <div class="context-menu-item" onclick="confirmSoftReset('${commitHash}', ${commitsToRemove})">
+      <span class="context-menu-icon">↩️</span>
+      <span class="context-menu-text">Soft Reset to Here</span>
+    </div>
+  `;
+
+  // Position menu at cursor
+  menu.style.left = event.pageX + 'px';
+  menu.style.top = event.pageY + 'px';
+
+  document.body.appendChild(menu);
+
+  // Close menu when clicking elsewhere
+  setTimeout(() => {
+    document.addEventListener('click', hideTimelineContextMenu, { once: true });
+    document.addEventListener('contextmenu', hideTimelineContextMenu, { once: true });
+  }, 0);
+}
+
+function hideTimelineContextMenu() {
+  const menu = document.getElementById('timeline-context-menu');
+  if (menu) {
+    menu.remove();
+  }
+}
+
+function confirmSoftReset(commitHash, commitsToRemove) {
+  hideTimelineContextMenu();
+
+  // Get commit info for display
+  const commit = allCommits.find(c => c.hash === commitHash);
+  const commitDate = commit ? new Date(commit.date).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }) : commitHash.substring(0, 8);
+
+  // Check if this is the most recent commit
+  if (commitsToRemove === 0) {
+    showNotification('This is already the most recent version', 'info', 3000);
+    return;
+  }
+
+  // Create confirmation dialog
+  const overlay = document.createElement('div');
+  overlay.id = 'soft-reset-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeSoftResetDialog();
+  };
+
+  overlay.innerHTML = `
+    <div class="modal soft-reset-modal">
+      <div class="modal-header">
+        <h3>Soft Reset Timeline</h3>
+        <button class="modal-close" onclick="closeSoftResetDialog()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>This will remove <strong>${commitsToRemove} version${commitsToRemove > 1 ? 's' : ''}</strong> from the timeline.</p>
+        <p style="margin-top: 12px;">Resetting to: <strong>${commitDate}</strong></p>
+        <p style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">
+          Your files will <strong>not</strong> be changed. Only the version history will be affected.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeSoftResetDialog()">Cancel</button>
+        <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Reset Timeline</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
+function closeSoftResetDialog() {
+  const overlay = document.getElementById('soft-reset-overlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}
+
+async function executeSoftReset(commitHash) {
+  closeSoftResetDialog();
+
+  showNotification('Resetting timeline...', 'info', 2000);
+
+  try {
+    const response = await fetch(`${API}/git/soft-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commitHash })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification(`Timeline reset! ${data.commitsRemoved} version(s) removed.`, 'success', 4000);
+      // Refresh the timeline
+      await loadTimeline();
+    } else {
+      showNotification(`Reset failed: ${data.error}`, 'error', 5000);
+    }
+  } catch (error) {
+    console.error('[soft-reset] Error:', error);
+    showNotification(`Reset error: ${error.message}`, 'error', 5000);
+  }
 }
