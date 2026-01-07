@@ -148,9 +148,8 @@ body {
 
 /* === Header === */
 .header {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  background: transparent;
+  border: none;
   padding: clamp(16px, 2vh, 28px) clamp(20px, 3vw, 32px);
   margin-bottom: clamp(16px, 2vh, 32px);
   display: flex;
