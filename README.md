@@ -156,6 +156,11 @@ Access the interface at `http://localhost:54001`.
 * **Restore Single File:** Click the "Restore" button on any file in the timeline.
 * **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
 
+### Right-Click Context Menu
+Right-click any timeline entry for quick actions:
+* **Reset Timeline Here:** Rewind the version history to this point. Your actual files stay exactly as they are—only the timeline is affected. Great for cleaning up cluttered history.
+* **Restore All Files Here:** Restore all tracked files to their state at this point in time.
+
 ---
 
 ## How It Works
@@ -203,6 +208,7 @@ API for advanced users or automation.
 | `POST` | `/api/restore-commit` | **Time Travel:** Restore ALL files to a specific point in time. |
 | `POST` | `/api/restore-file` | **Restore File:** Restore a single file to a specific commit. |
 | `POST` | `/api/git/hard-reset` | **Hard Reset:** Reset the repository to a specific commit (destructive). |
+| `POST` | `/api/git/soft-reset` | **Reset Timeline:** Rewind version history without changing files. |
 | `POST` | `/api/ha/restart` | **Restart HA:** Triggers a Home Assistant restart. |
 | `POST` | `/api/cloud-sync/push` | **Cloud Push:** Push to remote repository immediately. |
 | `GET` | `/api/cloud-sync/status` | **Cloud Status:** Get current cloud sync status and last push time. |
@@ -224,6 +230,19 @@ Reset the repository to a specific commit. **WARNING: This is destructive and wi
 {
   "commitHash": "a1b2c3d4",
   "createBackup": true
+}
+```
+
+#### `POST /api/git/soft-reset`
+Reset the timeline to a specific commit without changing any files. This is useful for cleaning up history while keeping your current configuration.
+
+**Parameters:**
+*   `commitHash` (string, required): The hash of the commit to reset to.
+
+**Example:**
+```json
+{
+  "commitHash": "a1b2c3d4"
 }
 ```
 

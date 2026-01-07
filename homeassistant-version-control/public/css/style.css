@@ -2541,7 +2541,7 @@ body.winter-mode .snow-container {
 .context-menu {
   position: absolute;
   background: var(--bg-elevated);
-  border: 1px solid var(--border-medium);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 2000;

@@ -6643,7 +6643,7 @@ function showTimelineContextMenu(event, commitHash) {
   menu.className = 'context-menu';
   menu.innerHTML = `
     <div class="context-menu-item" onclick="confirmSoftReset('${commitHash}', ${commitsToRemove})">
-      <span class="context-menu-text">Soft Reset Here</span>
+      <span class="context-menu-text">Reset Timeline Here</span>
     </div>
     <div class="context-menu-separator"></div>
     <div class="context-menu-item" onclick="restoreAllFilesFromContext('${commitHash}')">
@@ -6708,13 +6708,13 @@ function confirmSoftReset(commitHash, commitsToRemove) {
   const modalHTML = `
     <div class="modal-backdrop active" id="soft-reset-modal" onclick="if(event.target === this) closeSoftResetDialog()">
       <div class="modal-content hard-reset-dialog">
-        <h3>Soft Reset Timeline?</h3>
+        <h3>Reset Timeline?</h3>
         
         <p>This will reset the timeline back to ${formattedDate}.</p>
         
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closeSoftResetDialog()">Cancel</button>
-          <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Soft Reset</button>
+          <button class="btn restore" onclick="executeSoftReset('${commitHash}')">Reset Timeline</button>
         </div>
       </div>
     </div>
