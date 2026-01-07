@@ -150,6 +150,22 @@ docker run -d \
 
 Access the interface at `http://localhost:54001`.
 
+### Environment Variables
+
+You can configure runtime settings using environment variables. These values override defaults but are overridden by settings changed in the UI (stored in `/data/runtime-settings.json`).
+
+| Variable | Description | Default | Values |
+| :--- | :--- | :--- | :--- |
+| `DEBOUNCE_TIME` | Time to wait before creating a version | `3` | Integer |
+| `DEBOUNCE_TIME_UNIT` | Unit for debounce time | `seconds` | `seconds`, `minutes`, `hours`, `days` |
+| `HISTORY_RETENTION` | Enable automatic history cleanup | `false` | `true`, `false` |
+| `RETENTION_TYPE` | Type of retention to use | `age` | `age`, `count` |
+| `RETENTION_VALUE` | Number of days/versions to keep | `30` | Integer |
+| `RETENTION_UNIT` | Unit for age-based retention | `days` | `hours`, `days`, `weeks`, `months` |
+
+> [!TIP]
+> Use these variables in your `docker-compose.yaml` or `docker run` command to pre-configure the add-on without touching the UI.
+
 ---
 
 ### Restore Actions

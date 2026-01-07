@@ -165,6 +165,7 @@
     "group_general": "General",
     "group_diff_viewer": "Comparison View",
     "group_appearance": "Appearance",
+    "env_vars_note": "Note: Settings can also be pre-configured via environment variables.",
     "diff_view": "Layout",
     "diff_view_unified": "Stacked",
     "diff_view_split": "Side-by-Side",

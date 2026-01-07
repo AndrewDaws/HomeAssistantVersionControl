@@ -353,6 +353,95 @@ let runtimeSettings = {
   }
 };
 
+// Schema for runtime settings with validation rules and environment variable mapping
+const RUNTIME_SETTINGS_SCHEMA = {
+  debounceTime: {
+    type: 'number',
+    min: 0,
+    envKey: 'DEBOUNCE_TIME'
+  },
+  debounceTimeUnit: {
+    type: 'enum',
+    values: ['seconds', 'minutes', 'hours', 'days'],
+    envKey: 'DEBOUNCE_TIME_UNIT'
+  },
+  historyRetention: {
+    type: 'boolean',
+    envKey: 'HISTORY_RETENTION'
+  },
+  retentionType: {
+    type: 'enum',
+    values: ['time', 'age', 'versions', 'count'],
+    envKey: 'RETENTION_TYPE'
+  },
+  retentionValue: {
+    type: 'number',
+    min: 1,
+    envKey: 'RETENTION_VALUE'
+  },
+  retentionUnit: {
+    type: 'enum',
+    values: ['hours', 'days', 'weeks', 'months'],
+    envKey: 'RETENTION_UNIT'
+  }
+};
+
+/**
+ * Parse and validate an environment variable value based on schema
+ */
+function parseEnvVarValue(key, schema, rawValue) {
+  const trimmed = rawValue.trim();
+  if (trimmed === '') return { valid: false, error: 'Empty value' };
+
+  switch (schema.type) {
+    case 'number': {
+      const parsed = parseInt(trimmed, 10);
+      if (isNaN(parsed) || trimmed !== String(parsed)) return { valid: false, error: `Expected integer, got: '${rawValue}'` };
+      if (schema.min !== undefined && parsed < schema.min) return { valid: false, error: `Expected >= ${schema.min}, got: ${parsed}` };
+      return { valid: true, value: parsed };
+    }
+    case 'boolean': {
+      const normalized = trimmed.toLowerCase();
+      if (['true', '1', 'yes'].includes(normalized)) return { valid: true, value: true };
+      if (['false', '0', 'no'].includes(normalized)) return { valid: true, value: false };
+      return { valid: false, error: `Expected boolean, got: '${rawValue}'` };
+    }
+    case 'enum': {
+      const normalized = trimmed.toLowerCase();
+      // Special handling for legacy vs new retention names
+      if (key === 'retentionType') {
+        if (normalized === 'versions' || normalized === 'count') return { valid: true, value: 'count' };
+        if (normalized === 'time' || normalized === 'age') return { valid: true, value: 'age' };
+      }
+      const match = schema.values.find(v => v.toLowerCase() === normalized);
+      if (match) return { valid: true, value: match };
+      return { valid: false, error: `Expected one of [${schema.values.join(', ')}], got: '${rawValue}'` };
+    }
+    default:
+      return { valid: false, error: `Unknown type: ${schema.type}` };
+  }
+}
+
+/**
+ * Load runtime settings from environment variables
+ */
+function loadSettingsFromEnv() {
+  const settings = {};
+  const sources = {};
+  for (const [key, schema] of Object.entries(RUNTIME_SETTINGS_SCHEMA)) {
+    const envValue = process.env[schema.envKey];
+    if (envValue === undefined) continue;
+    const result = parseEnvVarValue(key, schema, envValue);
+    if (result.valid) {
+      settings[key] = result.value;
+      sources[key] = `env: ${schema.envKey}`;
+    } else {
+      console.log(`[init] Warning: Invalid ${schema.envKey}='${envValue}', ${result.error}.`);
+    }
+  }
+  return { settings, sources };
+}
+
 // Global lock for cleanup operations
 let cleanupLock = false;
 
@@ -479,22 +568,42 @@ function formatCommitMessage(status, fallbackName = null) {
 }
 
 async function loadRuntimeSettings() {
+  const settingSources = {};
+
+  // Layer 0: Initialize sources as defaults
+  for (const key of Object.keys(runtimeSettings)) {
+    settingSources[key] = 'default';
+  }
+
+  // Layer 1: Apply environment variables
+  const envResult = loadSettingsFromEnv();
+  runtimeSettings = { ...runtimeSettings, ...envResult.settings };
+  Object.assign(settingSources, envResult.sources);
+
+  // Layer 2: Apply file settings (highest precedence)
   try {
     const settingsPath = '/data/runtime-settings.json';
-    // Check if file exists first
     try {
       await fsPromises.access(settingsPath, fs.constants.F_OK);
-      console.log(`[init] Found runtime settings file at ${settingsPath}`);
+      const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+      const fileSettings = JSON.parse(settingsData);
+
+      for (const key of Object.keys(fileSettings)) {
+        if (runtimeSettings.hasOwnProperty(key)) {
+          settingSources[key] = 'file';
+        }
+      }
+
+      runtimeSettings = { ...runtimeSettings, ...fileSettings };
     } catch (e) {
-      console.log(`[init] No runtime settings file found at ${settingsPath}`);
-      return;
+      if (e.code === 'ENOENT') {
+        console.log(`[init] No settings file found at ${settingsPath}, using environment and defaults.`);
+      } else {
+        throw e;
+      }
     }
 
-    const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
-    const settings = JSON.parse(settingsData);
-    runtimeSettings = { ...runtimeSettings, ...settings };
-
-    // Ensure cloudSync exists
+    // Ensure cloudSync exists (Beta feature)
     if (!runtimeSettings.cloudSync) {
       runtimeSettings.cloudSync = {
         enabled: false,
@@ -505,10 +614,17 @@ async function loadRuntimeSettings() {
       };
     }
 
-    console.log('[init] Runtime settings loaded');
+    // Log final configuration with sources
+    console.log('[init] Runtime settings loaded:');
+    for (const [key, value] of Object.entries(runtimeSettings)) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) continue; // skip nested objects for summary logging
+      const source = settingSources[key] || 'unknown';
+      const displayValue = typeof value === 'string' ? `'${value}'` : value;
+      console.log(`[init]   ${key}: ${displayValue} (${source})`);
+    }
   } catch (error) {
-    console.error('[init] Error loading runtime settings:', error);
-    console.log('[init] Using default runtime settings');
+    console.error('[init] Error loading runtime settings:', error.message);
+    console.log('[init] Using environment variables and defaults due to error.');
   }
 }
 
