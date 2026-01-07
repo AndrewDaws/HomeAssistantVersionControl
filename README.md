@@ -248,12 +248,9 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 
 ## Contributing
 
-Contributions are welcome! To help keep things organized:
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- **Bug fixes** for the current release: Submit PRs to this repository
-- **New features** or improvements: Please submit PRs to the [Beta Repository](https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta)
-
-The beta repo contains upcoming features and undergoes active development. It will be merged here for major releases.
+**TL;DR:** New features → target the `develop` branch. Bug fixes → `main` is fine.
 
 ---
 
