@@ -2414,7 +2414,7 @@ input[type=number] {
   display: none;
 }
 
-body.holiday-mode .snow-container {
+body.winter-mode .snow-container {
   display: block;
 }
 
@@ -2525,84 +2525,7 @@ body.holiday-mode .snow-container {
   }
 }
 
-/* === HOLIDAY HEADER - THE GIFT === */
-body.holiday-mode .header {
-  background:
-    /* Gold ribbon horizontal */
-    linear-gradient(to bottom,
-      transparent calc(50% - 8px),
-      #D4AF37 calc(50% - 8px),
-      #F4CF47 calc(50% - 4px),
-      #D4AF37 50%,
-      #B8960C 50%,
-      #D4AF37 calc(50% + 4px),
-      #F4CF47 calc(50% + 8px),
-      transparent calc(50% + 8px)),
-    /* Plaid pattern - horizontal lines */
-    repeating-linear-gradient(0deg,
-      transparent 0px,
-      transparent 20px,
-      rgba(15, 79, 15, 0.4) 20px,
-      rgba(15, 79, 15, 0.4) 24px,
-      transparent 24px,
-      transparent 40px,
-      rgba(212, 175, 55, 0.3) 40px,
-      rgba(212, 175, 55, 0.3) 42px,
-      transparent 42px),
-    /* Plaid pattern - vertical lines */
-    repeating-linear-gradient(90deg,
-      transparent 0px,
-      transparent 20px,
-      rgba(15, 79, 15, 0.4) 20px,
-      rgba(15, 79, 15, 0.4) 24px,
-      transparent 24px,
-      transparent 40px,
-      rgba(212, 175, 55, 0.3) 40px,
-      rgba(212, 175, 55, 0.3) 42px,
-      transparent 42px),
-    /* Base - rich burgundy red */
-    linear-gradient(135deg, #8B1A1A 0%, #A52A2A 25%, #8B1A1A 50%, #6B0F0F 75%, #8B1A1A 100%);
-  border: 2px solid #D4AF37;
-  position: relative;
-  overflow: visible;
-}
 
-/* Vertical ribbon */
-body.holiday-mode .header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 100%;
-  background: linear-gradient(to right,
-      #D4AF37 0%,
-      #F4CF47 25%,
-      #D4AF37 50%,
-      #B8960C 75%,
-      #D4AF37 100%);
-  z-index: 1;
-}
-
-/* Make header title readable over plaid */
-body.holiday-mode .header .title,
-body.holiday-mode .header div[style*="color: var(--text-tertiary)"] {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  color: #ffffff !important;
-}
-
-body.holiday-mode .header .btn-subtle {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  backdrop-filter: blur(4px);
-}
-
-body.holiday-mode .header .btn-subtle:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
-}
 
 /* Hide snow from settings modal */
 .modal-overlay .snow-container,

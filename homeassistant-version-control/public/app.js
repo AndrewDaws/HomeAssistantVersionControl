@@ -374,8 +374,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   injectSelectedColorStyle();
   injectHoverStyles();
 
-  // Initialize Holiday Mode from localStorage
-  initHolidayMode();
+  // Initialize Winter Mode from localStorage
+  initWinterMode();
 
   // Initialize the view
   switchMode(currentMode);
@@ -6467,81 +6467,32 @@ function blendColors(color1, color2, ratio) {
   return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
 
-// Holiday design settings
-let holidayDesign = {
-  currentPlaidIndex: parseInt(localStorage.getItem('holidayPlaidIndex')) || 1,
-  ribbonWidth: parseInt(localStorage.getItem('holidayRibbonWidth')) || 19,
-  ribbonStyle: parseInt(localStorage.getItem('holidayRibbonStyle')) || 1,
-  ribbon3D: parseInt(localStorage.getItem('holidayRibbon3D')) || 10,
-  ribbonBrightness: localStorage.getItem('holidayRibbonBrightness') !== null ? parseInt(localStorage.getItem('holidayRibbonBrightness')) : -5,
-  plaidSize: parseInt(localStorage.getItem('holidayPlaidSize')) || 24,
-  paperGradientAngle: parseInt(localStorage.getItem('holidayPaperGradientAngle')) || 177,
-  paperGradientIntensity: parseInt(localStorage.getItem('holidayPaperGradientIntensity')) || 30,
-  paperShine: parseInt(localStorage.getItem('holidayPaperShine')) || 4,
-  paperShineIntensity: parseInt(localStorage.getItem('holidayPaperShineIntensity')) || 10,
-  bowSize: parseInt(localStorage.getItem('holidayBowSize')) || 139,
-  bowOffset: parseInt(localStorage.getItem('holidayBowOffset')) || 53,
-  bowShadow: parseInt(localStorage.getItem('holidayBowShadow')) || 6,
-  bowShadowSpread: parseInt(localStorage.getItem('holidayBowShadowSpread')) || 3,
-  bowStyle: parseInt(localStorage.getItem('holidayBowStyle')) || 1,
-  borderEnabled: localStorage.getItem('holidayBorderEnabled') === 'true',
-  borderWidth: parseInt(localStorage.getItem('holidayBorderWidth')) || 2,
-  borderColor: localStorage.getItem('holidayBorderColor') || '#D4AF37'
-};
-
-// Ribbon gradient styles
-const RIBBON_STYLES = [
-  { name: 'Red Satin', colors: ['#5A0008', '#960011', '#B81520', '#960011', '#5A0008', '#400006'] },
-  { name: 'Gold Satin', colors: ['#B8960C', '#D4AF37', '#F4CF47', '#D4AF37', '#B8960C', '#A07D00'] },
-  { name: 'Green Velvet', colors: ['#0D3D0D', '#1B5E20', '#2E7D32', '#1B5E20', '#0D3D0D', '#052505'] },
-  { name: 'Royal Blue', colors: ['#0D47A1', '#1565C0', '#1976D2', '#1565C0', '#0D47A1', '#052560'] },
-  { name: 'Purple Silk', colors: ['#4A148C', '#6A1B9A', '#7B1FA2', '#6A1B9A', '#4A148C', '#38006b'] },
-  { name: 'Silver Frost', colors: ['#455A64', '#607D8B', '#78909C', '#607D8B', '#455A64', '#37474F'] },
-  { name: 'Rose Gold', colors: ['#8B5A5A', '#C78585', '#E0A0A0', '#C78585', '#8B5A5A', '#6B4040'] },
-  { name: 'Candy Cane', colors: ['#D32F2F', '#FFFFFF', '#D32F2F', '#FFFFFF', '#D32F2F', '#B71C1C'] }
-];
-
-// Paper shine/gradient effects
-const PAPER_SHINE_EFFECTS = [
-  { name: 'None', css: '' },
-  { name: 'Diagonal Shine', css: (i) => `linear-gradient(135deg, transparent 0%, rgba(255,255,255,${i / 100}) 25%, transparent 50%, rgba(255,255,255,${i / 200}) 75%, transparent 100%)` },
-  { name: 'Top Glow', css: (i) => `linear-gradient(to bottom, rgba(255,255,255,${i / 100}) 0%, transparent 30%, transparent 100%)` },
-  { name: 'Center Spotlight', css: (i) => `radial-gradient(ellipse at center, rgba(255,255,255,${i / 100}) 0%, transparent 50%)` },
-  { name: 'Vignette', css: (i) => `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${i / 100}) 100%)` },
-  { name: 'Shimmer', css: (i) => `repeating-linear-gradient(45deg, transparent 0px, transparent 10px, rgba(255,255,255,${i / 200}) 10px, rgba(255,255,255,${i / 200}) 11px)` },
-  { name: 'Glossy', css: (i) => `linear-gradient(to bottom, rgba(255,255,255,${i / 80}) 0%, transparent 40%, transparent 60%, rgba(0,0,0,${i / 150}) 100%)` }
-];
-
-// Toggle Holiday Mode - onclick fires BEFORE checkbox changes, so invert logic
-function toggleHolidayMode() {
-  const checkbox = document.getElementById('holidayMode');
+// Toggle Winter Mode
+function toggleWinterMode() {
+  const checkbox = document.getElementById('winterMode');
   // Since onclick fires before the checkbox value changes, we check the OPPOSITE
   const willBeEnabled = !checkbox.checked;
 
   if (willBeEnabled) {
-    document.body.classList.add('holiday-mode');
+    document.body.classList.add('winter-mode');
     createSnowflakes();
-    applyHolidayDesign();
-    localStorage.setItem('holidayModeEnabled', 'true');
+    localStorage.setItem('winterModeEnabled', 'true');
   } else {
-    document.body.classList.remove('holiday-mode');
+    document.body.classList.remove('winter-mode');
     clearSnowflakes();
-    hideHolidayDesignPanel();
-    localStorage.setItem('holidayModeEnabled', 'false');
+    localStorage.setItem('winterModeEnabled', 'false');
   }
 }
 
-// Initialize Holiday Mode from localStorage
-function initHolidayMode() {
-  const saved = localStorage.getItem('holidayModeEnabled');
-  const checkbox = document.getElementById('holidayMode');
+// Initialize Winter Mode from localStorage
+function initWinterMode() {
+  const saved = localStorage.getItem('winterModeEnabled');
+  const checkbox = document.getElementById('winterMode');
 
   if (saved === 'true') {
     checkbox.checked = true;
-    document.body.classList.add('holiday-mode');
+    document.body.classList.add('winter-mode');
     createSnowflakes();
-    applyHolidayDesign();
-    // showHolidayDesignPanel(); // Panel hidden by default now
   }
 }
 
@@ -6594,443 +6545,6 @@ function clearSnowflakes() {
   }
 }
 
-// Show holiday design adjustment panel
-function showHolidayDesignPanel() {
-  // Remove existing panel if any
-  hideHolidayDesignPanel();
-
-  const currentPattern = PLAID_PATTERNS[holidayDesign.currentPlaidIndex];
-
-  const panel = document.createElement('div');
-  panel.id = 'holidayDesignPanel';
-  panel.innerHTML = `
-    <div class="holiday-panel-header">
-      <span>🎁 Present Designer</span>
-      <button onclick="hideHolidayDesignPanel()" style="background:none;border:none;color:white;font-size:18px;cursor:pointer;">×</button>
-    </div>
-    <div class="holiday-panel-content" style="max-height: 70vh; overflow-y: auto;">
-      
-      <!-- Pattern Section -->
-      <div class="holiday-section">
-        <div class="holiday-section-title">🎨 Pattern</div>
-        <div class="holiday-control" style="text-align:center; padding: 8px 0; background: rgba(255,255,255,0.05); border-radius: 8px;">
-          <div style="font-size: 14px; color: #D4AF37; font-weight: 600;" id="currentPatternName">${currentPattern.name}</div>
-        </div>
-        <div class="holiday-control">
-          <label>Pattern Scale: <span id="plaidSizeVal">${holidayDesign.plaidSize}px</span></label>
-          <input type="range" min="15" max="60" value="${holidayDesign.plaidSize}" oninput="updateHolidayDesign('plaidSize', this.value)">
-        </div>
-      </div>
-      
-      <!-- Bow Section -->
-      <div class="holiday-section">
-        <div class="holiday-section-title">🎀 Bow</div>
-        <div class="holiday-control">
-          <label>Bow Style:</label>
-          <div style="display: flex; gap: 8px; margin-top: 6px;">
-            <button onclick="updateHolidayDesign('bowStyle', 1)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 1 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 1 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 1</button>
-            <button onclick="updateHolidayDesign('bowStyle', 2)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 2 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 2 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 2</button>
-            <button onclick="updateHolidayDesign('bowStyle', 3)" style="flex:1; padding: 8px; border-radius: 6px; border: 2px solid ${holidayDesign.bowStyle === 3 ? '#D4AF37' : '#444'}; background: ${holidayDesign.bowStyle === 3 ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer;">Bow 3</button>
-          </div>
-        </div>
-        <div class="holiday-control">
-          <label>Size: <span id="bowSizeVal">${holidayDesign.bowSize}px</span></label>
-          <input type="range" min="40" max="180" value="${holidayDesign.bowSize}" oninput="updateHolidayDesign('bowSize', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Position: <span id="bowOffsetVal">${holidayDesign.bowOffset}px</span></label>
-          <input type="range" min="-30" max="60" value="${holidayDesign.bowOffset}" oninput="updateHolidayDesign('bowOffset', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Shadow Blur: <span id="bowShadowVal">${holidayDesign.bowShadow}px</span></label>
-          <input type="range" min="0" max="30" value="${holidayDesign.bowShadow}" oninput="updateHolidayDesign('bowShadow', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Shadow Spread: <span id="bowShadowSpreadVal">${holidayDesign.bowShadowSpread}px</span></label>
-          <input type="range" min="0" max="40" value="${holidayDesign.bowShadowSpread}" oninput="updateHolidayDesign('bowShadowSpread', this.value)">
-        </div>
-      </div>
-      
-      <!-- Ribbon Section -->
-      <div class="holiday-section">
-        <div class="holiday-section-title">🎗️ Ribbon</div>
-        <div class="holiday-control">
-          <label>Style: <span style="color: #D4AF37;">${RIBBON_STYLES[holidayDesign.ribbonStyle - 1]?.name || 'Red Satin'}</span></label>
-          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-            ${RIBBON_STYLES.map((style, i) => `
-              <button onclick="updateHolidayDesign('ribbonStyle', ${i + 1})" 
-                style="width: 28px; height: 28px; border-radius: 4px; border: 2px solid ${holidayDesign.ribbonStyle === i + 1 ? 'white' : 'transparent'}; 
-                background: linear-gradient(to right, ${style.colors[0]}, ${style.colors[2]}, ${style.colors[4]}); cursor: pointer;" 
-                title="${style.name}"></button>
-            `).join('')}
-          </div>
-        </div>
-        <div class="holiday-control">
-          <label>Width: <span id="ribbonWidthVal">${holidayDesign.ribbonWidth}px</span></label>
-          <input type="range" min="10" max="40" value="${holidayDesign.ribbonWidth}" oninput="updateHolidayDesign('ribbonWidth', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>3D Effect: <span id="ribbon3DVal">${holidayDesign.ribbon3D}%</span></label>
-          <input type="range" min="0" max="100" value="${holidayDesign.ribbon3D}" oninput="updateHolidayDesign('ribbon3D', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Brightness: <span id="ribbonBrightnessVal">${holidayDesign.ribbonBrightness}%</span></label>
-          <input type="range" min="-50" max="50" value="${holidayDesign.ribbonBrightness}" oninput="updateHolidayDesign('ribbonBrightness', this.value)">
-        </div>
-      </div>
-      
-      <!-- Paper Shine Section -->
-      <div class="holiday-section">
-        <div class="holiday-section-title">✨ Paper Effect</div>
-        <div class="holiday-control">
-          <label>Gradient Angle: <span id="paperGradientAngleVal">${holidayDesign.paperGradientAngle}°</span></label>
-          <input type="range" min="0" max="360" value="${holidayDesign.paperGradientAngle}" oninput="updateHolidayDesign('paperGradientAngle', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Gradient Intensity: <span id="paperGradientIntensityVal">${holidayDesign.paperGradientIntensity}%</span></label>
-          <input type="range" min="0" max="100" value="${holidayDesign.paperGradientIntensity}" oninput="updateHolidayDesign('paperGradientIntensity', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Effect: <span style="color: #D4AF37;">${PAPER_SHINE_EFFECTS[holidayDesign.paperShine]?.name || 'None'}</span></label>
-          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-            ${PAPER_SHINE_EFFECTS.map((effect, i) => `
-              <button onclick="updateHolidayDesign('paperShine', ${i})" 
-                style="padding: 4px 8px; border-radius: 4px; border: 2px solid ${holidayDesign.paperShine === i ? '#D4AF37' : '#444'}; 
-                background: ${holidayDesign.paperShine === i ? 'rgba(212,175,55,0.2)' : '#333'}; color: white; cursor: pointer; font-size: 10px;" 
-                title="${effect.name}">${effect.name}</button>
-            `).join('')}
-          </div>
-        </div>
-        <div class="holiday-control">
-          <label>Intensity: <span id="paperShineIntensityVal">${holidayDesign.paperShineIntensity}%</span></label>
-          <input type="range" min="10" max="80" value="${holidayDesign.paperShineIntensity}" oninput="updateHolidayDesign('paperShineIntensity', this.value)">
-        </div>
-      </div>
-      
-      <!-- Border Section -->
-      <div class="holiday-section">
-        <div class="holiday-section-title">📦 Border</div>
-        <div class="holiday-control" style="display: flex; justify-content: space-between; align-items: center;">
-          <label style="margin-bottom: 0;">Show Border</label>
-          <label class="toggle-switch-mini">
-            <input type="checkbox" ${holidayDesign.borderEnabled ? 'checked' : ''} onchange="updateHolidayDesign('borderEnabled', this.checked)">
-            <span class="toggle-slider-mini"></span>
-          </label>
-        </div>
-        <div class="holiday-control">
-          <label>Width: <span id="borderWidthVal">${holidayDesign.borderWidth}px</span></label>
-          <input type="range" min="1" max="8" value="${holidayDesign.borderWidth}" oninput="updateHolidayDesign('borderWidth', this.value)">
-        </div>
-        <div class="holiday-control">
-          <label>Color:</label>
-          <div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button onclick="updateHolidayDesign('borderColor', '#D4AF37')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#D4AF37' ? 'white' : 'transparent'}; background: #D4AF37; cursor:pointer;" title="Gold"></button>
-            <button onclick="updateHolidayDesign('borderColor', '#960011')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#960011' ? 'white' : 'transparent'}; background: #960011; cursor:pointer;" title="Red"></button>
-            <button onclick="updateHolidayDesign('borderColor', '#1B5E20')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#1B5E20' ? 'white' : 'transparent'}; background: #1B5E20; cursor:pointer;" title="Green"></button>
-            <button onclick="updateHolidayDesign('borderColor', '#FFFFFF')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#FFFFFF' ? '#D4AF37' : '#666'}; background: #FFFFFF; cursor:pointer;" title="White"></button>
-            <button onclick="updateHolidayDesign('borderColor', '#000000')" style="width:28px; height:28px; border-radius:50%; border: 2px solid ${holidayDesign.borderColor === '#000000' ? 'white' : '#666'}; background: #000000; cursor:pointer;" title="Black"></button>
-          </div>
-        </div>
-      </div>
-      
-    </div>
-  `;
-  document.body.appendChild(panel);
-}
-
-// Hide holiday design panel
-function hideHolidayDesignPanel() {
-  const panel = document.getElementById('holidayDesignPanel');
-  if (panel) {
-    panel.remove();
-  }
-}
-
-// Update holiday design setting
-function updateHolidayDesign(setting, value) {
-  // Handle different value types
-  if (setting === 'borderEnabled') {
-    holidayDesign[setting] = value === true || value === 'true';
-  } else if (setting === 'borderColor') {
-    holidayDesign[setting] = value;
-  } else {
-    holidayDesign[setting] = parseInt(value);
-  }
-
-  // Update display value if it exists
-  const valSpan = document.getElementById(setting + 'Val');
-  if (valSpan && typeof value !== 'boolean') {
-    valSpan.textContent = value + (setting !== 'borderColor' ? 'px' : '');
-  }
-
-  // Save to localStorage
-  localStorage.setItem('holiday' + setting.charAt(0).toUpperCase() + setting.slice(1), value);
-
-  // Refresh panel for certain settings to update button states
-  if (setting === 'bowStyle' || setting === 'borderColor' || setting === 'borderEnabled' || setting === 'ribbonStyle' || setting === 'paperShine') {
-    showHolidayDesignPanel();
-  }
-
-  // Apply changes
-  applyHolidayDesign();
-}
-
-// Apply holiday design CSS dynamically
-function applyHolidayDesign() {
-  let styleEl = document.getElementById('holidayDynamicStyle');
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = 'holidayDynamicStyle';
-    document.head.appendChild(styleEl);
-  }
-
-  const { currentPlaidIndex, ribbonWidth, ribbonStyle, ribbon3D, ribbonBrightness = 0, plaidSize, paperGradientAngle, paperGradientIntensity, paperShine, paperShineIntensity, bowSize, bowOffset, bowShadow, bowShadowSpread, bowStyle, borderEnabled, borderWidth, borderColor } = holidayDesign;
-
-  // Get current plaid pattern
-  const pattern = PLAID_PATTERNS[currentPlaidIndex];
-  const wrapBg = generatePlaidPattern(pattern, plaidSize, paperGradientAngle, paperGradientIntensity);
-
-  // Get ribbon colors with 3D effect applied
-  const ribbon = RIBBON_STYLES[ribbonStyle - 1] || RIBBON_STYLES[0];
-
-  // Apply brightness to base colors
-  const baseColors = ribbon.colors.map(color => {
-    if (ribbonBrightness > 0) return lightenColor(color, ribbonBrightness);
-    if (ribbonBrightness < 0) return darkenColor(color, Math.abs(ribbonBrightness));
-    return color;
-  });
-
-  const [r0, r1, r2, r3, r4, r5] = baseColors;
-  // ribbon3D 0% = flat (all same color), 100% = full gradient
-  const effect3D = ribbon3D / 100;
-  // Blend colors based on 3D effect (when 0%, all look like r1)
-  const rb0 = effect3D < 0.5 ? blendColors(r1, r0, effect3D * 2) : r0;
-  const rb2 = effect3D < 0.5 ? blendColors(r1, r2, effect3D * 2) : r2;
-  const rb5 = effect3D < 0.5 ? blendColors(r1, r5, effect3D * 2) : r5;
-
-  // Get paper shine effect
-  const shineEffect = PAPER_SHINE_EFFECTS[paperShine];
-  const shineCss = shineEffect && shineEffect.css ? (typeof shineEffect.css === 'function' ? shineEffect.css(paperShineIntensity) + ',' : '') : '';
-
-  // Bow image selection
-  const bowImage = bowStyle === 3 ? 'images/holiday_bow_3.png' : bowStyle === 2 ? 'images/holiday_bow_2.png' : 'images/holiday_bow.png';
-
-  // Border style
-  const borderStyle = borderEnabled ? `${borderWidth}px solid ${borderColor}` : 'none';
-
-  styleEl.textContent = `
-    /* Dynamic Holiday Styles */
-    body.holiday-mode .header {
-      background: 
-        /* Paper shine effect */
-        ${shineCss}
-        /* Horizontal ribbon */
-        linear-gradient(
-          to bottom,
-          transparent calc(50% - ${ribbonWidth / 2}px),
-          ${rb0} calc(50% - ${ribbonWidth / 2}px),
-          ${r1} calc(50% - ${ribbonWidth / 2 - 2}px),
-          ${rb2} calc(50% - 2px),
-          ${r1} 50%,
-          ${rb2} calc(50% + 2px),
-          ${r1} calc(50% + ${ribbonWidth / 2 - 2}px),
-          ${rb0} calc(50% + ${ribbonWidth / 2}px),
-          transparent calc(50% + ${ribbonWidth / 2}px)
-        ),
-        ${wrapBg};
-      /* cursor: pointer; removed */
-      position: relative;
-      border: ${borderStyle} !important;
-    }
-    
-    /* Active removed */
-    
-    /* Vertical ribbon */
-    body.holiday-mode .header::before {
-      width: ${ribbonWidth}px;
-      background: linear-gradient(
-        to right,
-        ${rb0} 0%,
-        ${r1} 15%,
-        ${rb2} 40%,
-        ${r1} 60%,
-        ${rb0} 85%,
-        ${rb5} 100%
-      );
-    }
-    
-    /* Bow */
-    body.holiday-mode .header::after {
-      content: '';
-      position: absolute;
-      top: calc(-${bowSize * 0.35}px + ${bowOffset}px);
-      left: 50%;
-      transform: translateX(-50%);
-      width: ${bowSize}px;
-      height: ${bowSize}px;
-      background-image: url('${bowImage}');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      pointer-events: none;
-      z-index: 10;
-      filter: drop-shadow(0 ${bowShadow}px ${bowShadowSpread}px rgba(0, 0, 0, 0.5));
-    }
-    
-    
-    /* Holiday Design Panel Styles */
-    #holidayDesignPanel {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 280px;
-      background: linear-gradient(135deg, rgba(30,30,30,0.98) 0%, rgba(20,20,20,0.98) 100%);
-      border: 1px solid rgba(212, 175, 55, 0.5);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(212, 175, 55, 0.2);
-      z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      overflow: hidden;
-    }
-    
-    .holiday-panel-header {
-      background: linear-gradient(90deg, #8B1A1A 0%, #6B0F0F 100%);
-      color: white;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    
-    .holiday-panel-content {
-      padding: 16px;
-    }
-    
-    .holiday-control {
-      margin-bottom: 16px;
-    }
-    
-    .holiday-control:last-child {
-      margin-bottom: 0;
-    }
-    
-    .holiday-control label {
-      display: block;
-      color: #ccc;
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-    
-    .holiday-control label span {
-      color: #D4AF37;
-      font-weight: 600;
-    }
-    
-    .holiday-control input[type="range"] {
-      width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: #333;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    
-    .holiday-control input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    
-    .holiday-control select {
-      width: 100%;
-      padding: 8px 12px;
-      background: #333;
-      border: 1px solid #555;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    
-    .holiday-control select:focus {
-      outline: none;
-      border-color: #D4AF37;
-    }
-    
-    .holiday-section {
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .holiday-section:last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-    
-    .holiday-section-title {
-      color: #D4AF37;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .toggle-switch-mini {
-      position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 22px;
-    }
-    
-    .toggle-switch-mini input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .toggle-slider-mini {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #333;
-      transition: .3s;
-      border-radius: 22px;
-    }
-    
-    .toggle-slider-mini:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    
-    .toggle-switch-mini input:checked + .toggle-slider-mini {
-      background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
-    }
-    
-    .toggle-switch-mini input:checked + .toggle-slider-mini:before {
-      transform: translateX(18px);
-    }
-  `;
-}
-
 async function handleCloudProviderChange() {
   const isGithub = document.getElementById('cloudProviderGithub').checked;
   const githubSection = document.getElementById('githubConfigSection');
@@ -7048,7 +6562,7 @@ async function handleCloudProviderChange() {
 
     // When switching to Custom, restore the stored Custom URL and connected state
     try {
-      const response = await fetch(`${API}/cloud-sync/settings`);
+      const response = await fetch(`${API} /cloud-sync/settings`);
       const data = await response.json();
       if (data.success && data.settings.customRemoteUrl) {
         // Restore URL to input
