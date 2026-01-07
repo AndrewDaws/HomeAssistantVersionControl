@@ -44,8 +44,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            # Tag as latest on main branch push or full release
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || (github.event_name == 'release' && !github.event.release.prerelease) }}
+            # Tag as latest ONLY on full release (ensures it always has a version number)
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
             # Tag as beta on develop branch push or pre-release
             type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' || (github.event_name == 'release' && github.event.release.prerelease) }}
             # Branch tagging
