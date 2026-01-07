@@ -1,6 +1,8 @@
 name: Docker
 
 on:
+  push:
+    branches: [ "main", "develop" ]
   release:
     types: [published]
   workflow_dispatch:
@@ -42,13 +44,14 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            # 'latest' tag: for stable releases or manual trigger on main
-            type=raw,value=latest,enable=${{ (github.event_name == 'release' && !github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
-            # 'beta' tag: for pre-releases or manual trigger on develop
-            type=raw,value=beta,enable=${{ (github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop') }}
-            # Branch-specific tags (only for branch events)
-            type=sha,prefix={{branch}}-,enable=${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-            type=ref,event=branch,enable=${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+            # Tag as latest on main branch push or full release
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || (github.event_name == 'release' && !github.event.release.prerelease) }}
+            # Tag as beta on develop branch push or pre-release
+            type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' || (github.event_name == 'release' && github.event.release.prerelease) }}
+            # Branch tagging
+            type=ref,event=branch
+            # Commit SHA tagging (simple sha for pushes only)
+            type=sha,enable=${{ github.event_name == 'push' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
