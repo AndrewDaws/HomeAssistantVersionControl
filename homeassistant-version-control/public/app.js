@@ -6748,7 +6748,7 @@ async function executeSoftReset(commitHash) {
     console.log('[soft-reset] Server response:', data);
 
     if (data.success) {
-      showNotification(`Timeline reset! ${data.commitsRemoved} version(s) removed.`, 'success', 4000);
+      showNotification('Timeline reset!', 'success', 4000);
       // Refresh the timeline
       await loadTimeline();
     } else {
