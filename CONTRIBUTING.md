@@ -24,6 +24,16 @@ If you've already created a PR targeting `main`, you can change it by clicking "
 4. Submit a PR targeting `develop`
 5. Your changes will be tested in beta, then merged to `main` for stable releases
 
+## Release Process
+
+| Environment | Branch | Docker Tag | Repo |
+|-------------|--------|------------|------|
+| **Beta** | `develop` | `beta` | `ha-addons-beta` |
+| **Stable** | `main` | `latest` | `ha-addons` |
+
+- **For Beta Tracking:** Simply push to the `develop` branch.
+- **For Official Release:** Merge `develop` → `main`, then create a **GitHub Release** on `main`. This will tag the image with the version number and update `latest`.
+
 ## Questions?
 
 Open an issue if you're unsure where your contribution should go!
