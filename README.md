@@ -53,14 +53,14 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/DiggingForDinos/ha-addons)
+    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://codeberg.org/DiggingForDinos/ha-addons)
 
     **Or manually add it:**
     - Navigate to **Settings** → **Add-ons** → **Add-on Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
-      https://github.com/DiggingForDinos/ha-addons
+      https://codeberg.org/DiggingForDinos/ha-addons
       ```
 2.  **Install the Add-on:**
     The "Home Assistant Version Control" add-on will now appear in the store. Click on it and then click "Install".
@@ -112,7 +112,7 @@ Replace `/path/to/your/config` with the actual path to your Home Assistant confi
 **Option C: Build locally:**
 
 ```bash
-git clone https://github.com/DiggingForDinos/HomeAssistantVersionControl.git
+git clone https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl.git
 cd HomeAssistantVersionControl/homeassistant-version-control
 docker build --build-arg BUILD_FROM=alpine:latest -t home-assistant-version-control .
 
@@ -359,6 +359,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ##  Support
 
-Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControl/issues).
+Found a bug or have a feature request? Please [submit an issue on GitHub](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
 
 **If you find this add-on helpful, please ⭐ star the repository!**
