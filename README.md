@@ -14,11 +14,11 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ---
 
-![Screenshot 1](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/1.png)
-![Screenshot 2](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/2.1.png)
-![Screenshot 3](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/3.png)
-![Screenshot 4](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/4.png)
-![Screenshot 5](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/5.png)
+![Screenshot 1](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/1.png)
+![Screenshot 2](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/2.1.png)
+![Screenshot 3](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/3.png)
+![Screenshot 4](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/4.png)
+![Screenshot 5](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/5.png)
 
 > [!IMPORTANT]
 > 1. **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up first**. The add-on will use your existing repository but may conflict with your workflow through auto-commits and automatic merging of old history. **For best results, delete the existing `.git` folder** and let the add-on create a fresh repository.
@@ -71,14 +71,14 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/DiggingForDinos/ha-addons-beta)
+    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://codeberg.org/DiggingForDinos/ha-addons)
 
     **Or manually add it:**
     - Navigate to **Settings** → **Add-ons** → **Add-on Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
-      https://github.com/DiggingForDinos/ha-addons-beta
+      https://codeberg.org/DiggingForDinos/ha-addons
       ```
 
 2.  **Install the Add-on:**
@@ -96,7 +96,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/compose.yaml
+   curl -o compose.yaml https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -131,7 +131,7 @@ Replace `/path/to/your/config` with the actual path to your Home Assistant confi
 **Option C: Build locally:**
 
 ```bash
-git clone https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta.git
+git clone https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl.git
 cd HomeAssistantVersionControlBeta/homeassistant-version-control
 docker build --build-arg BUILD_FROM=alpine:latest -t homeassistantversioncontrolbeta .
 
@@ -331,6 +331,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ##  Support
 
-Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta/issues).
+Found a bug or have a feature request? Please [submit an issue on Codeberg](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
 
 **If you find this add-on helpful, please ⭐ star the repository!**
