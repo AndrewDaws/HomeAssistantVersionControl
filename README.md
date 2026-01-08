@@ -4,11 +4,11 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-![Screenshot 1](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/1.png)
-![Screenshot 2](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/2.1.png)
-![Screenshot 3](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/3.png)
-![Screenshot 4](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/4.png)
-![Screenshot 5](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/5.png)
+![Screenshot 1](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/1.png)
+![Screenshot 2](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/2.1.png)
+![Screenshot 3](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/3.png)
+![Screenshot 4](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/4.png)
+![Screenshot 5](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/5.png)
 
 ##  Key Features
 
@@ -77,7 +77,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/compose.yaml
+   curl -o compose.yaml https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -349,13 +349,12 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 
 ---
 
-## Support & Contributing
+## Contributing & Support
 
-Found a bug or have a feature request? Please [submit an issue on Codeberg](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
+Contributions are welcome! Check out [contribution guidelines](CONTRIBUTING.md) for more details.
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-*   **TL;DR:** New features → target the `develop` branch. Bug fixes → `main` is fine.
+If you encounter a bug or have a feature request, feel free to [open an issue](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
 
-If you find this add-on helpful, please ⭐ star the repository!
+If you'd like to buy me a coffee, you can do so [here](https://ko-fi.com/diggingfordinos).
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-orange?style=for-the-badge&logo=ko-fi)](https://ko-fi.com/diggingfordinos)
+**If you find this add-on helpful, please ⭐ star the repository!**
