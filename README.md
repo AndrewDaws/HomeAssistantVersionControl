@@ -321,16 +321,13 @@ curl -X POST http://homeassistant.local:54001/api/cloud-sync/push \
 
 ---
 
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-**TL;DR:** New features → target the `develop` branch. Bug fixes → `main` is fine.
-
----
-
-##  Support
+## Support & Contributing
 
 Found a bug or have a feature request? Please [submit an issue on Codeberg](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
 
-**If you find this add-on helpful, please ⭐ star the repository!**
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+*   **TL;DR:** New features → target the `develop` branch. Bug fixes → `main` is fine.
+
+If you find this add-on helpful, please ⭐ star the repository!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-orange?style=for-the-badge&logo=ko-fi)](https://ko-fi.com/diggingfordinos)
