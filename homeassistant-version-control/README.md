@@ -1,44 +1,14 @@
-<<<<<<< HEAD
 # Home Assistant Version Control Beta
-
-**The ultimate undo button for Home Assistant.**
-
-Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
-
----
-
-## What's New?
-- **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync **manually**, **daily**, or **automatically after every change**.
-- **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like `.sh`, `.py`, `.json` directly in the add-on's Configuration tab.
-* **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
-* **Progressive History Loading:** Versions now load faster, displaying results as they're found.
-
----
-
-![Screenshot 1](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/1.png)
-![Screenshot 2](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/2.1.png)
-![Screenshot 3](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/3.png)
-![Screenshot 4](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/4.png)
-![Screenshot 5](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/images/screenshots/5.png)
-
-> [!IMPORTANT]
-> 1. **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up first**. The add-on will use your existing repository but may conflict with your workflow through auto-commits and automatic merging of old history. **For best results, delete the existing `.git` folder** and let the add-on create a fresh repository.
-> 2. **Backup Strategy:** While this add-on provides excellent version control, **do not rely on it as your sole backup method**. Always maintain external backups (e.g., Google Drive, Samba) of your Home Assistant instance.
-
-
-=======
-# Home Assistant Version Control
 
 **Automatic backup, history tracking, and instant restore for your Home Assistant configuration.**
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-![Screenshot 1](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/1.png)
-![Screenshot 2](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/2.1.png)
-![Screenshot 3](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/3.png)
-![Screenshot 4](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/4.png)
-![Screenshot 5](https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/images/screenshots/5.png)
->>>>>>> pr-7
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/1.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/2.1.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/3.png)
+![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/4.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/5.png)
 
 ##  Key Features
 
@@ -46,11 +16,7 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Zero-Effort Backups:** Every edit is saved automatically.
 * **Smart Debouncing:** Multiple rapid edits are grouped into a single save snapshot (customizable delay).
 * **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files (both UI and YAML mode).
-<<<<<<< HEAD
-* **Efficient Storage:** Uses Git deduplication to minimize disk usage—only stores the differences between versions.
-=======
 * **Efficient Storage:** Uses Git deduplication to minimize disk usage by storing only the differences between versions.
->>>>>>> pr-7
 
 ### Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
@@ -62,24 +28,11 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Smart Reloads:** Automatically reloads Home Assistant when restoring automation or script files to apply changes immediately.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
-<<<<<<< HEAD
-### Cloud Backup
-*Every change synced to the cloud.* Push your configuration to GitHub or Gitea for secure off-site storage.
-* **Automatic Sync:** Choose to push after every commit, hourly, daily, or manually.
-* **Clean History:** Uses force push to keep your remote repository in sync with local history.
-* **Secrets Protection:** `secrets.yaml` is excluded from Git by default (both locally and remotely) to prevent accidental storing of credentials. This can be toggled in the Cloud settings.
-
-=======
->>>>>>> pr-7
 ### Customization
 * **Color Theme:** Choose from seven preset color palettes.
 * **Light Themes:** Toggle between Light and Dark modes.
 * **Comparison View:**
-<<<<<<< HEAD
-  * **Style:** Customize your comparisons with 8 different themes. Cycle through them by clicking the diff header.
-=======
   * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.).
->>>>>>> pr-7
   * **Layout:** Choose between Stacked (Unified) or Side-by-Side views.
   * **Comparison:**
     * **Current (Default):** Compare against your **Current File** on disk to see how far you've deviated since that backup.
@@ -89,13 +42,10 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ## Installation
 
-<<<<<<< HEAD
-=======
 > [!IMPORTANT]
 > 1. **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up first**. The add-on will use your existing repository but may conflict with your workflow through auto-commits and automatic merging of old history. **For best results, delete the existing `.git` folder** and let the add-on create a fresh repository.
 > 2. **Backup Strategy:** While this add-on provides excellent version control, **do not rely on it as your sole backup method**. Always maintain external backups (e.g., Google Drive, Samba) of your Home Assistant instance.
 
->>>>>>> pr-7
 There are two ways to install Home Assistant Version Control: as a Home Assistant add-on or as a standalone Docker container.
 
 ### 1. Home Assistant Add-on (Recommended for most users)
@@ -103,23 +53,17 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/DiggingForDinos/ha-addons)
+    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/saihgupr/ha-addons)
 
     **Or manually add it:**
     - Navigate to **Settings** → **Add-ons** → **Add-on Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
-      https://github.com/DiggingForDinos/ha-addons
+      https://github.com/saihgupr/ha-addons
       ```
-<<<<<<< HEAD
-
-2.  **Install the Add-on:**
-    The "Home Assistant Version Control Beta" add-on will now appear in the store. Click on it and then click "Install".
-=======
 2.  **Install the Add-on:**
     The "Home Assistant Version Control" add-on will now appear in the store. Click on it and then click "Install".
->>>>>>> pr-7
 
 3.  **Start:** Start the add-on and click **"Open Web UI"** to access the interface.
 
@@ -133,11 +77,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-<<<<<<< HEAD
-   curl -o compose.yaml https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControlBeta/main/compose.yaml
-=======
-   curl -o compose.yaml https://raw.githubusercontent.com/DiggingForDinos/HomeAssistantVersionControl/main/compose.yaml
->>>>>>> pr-7
+   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -164,11 +104,7 @@ docker run -d \
   -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   -e HA_URL=http://homeassistant.local:8123 \
   --name home-assistant-version-control \
-<<<<<<< HEAD
-  ghcr.io/diggingfordinos/ha-version-control:latest
-=======
-  ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
->>>>>>> pr-7
+  ghcr.io/saihgupr/homeassistantversioncontrol:latest
 ```
 
 Replace `/path/to/your/config` with the actual path to your Home Assistant configuration directory.
@@ -176,13 +112,8 @@ Replace `/path/to/your/config` with the actual path to your Home Assistant confi
 **Option C: Build locally:**
 
 ```bash
-<<<<<<< HEAD
-git clone https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta.git
-cd HomeAssistantVersionControlBeta/homeassistant-version-control
-=======
-git clone https://github.com/DiggingForDinos/HomeAssistantVersionControl.git
+git clone https://github.com/saihgupr/HomeAssistantVersionControl.git
 cd HomeAssistantVersionControl/homeassistant-version-control
->>>>>>> pr-7
 docker build --build-arg BUILD_FROM=alpine:latest -t home-assistant-version-control .
 
 docker run -d \
@@ -213,11 +144,7 @@ Access the interface at `http://localhost:54001`.
 ### The Workflow
 1.  **File Watcher:** The system continuously monitors your `/config` folder for changes to YAML files.
 2.  **Stabilization:** When a change is detected, it waits **2 seconds** to ensure Home Assistant has finished writing the file (preventing corruption).
-<<<<<<< HEAD
-3.  **Debounce:** It then waits for your configured **Debounce Time** (default 3s) to batch related edits into a single commit.
-=======
 3.  **Debounce:** It then waits for your configured **Debounce Time** (default 5s) to batch related edits into a single commit.
->>>>>>> pr-7
 4.  **Snapshot:** A Git commit is created with a timestamp.
 5.  **Cleanup:** If enabled, old snapshots are consolidated periodically.
 
@@ -227,14 +154,6 @@ The add-on automatically tracks configuration files while ignoring system files.
 | Tracked ✅ | Ignored ❌ |
 | :--- | :--- |
 | `configuration.yaml` | Database files (`.db`, `.db-shm`) |
-<<<<<<< HEAD
-| `automations.yaml`, `scripts.yaml` | `secrets.yaml` (default) |
-| Lovelace dashboards (`.storage/lovelace*`) | Log files (`*.log`) |
-| `esphome/*.yaml` | Python cache (`__pycache__`) |
-| Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
-| `esphome/*.yaml` | Temporary files |
-| All other `.yaml` and `.yml` files | |
-=======
 | `automations.yaml`, `scripts.yaml` | Log files (`*.log`) |
 | `secrets.yaml` | Python cache (`__pycache__`) |
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
@@ -244,7 +163,6 @@ The add-on automatically tracks configuration files while ignoring system files.
 > [!TIP]
 > **Excluding Files (e.g., secrets.yaml):**
 > You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to hide, and the add-on will automatically exclude them from version control.
->>>>>>> pr-7
 
 ---
 
@@ -261,11 +179,6 @@ API for advanced users or automation.
 | `POST` | `/api/restore-file` | **Restore File:** Restore a single file to a specific commit. |
 | `POST` | `/api/git/hard-reset` | **Hard Reset:** Reset the repository to a specific commit (destructive). |
 | `POST` | `/api/ha/restart` | **Restart HA:** Triggers a Home Assistant restart. |
-<<<<<<< HEAD
-| `POST` | `/api/cloud-sync/push` | **Cloud Push:** Push to remote repository immediately. |
-| `GET` | `/api/cloud-sync/status` | **Cloud Status:** Get current cloud sync status and last push time. |
-=======
->>>>>>> pr-7
 | `GET` | `/api/git/history` | **Get History:** Returns the full commit history log. |
 | `GET` | `/api/git/file-diff` | **File Comparison:** Get the diff for a specific file in a commit. |
 | `GET` | `/api/git/commit-diff` | **Commit Comparison:** Get the full diff for a specific commit. |
@@ -331,30 +244,12 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
-<<<<<<< HEAD
-#### `POST /api/cloud-sync/push`
-Push to the configured remote repository immediately. Useful for triggering cloud backups from automations.
-
-**Parameters:**
-*   `force` (boolean, optional): If `true`, push even if cloud sync is disabled. Default: `false`.
-
-**Example:**
-```bash
-curl -X POST http://homeassistant.local:54001/api/cloud-sync/push \
-  -H "Content-Type: application/json" \
-  -d '{"force": true}'
-```
-
-=======
->>>>>>> pr-7
 ---
 
-##  Support
+## Support & Contributing
 
-<<<<<<< HEAD
-Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControlBeta/issues).
-=======
-Found a bug or have a feature request? Please [submit an issue on GitHub](https://github.com/DiggingForDinos/HomeAssistantVersionControl/issues).
->>>>>>> pr-7
+Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-**If you find this add-on helpful, please ⭐ star the repository!**
+- **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
+- **Want to contribute?** Use the `develop` branch for new features; bug fixes are welcome on `main`.
+- **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!

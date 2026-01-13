@@ -1,9 +1,9 @@
 {
-  "name": "Home Assistant Version Control Beta",
-  "version": "1.0.3",
-  "slug": "home-assistant-version-control-beta",
-  "description": "Git-powered version control and automated backup for your Home Assistant configuration files",
-  "url": "https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl",
+  "name": "Home Assistant Version Control",
+  "version": "1.0.0",
+  "slug": "home-assistant-version-control",
+  "description": "Git-powered version control and automated backup for your Home Assistant configuration files.",
+  "url": "https://github.com/saihgupr/HomeAssistantVersionControl",
   "startup": "application",
   "boot": "auto",
   "arch": [
@@ -25,29 +25,13 @@
   },
   "map": [
     "config:rw",
-    "ssl",
-    "data:rw"
+    "ssl"
   ],
   "environment": {
     "CONFIG_PATH": "/config"
   },
-  "options": {
-    "include_extensions": [
-      "yaml",
-      "yml"
-    ],
-    "exclude_files": [
-      "secrets.yaml"
-    ]
-  },
-  "schema": {
-    "include_extensions": [
-      "str"
-    ],
-    "exclude_files": [
-      "str"
-    ]
-  },
+  "options": {},
+  "schema": {},
   "healthcheck": {
     "test": [
       "CMD",
@@ -61,15 +45,14 @@
     "retries": 3
   },
   "codeowners": [
-    "DiggingForDinos"
+    "@saihgupr"
   ],
   "labels": {
-    "org.opencontainers.image.title": "Home Assistant Version Control Beta",
+    "org.opencontainers.image.title": "Home Assistant Version Control",
     "org.opencontainers.image.description": "Git-powered version control for Home Assistant configuration",
-    "org.opencontainers.image.source": "https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl",
+    "org.opencontainers.image.source": "https://github.com/saihgupr/HomeAssistantVersionControl",
     "org.opencontainers.image.licenses": "MIT"
   },
-  "stage": "experimental",
   "supported": false,
   "ingress": true,
   "panel_icon": "mdi:auto-fix",
