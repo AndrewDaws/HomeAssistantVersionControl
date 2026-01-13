@@ -30,8 +30,23 @@
   "environment": {
     "CONFIG_PATH": "/config"
   },
-  "options": {},
-  "schema": {},
+  "options": {
+    "include_extensions": [
+      "yaml",
+      "yml"
+    ],
+    "exclude_files": [
+      "secrets.yaml"
+    ]
+  },
+  "schema": {
+    "include_extensions": [
+      "str"
+    ],
+    "exclude_files": [
+      "str"
+    ]
+  },
   "healthcheck": {
     "test": [
       "CMD",
