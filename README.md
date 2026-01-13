@@ -4,11 +4,11 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-![Screenshot 1](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/1.png)
-![Screenshot 2](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/2.1.png)
-![Screenshot 3](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/3.png)
-![Screenshot 4](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/4.png)
-![Screenshot 5](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/images/screenshots/5.png)
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/1.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/2.1.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/3.png)
+![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/4.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/5.png)
 
 ##  Key Features
 
@@ -53,14 +53,14 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://codeberg.org/DiggingForDinos/ha-addons)
+    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/saihgupr/ha-addons)
 
     **Or manually add it:**
     - Navigate to **Settings** → **Add-ons** → **Add-on Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
-      https://codeberg.org/DiggingForDinos/ha-addons
+      https://github.com/saihgupr/ha-addons
       ```
 2.  **Install the Add-on:**
     The "Home Assistant Version Control" add-on will now appear in the store. Click on it and then click "Install".
@@ -77,7 +77,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/raw/branch/main/compose.yaml
+   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -104,7 +104,7 @@ docker run -d \
   -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   -e HA_URL=http://homeassistant.local:8123 \
   --name home-assistant-version-control \
-  ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/homeassistantversioncontrol:latest
 ```
 
 Replace `/path/to/your/config` with the actual path to your Home Assistant configuration directory.
@@ -112,7 +112,7 @@ Replace `/path/to/your/config` with the actual path to your Home Assistant confi
 **Option C: Build locally:**
 
 ```bash
-git clone https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl.git
+git clone https://github.com/saihgupr/HomeAssistantVersionControl.git
 cd HomeAssistantVersionControl/homeassistant-version-control
 docker build --build-arg BUILD_FROM=alpine:latest -t home-assistant-version-control .
 
@@ -185,7 +185,7 @@ For containerized deployments (especially when not persisting the `/data` direct
 version: '3.8'
 services:
   havc:
-    image: ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
+    image: ghcr.io/saihgupr/homeassistantversioncontrol:latest
     ports:
       - "54001:54001"
     volumes:
@@ -213,7 +213,7 @@ docker run -d \
   -e RETENTION_VALUE=30 \
   -e RETENTION_UNIT=days \
   --name home-assistant-version-control \
-  ghcr.io/diggingfordinos/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/homeassistantversioncontrol:latest
 ```
 
 **Validation and Logging:**
@@ -349,12 +349,10 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 
 ---
 
-## Contributing & Support
+## Support & Contributing
 
-Contributions are welcome! Check out [contribution guidelines](CONTRIBUTING.md) for more details.
+Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-If you encounter a bug or have a feature request, feel free to [open an issue](https://codeberg.org/DiggingForDinos/HomeAssistantVersionControl/issues).
-
-If you'd like to buy me a coffee, you can do so [here](https://ko-fi.com/diggingfordinos).
-
-**If you find this add-on helpful, please ⭐ star the repository!**
+- **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
+- **Want to contribute?** Use the `develop` branch for new features; bug fixes are welcome on `main`.
+- **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!

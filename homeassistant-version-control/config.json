@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "slug": "home-assistant-version-control",
   "description": "Git-powered version control and automated backup for your Home Assistant configuration files.",
-  "url": "https://github.com/DiggingForDinos/HomeAssistantVersionControl",
+  "url": "https://github.com/saihgupr/HomeAssistantVersionControl",
   "startup": "application",
   "boot": "auto",
   "arch": [
@@ -45,12 +45,12 @@
     "retries": 3
   },
   "codeowners": [
-    "@diggingfordinos"
+    "@saihgupr"
   ],
   "labels": {
     "org.opencontainers.image.title": "Home Assistant Version Control",
     "org.opencontainers.image.description": "Git-powered version control for Home Assistant configuration",
-    "org.opencontainers.image.source": "https://github.com/DiggingForDinos/HomeAssistantVersionControl",
+    "org.opencontainers.image.source": "https://github.com/saihgupr/HomeAssistantVersionControl",
     "org.opencontainers.image.licenses": "MIT"
   },
   "supported": false,
