@@ -4,6 +4,7 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
+
 ##  What's New!
 
 *   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
@@ -356,12 +357,12 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
----
-
 ## Support & Contributing
 
-Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues) on GitHub.
 
-- **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
-- **Want to contribute?** Use the `develop` branch for all features and bug fixes.
-- **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!
+Want to contribute? Check out the [contributing guidelines](CONTRIBUTING.md).
+
+Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
+
+Enjoying this project? Consider [buying me a coffee](https://ko-fi.com/saihgupr) or leaving a ⭐ star on the repository!
