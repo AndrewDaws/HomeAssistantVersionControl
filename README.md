@@ -4,11 +4,11 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/1.png)
-![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/2.1.png)
-![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/3.png)
-![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/4.png)
-![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/5.png)
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.1.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.png)
+![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/4.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.png)
 
 ##  Key Features
 
@@ -77,7 +77,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/compose.yaml
+   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -354,5 +354,5 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 - **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
-- **Want to contribute?** Use the `develop` branch for new features; bug fixes are welcome on `main`.
+- **Want to contribute?** Use the `develop` branch for all features and bug fixes.
 - **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!

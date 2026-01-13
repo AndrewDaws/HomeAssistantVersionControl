@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0]
+
+### Changed
+- **Default Branch:** Switched primary development and cloud sync branch from `main` to `develop`.
+- **Cloud Sync:** Automatic backups now point to the `develop` branch on remote repositories.
+
 ## [1.0.3]
 
 ### Added
