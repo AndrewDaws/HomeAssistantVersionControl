@@ -7,7 +7,3 @@
 - **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
 - **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
 - **Progressive History Loading:** Versions now load faster, displaying results as they're found.
-
-### Changed
-- **Default Branch:** Switched primary development and cloud sync branch from `main` to `develop`.
-- **Cloud Sync:** Automatic backups now point to the `develop` branch on remote repositories.
