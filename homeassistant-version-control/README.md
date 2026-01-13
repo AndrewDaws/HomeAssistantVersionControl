@@ -357,12 +357,14 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
-## Support & Contributing
+## Contributing
 
-Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues) on GitHub.
+Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
 
-Want to contribute? Check out the [contributing guidelines](CONTRIBUTING.md).
+Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
 
-Enjoying this project? Consider [buying me a coffee](https://ko-fi.com/saihgupr) or leaving a ⭐ star on the repository!
+## Support
+
+Enjoying this project? Consider [buying me a coffee](https://ko-fi.com/saihgupr) or leaving a star on the repository!
