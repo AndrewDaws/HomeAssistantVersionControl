@@ -1,6 +1,6 @@
 {
   "name": "Home Assistant Version Control",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "slug": "home-assistant-version-control",
   "description": "Git-powered version control and automated backup for your Home Assistant configuration files.",
   "url": "https://github.com/saihgupr/HomeAssistantVersionControl",
@@ -30,23 +30,8 @@
   "environment": {
     "CONFIG_PATH": "/config"
   },
-  "options": {
-    "include_extensions": [
-      "yaml",
-      "yml"
-    ],
-    "exclude_files": [
-      "secrets.yaml"
-    ]
-  },
-  "schema": {
-    "include_extensions": [
-      "str"
-    ],
-    "exclude_files": [
-      "str"
-    ]
-  },
+  "options": {},
+  "schema": {},
   "healthcheck": {
     "test": [
       "CMD",

@@ -4,21 +4,11 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-
-##  What's New!
-
-*   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
-*   **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
-*   **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
-*   **Progressive History Loading:** Versions now load faster, displaying results as they're found.
-*   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
-
-
-![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.png)
-![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.1.png)
-![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.png)
-![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/4.png)
-![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.png)
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/1.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/2.1.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/3.png)
+![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/4.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/5.png)
 
 ##  Key Features
 
@@ -87,7 +77,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/compose.yaml
+   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -140,109 +130,6 @@ docker run -d \
 > The `SUPERVISOR_TOKEN` and `HA_URL` are optional. You can omit those lines if you don't need Home Assistant restart/reload features.
 
 Access the interface at `http://localhost:54001`.
-
----
-
-## Configuration
-
-### Runtime Settings
-
-The application can be configured through the web UI Settings page or via environment variables for containerized deployments.
-
-#### Available Settings
-
-| Setting | Description | Default |
-| :--- | :--- | :--- |
-| **Debounce Time** | Time to wait after detecting changes before creating a commit | `5 seconds` |
-| **History Retention** | Automatically merge old commits to keep history clean | `Disabled` |
-| **Retention Type** | Keep history based on time or number of versions | `time` |
-| **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
-| **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
-
-#### Environment Variable Configuration
-
-For containerized deployments (especially when not persisting the `/data` directory), you can configure runtime settings using environment variables. This is particularly useful for:
-- Docker/Podman deployments without persistent data volumes
-- Infrastructure-as-code configurations
-- Automated deployments with predefined settings
-
-**Precedence order (per-setting):**
-1. **Settings file** (`/data/runtime-settings.json`) - highest priority
-2. **Environment variables** - middle priority
-3. **Default values** - fallback
-
-#### Environment Variable Reference
-
-| Environment Variable | Setting | Type | Valid Values | Default |
-| :--- | :--- | :--- | :--- | :--- |
-| `DEBOUNCE_TIME` | Debounce Time | Number | ≥ 0 | `5` |
-| `DEBOUNCE_TIME_UNIT` | Debounce Time Unit | String | `seconds`, `minutes`, `hours`, `days` | `seconds` |
-| `HISTORY_RETENTION` | History Retention | Boolean | `true`, `false`, `yes`, `no`, `1`, `0` | `false` |
-| `RETENTION_TYPE` | Retention Type | String | `time`, `versions` | `time` |
-| `RETENTION_VALUE` | Retention Value | Number | ≥ 1 | `90` |
-| `RETENTION_UNIT` | Retention Unit | String | `hours`, `days`, `weeks`, `months` | `days` |
-
-**Notes:**
-- Boolean values are case-insensitive and accept: `true`/`false`, `yes`/`no`, `1`/`0`
-- String values (units, types) are case-insensitive: `SECONDS` and `seconds` are equivalent
-- Invalid values trigger warnings in logs and fall back to defaults
-- Empty values are ignored
-
-#### Docker Examples
-
-**Docker Compose with environment variables:**
-```yaml
-version: '3.8'
-services:
-  havc:
-    image: ghcr.io/saihgupr/homeassistantversioncontrol:latest
-    ports:
-      - "54001:54001"
-    volumes:
-      - /path/to/your/config:/config
-    environment:
-      - TZ=America/New_York
-      - DEBOUNCE_TIME=10
-      - DEBOUNCE_TIME_UNIT=minutes
-      - HISTORY_RETENTION=true
-      - RETENTION_TYPE=time
-      - RETENTION_VALUE=30
-      - RETENTION_UNIT=days
-```
-
-**Docker Run with environment variables:**
-```bash
-docker run -d \
-  -p 54001:54001 \
-  -v /path/to/your/config:/config \
-  -e TZ=America/New_York \
-  -e DEBOUNCE_TIME=10 \
-  -e DEBOUNCE_TIME_UNIT=minutes \
-  -e HISTORY_RETENTION=true \
-  -e RETENTION_TYPE=time \
-  -e RETENTION_VALUE=30 \
-  -e RETENTION_UNIT=days \
-  --name home-assistant-version-control \
-  ghcr.io/saihgupr/homeassistantversioncontrol:latest
-```
-
-**Validation and Logging:**
-
-When the container starts, you'll see detailed logging showing where each setting value came from:
-```
-[init] Runtime settings loaded:
-[init]   debounceTime: 10 (env: DEBOUNCE_TIME)
-[init]   debounceTimeUnit: 'minutes' (env: DEBOUNCE_TIME_UNIT)
-[init]   historyRetention: true (env: HISTORY_RETENTION)
-[init]   retentionType: 'time' (default)
-[init]   retentionValue: 30 (env: RETENTION_VALUE)
-[init]   retentionUnit: 'days' (default)
-```
-
-Invalid values will trigger warnings:
-```
-[init] Warning: Invalid DEBOUNCE_TIME='abc', Expected integer, got: 'abc'. Using default: 5
-```
 
 ---
 
@@ -357,14 +244,12 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
-## Contributing
+---
 
-Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
+## Support & Contributing
 
-Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
-
-## Support
-
-Enjoying this project? Consider [buying me a coffee](https://ko-fi.com/saihgupr) or leaving a star on the repository!
+- **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
+- **Want to contribute?** Use the `develop` branch for new features; bug fixes are welcome on `main`.
+- **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!

@@ -69,9 +69,7 @@
     "view_button": "View",
     "restore_button": "Restore",
     "restore_tooltip": "Restore this file to the version from this commit",
-    "folder_label": "Folder",
-    "deleted_empty_state": "No deleted files found",
-    "last_seen": "Last seen: {date}"
+    "folder_label": "Folder"
   },
   "automations": {
     "title": "Automations",
@@ -86,9 +84,7 @@
     "automation_restored": "{name} restored!",
     "automation_restored_reloaded": "{name} restored and reloaded successfully!",
     "automation_restore_error": "Error restoring automation: {error}",
-    "deleted_automation": "Deleted Automation",
-    "deleted_empty_state": "No deleted automations found",
-    "last_seen": "Last seen: {date}"
+    "deleted_automation": "Deleted Automation"
   },
   "scripts": {
     "title": "Scripts",
@@ -103,9 +99,7 @@
     "script_restored": "{name} restored!",
     "script_restored_reloaded": "{name} restored and reloaded successfully!",
     "script_restore_error": "Error restoring script: {error}",
-    "deleted_script": "Deleted Script",
-    "deleted_empty_state": "No deleted scripts found",
-    "last_seen": "Last seen: {date}"
+    "deleted_script": "Deleted Script"
   },
   "diff": {
     "title": "File Diff",
@@ -165,7 +159,6 @@
     "group_general": "General",
     "group_diff_viewer": "Comparison View",
     "group_appearance": "Appearance",
-    "env_vars_note": "Note: Settings can also be pre-configured via environment variables.",
     "diff_view": "Layout",
     "diff_view_unified": "Stacked",
     "diff_view_split": "Side-by-Side",
@@ -183,32 +176,7 @@
     "diff_style_pastel": "Pastel",
     "diff_style_minimal": "Minimal Border",
     "diff_style_split": "Split Highlight",
-    "winter_mode": "Winter Mode",
-    "group_cloud_backup": "Cloud Backup",
-    "cloud_provider": "Cloud Provider",
-    "cloud_provider_custom": "Custom",
-    "cloud_sync_enabled": "Enable Cloud Sync",
-    "cloud_remote_url": "Repository URL",
-    "cloud_remote_url_desc": "Create a new private repository, then paste the URL here",
-    "cloud_auth_token": "Access Token",
-    "cloud_auth_token_desc": "Create a personal access token with repo permissions",
-    "cloud_push_frequency": "Push Frequency",
-    "cloud_push_manual": "Manual Only",
-    "cloud_push_every_commit": "After Every Commit",
-    "cloud_push_hourly": "Hourly",
-    "cloud_push_daily": "Daily",
-    "cloud_include_secrets": "Include secrets.yaml",
-    "cloud_test_connection": "Test Connection",
-    "cloud_push_now": "Push Now",
-    "cloud_last_push": "Last push:",
-    "cloud_repo_name": "Repository Name",
-    "cloud_repo_name_desc": "A private repository will be created automatically",
-    "cloud_github_account": "GitHub Account",
-    "cloud_custom_account": "Custom Account",
-    "cloud_connect_github": "Connect GitHub",
-    "cloud_github_enter_code": "Enter this code at:",
-    "cloud_github_waiting": "Waiting for authorization...",
-    "cloud_disconnect": "Disconnect"
+    "holiday_mode": "Holiday Mode"
   },
   "date_buckets": {
     "today": "Today",
@@ -229,8 +197,7 @@
     "default": "Default",
     "name_asc": "Name (A-Z)",
     "name_desc": "Name (Z-A)",
-    "recently_modified": "Recently Modified",
-    "deleted": "Deleted"
+    "recently_modified": "Recently Modified"
   },
   "history": {
     "no_changes": "No changes found in history",
