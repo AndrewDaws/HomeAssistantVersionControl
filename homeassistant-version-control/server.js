@@ -40,7 +40,12 @@ import {
   getAutomationDiff,
   getScriptDiff,
   restoreAutomation,
-  restoreScript
+  restoreScript,
+  getConfigFilePaths,
+  getAutomationHistoryMetadata,
+  getAutomationAtCommit,
+  getScriptHistoryMetadata,
+  getScriptAtCommit
 } from './automation-parser.js';
 
 // Override console.log and console.error to add timestamps
@@ -63,7 +68,7 @@ console.error = function (...args) {
 
 const app = express();
 const PORT = process.env.PORT || 54001;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || '::';
 
 // Ensure HOME is set for git
 if (!process.env.HOME) {
@@ -321,13 +326,31 @@ let configOptions = {
 
 // Runtime settings loaded from file
 let runtimeSettings = {
-  debounceTime: 5, // time value
-  debounceTimeUnit: 'seconds', // 'seconds', 'minutes', 'hours', 'days'
+  debounceTime: 3,
+  debounceTimeUnit: 'seconds',
   historyRetention: false,
-  retentionType: 'time', // 'time' or 'versions'
-  retentionValue: 90,
-  retentionUnit: 'days', // 'hours', 'days', 'weeks', 'months'
-
+  retentionType: 'age', // 'count' or 'age'
+  retentionValue: 30,
+  retentionUnit: 'days', // for age type
+  // Cloud Sync Settings
+  cloudSync: {
+    enabled: false,
+    remoteUrl: '', // Current active URL (set based on authProvider)
+    githubRemoteUrl: '', // Stored GitHub URL (preserved when switching)
+    customRemoteUrl: '', // Stored Custom URL (preserved when switching)
+    authProvider: '', // 'github' or 'generic'
+    authToken: '', // OAuth token or PAT
+    pushFrequency: 'manual', // 'manual', 'every_commit', 'hourly', 'daily'
+    includeSecrets: false, // Default to FALSE (exclude by default)
+    lastPushTime: null,
+    lastPushStatus: null, // 'success', 'failed'
+    lastPushError: null
+  },
+  // File extension configuration - what gets tracked/ignored
+  extensions: {
+    include: ['yaml', 'yml'], // File extensions to track
+    exclude: ['secrets.yaml'] // Specific files to ignore (always ignored regardless of extension)
+  }
 };
 
 // Schema for runtime settings with validation rules and environment variable mapping
@@ -348,7 +371,7 @@ const RUNTIME_SETTINGS_SCHEMA = {
   },
   retentionType: {
     type: 'enum',
-    values: ['time', 'versions'],
+    values: ['time', 'age', 'versions', 'count'],
     envKey: 'RETENTION_TYPE'
   },
   retentionValue: {
@@ -365,100 +388,57 @@ const RUNTIME_SETTINGS_SCHEMA = {
 
 /**
  * Parse and validate an environment variable value based on schema
- * @param {string} key - The setting key (e.g., 'debounceTime')
- * @param {object} schema - The schema definition for this setting
- * @param {string} rawValue - The raw string value from process.env
- * @returns {object} - { valid: boolean, value: any, error: string }
  */
 function parseEnvVarValue(key, schema, rawValue) {
   const trimmed = rawValue.trim();
-
-  // Skip empty values
-  if (trimmed === '') {
-    return { valid: false, error: 'Empty value' };
-  }
+  if (trimmed === '') return { valid: false, error: 'Empty value' };
 
   switch (schema.type) {
     case 'number': {
       const parsed = parseInt(trimmed, 10);
-
-      // Check if parsing failed or if there's extraneous content
-      if (isNaN(parsed) || trimmed !== String(parsed)) {
-        return { valid: false, error: `Expected integer, got: '${rawValue}'` };
-      }
-
-      // Check minimum bound
-      if (schema.min !== undefined && parsed < schema.min) {
-        return { valid: false, error: `Expected >= ${schema.min}, got: ${parsed}` };
-      }
-
-      // Check maximum bound if defined
-      if (schema.max !== undefined && parsed > schema.max) {
-        return { valid: false, error: `Expected <= ${schema.max}, got: ${parsed}` };
-      }
-
+      if (isNaN(parsed) || trimmed !== String(parsed)) return { valid: false, error: `Expected integer, got: '${rawValue}'` };
+      if (schema.min !== undefined && parsed < schema.min) return { valid: false, error: `Expected >= ${schema.min}, got: ${parsed}` };
       return { valid: true, value: parsed };
     }
-
     case 'boolean': {
       const normalized = trimmed.toLowerCase();
-      const truthyValues = ['true', '1', 'yes'];
-      const falsyValues = ['false', '0', 'no'];
-
-      if (truthyValues.includes(normalized)) {
-        return { valid: true, value: true };
-      }
-      if (falsyValues.includes(normalized)) {
-        return { valid: true, value: false };
-      }
-
-      return { valid: false, error: `Expected boolean (true/false/1/0/yes/no), got: '${rawValue}'` };
+      if (['true', '1', 'yes'].includes(normalized)) return { valid: true, value: true };
+      if (['false', '0', 'no'].includes(normalized)) return { valid: true, value: false };
+      return { valid: false, error: `Expected boolean, got: '${rawValue}'` };
     }
-
     case 'enum': {
       const normalized = trimmed.toLowerCase();
-      const match = schema.values.find(v => v.toLowerCase() === normalized);
-
-      if (match) {
-        return { valid: true, value: match }; // Return canonical casing from schema
+      // Special handling for legacy vs new retention names
+      if (key === 'retentionType') {
+        if (normalized === 'versions' || normalized === 'count') return { valid: true, value: 'count' };
+        if (normalized === 'time' || normalized === 'age') return { valid: true, value: 'age' };
       }
-
+      const match = schema.values.find(v => v.toLowerCase() === normalized);
+      if (match) return { valid: true, value: match };
       return { valid: false, error: `Expected one of [${schema.values.join(', ')}], got: '${rawValue}'` };
     }
-
     default:
-      return { valid: false, error: `Unknown schema type: ${schema.type}` };
+      return { valid: false, error: `Unknown type: ${schema.type}` };
   }
 }
 
 /**
  * Load runtime settings from environment variables
- * @returns {object} - { settings: object, sources: object }
  */
 function loadSettingsFromEnv() {
   const settings = {};
   const sources = {};
-
   for (const [key, schema] of Object.entries(RUNTIME_SETTINGS_SCHEMA)) {
     const envValue = process.env[schema.envKey];
-
-    // Skip if env var is not set
-    if (envValue === undefined) {
-      continue;
-    }
-
+    if (envValue === undefined) continue;
     const result = parseEnvVarValue(key, schema, envValue);
-
     if (result.valid) {
       settings[key] = result.value;
       sources[key] = `env: ${schema.envKey}`;
     } else {
-      // Log warning for invalid env var value
-      const defaultValue = runtimeSettings[key];
-      console.log(`[init] Warning: Invalid ${schema.envKey}='${envValue}', ${result.error}. Using default: ${defaultValue}`);
+      console.log(`[init] Warning: Invalid ${schema.envKey}='${envValue}', ${result.error}.`);
     }
   }
-
   return { settings, sources };
 }
 
@@ -467,7 +447,7 @@ let cleanupLock = false;
 
 // Helper function to ensure git is initialized
 function ensureGitInitialized() {
-  if (!git || !gitInitialized) {
+  if (!gitInitialized) {
     throw new Error('Git repository not initialized yet. Please try again in a moment.');
   }
 }
@@ -502,29 +482,32 @@ function getConfiguredExtensions() {
 const IGNORED_NESTED_REPOS = [];
 
 /**
- * Generate .gitignore content based on configured extensions
- * @param {Array<string>} extraIgnores - Additional paths to ignore
+ * Generate .gitignore contents with managed section
+ * @param {Array<string>} extraIgnores - Additional paths to ignore (nested repos)
+ * @param {Object} extensions - Extensions config with include/exclude arrays
  * @returns {string} .gitignore file content
  */
-function generateGitignoreContent(extraIgnores = []) {
+function generateGitignoreContent(extraIgnores = [], extensions = null) {
+  const MANAGED_START = '# === Home Assistant Version Control Managed (do not edit below) ===';
+  const MANAGED_END = '# === End Home Assistant Version Control Managed ===';
 
-  const extensions = getConfiguredExtensions();
-  const invisiblePattern = configOptions.invisible_files ? '!**/.??*.' : '';
-  const dirTraversal = '!*/';
-
-  if (extensions.length === 0) {
-    // If no extensions configured, ignore everything
-    return `# No file formats configured - ignoring all files\n*\n${dirTraversal}\n`;
-  }
+  // Use provided extensions or defaults
+  const ext = extensions || runtimeSettings.extensions || { include: ['yaml', 'yml'], exclude: ['secrets.yaml'] };
+  const includeExts = ext.include || ['yaml', 'yml'];
+  const excludeFiles = ext.exclude || ['secrets.yaml'];
 
   let content = `# Only track specific file types\n# Ignore everything by default\n*\n\n`;
 
-  // Add extensions
-  for (const ext of extensions) {
-    const extension = ext.replace('.', ''); // Remove the dot for the pattern
-    content += `!*.${extension}\n`;
+  // Start managed section
+  content += `${MANAGED_START}\n`;
+
+  // Add included extensions
+  content += `# Tracked file types\n`;
+  for (const extension of includeExts) {
+    const cleanExt = extension.replace(/^\./, ''); // Remove leading dot if present
+    content += `!*.${cleanExt}\n`;
     if (configOptions.invisible_files) {
-      content += `!**/.??*.${extension}\n`;
+      content += `!**/.??*.${cleanExt}\n`;
     }
   }
 
@@ -535,7 +518,10 @@ function generateGitignoreContent(extraIgnores = []) {
   content += `!.storage/lovelace_resources\n`;
   content += `!.storage/lovelace.*\n`;
 
-  content += `\n# Allow directory traversal\n${dirTraversal}\n`;
+  // End managed section
+  content += `${MANAGED_END}\n`;
+
+  content += `\n# Allow directory traversal\n!*/\n`;
 
   // Re-ignore macOS metadata files (even if they match allowed extensions)
   content += `\n# Re-ignore macOS metadata files (even if they match allowed extensions)\n`;
@@ -550,6 +536,13 @@ function generateGitignoreContent(extraIgnores = []) {
     }
   }
 
+  // Add excluded files (secrets.yaml, etc.)
+  if (excludeFiles.length > 0) {
+    content += `\n# Excluded files\n`;
+    for (const file of excludeFiles) {
+      content += `${file}\n`;
+    }
+  }
 
   return content;
 }
@@ -575,10 +568,9 @@ function formatCommitMessage(status, fallbackName = null) {
 }
 
 async function loadRuntimeSettings() {
-  // Track the source of each setting for logging
   const settingSources = {};
 
-  // Initialize all settings as defaults
+  // Layer 0: Initialize sources as defaults
   for (const key of Object.keys(runtimeSettings)) {
     settingSources[key] = 'default';
   }
@@ -590,32 +582,49 @@ async function loadRuntimeSettings() {
 
   // Layer 2: Apply file settings (highest precedence)
   try {
-    const settingsData = await fsPromises.readFile('/data/runtime-settings.json', 'utf-8');
-    const fileSettings = JSON.parse(settingsData);
+    const settingsPath = '/data/runtime-settings.json';
+    try {
+      await fsPromises.access(settingsPath, fs.constants.F_OK);
+      const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+      const fileSettings = JSON.parse(settingsData);
 
-    // Track which settings came from the file
-    for (const key of Object.keys(fileSettings)) {
-      if (runtimeSettings.hasOwnProperty(key)) {
-        settingSources[key] = 'file';
+      for (const key of Object.keys(fileSettings)) {
+        if (runtimeSettings.hasOwnProperty(key)) {
+          settingSources[key] = 'file';
+        }
+      }
+
+      runtimeSettings = { ...runtimeSettings, ...fileSettings };
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        console.log(`[init] No settings file found at ${settingsPath}, using environment and defaults.`);
+      } else {
+        throw e;
       }
     }
 
-    runtimeSettings = { ...runtimeSettings, ...fileSettings };
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      console.log('[init] Runtime settings file not found, using environment variables and defaults.');
-    } else {
-      console.error('[init] Error loading runtime settings:', error.message);
-      console.log('[init] Using environment variables and defaults due to error.');
+    // Ensure cloudSync exists (Beta feature)
+    if (!runtimeSettings.cloudSync) {
+      runtimeSettings.cloudSync = {
+        enabled: false,
+        remoteUrl: '',
+        authToken: '',
+        pushFrequency: 'manual',
+        includeSecrets: false
+      };
     }
-  }
 
-  // Log final configuration with sources
-  console.log('[init] Runtime settings loaded:');
-  for (const [key, value] of Object.entries(runtimeSettings)) {
-    const source = settingSources[key] || 'unknown';
-    const displayValue = typeof value === 'string' ? `'${value}'` : value;
-    console.log(`[init]   ${key}: ${displayValue} (${source})`);
+    // Log final configuration with sources
+    console.log('[init] Runtime settings loaded:');
+    for (const [key, value] of Object.entries(runtimeSettings)) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) continue; // skip nested objects for summary logging
+      const source = settingSources[key] || 'unknown';
+      const displayValue = typeof value === 'string' ? `'${value}'` : value;
+      console.log(`[init]   ${key}: ${displayValue} (${source})`);
+    }
+  } catch (error) {
+    console.error('[init] Error loading runtime settings:', error.message);
+    console.log('[init] Using environment variables and defaults due to error.');
   }
 }
 
@@ -624,11 +633,14 @@ async function loadRuntimeSettings() {
  */
 async function saveRuntimeSettings() {
   try {
-    await fsPromises.writeFile('/data/runtime-settings.json', JSON.stringify(runtimeSettings, null, 2), 'utf-8');
-    console.log('[settings] Saved runtime settings');
+    const settingsPath = '/data/runtime-settings.json';
+    console.log(`[settings] Saving settings to ${settingsPath}...`);
+
+    await fsPromises.writeFile(settingsPath, JSON.stringify(runtimeSettings, null, 2), 'utf-8');
+    console.log('[settings] Successfully saved runtime settings');
   } catch (error) {
-    console.error('[settings] Failed to save runtime settings:', error.message);
-    throw error;
+    console.error('[settings] Failed to save runtime settings:', error);
+    // Don't throw, just log, so we don't crash requests
   }
 }
 
@@ -750,18 +762,33 @@ async function findNestedGitRepos() {
 
 
 async function initRepo() {
+  // Load runtime settings first
+  await loadRuntimeSettings();
+
   try {
     // Determine CONFIG_PATH
     CONFIG_PATH = process.env.CONFIG_PATH;
 
     // Also check for config.json in the data directory
     try {
-      const configData = await fs.readFile('/data/options.json', 'utf-8');
+      const configData = await fsPromises.readFile('/data/options.json', 'utf-8');
       const config = JSON.parse(configData);
       if (config.liveConfigPath) {
         CONFIG_PATH = config.liveConfigPath;
       }
-      // File format options are now hardcoded (YAML only, invisible files enabled)
+      // Load extensions from add-on config - these override runtimeSettings
+      if (config.include_extensions && Array.isArray(config.include_extensions)) {
+        runtimeSettings.extensions.include = config.include_extensions
+          .map(ext => ext.trim().replace(/^\./, '')) // Remove leading dots
+          .filter(ext => ext.length > 0);
+        console.log(`[init] Include extensions from config:`, runtimeSettings.extensions.include);
+      }
+      if (config.exclude_files && Array.isArray(config.exclude_files)) {
+        runtimeSettings.extensions.exclude = config.exclude_files
+          .map(file => file.trim())
+          .filter(file => file.length > 0);
+        console.log(`[init] Exclude files from config:`, runtimeSettings.extensions.exclude);
+      }
       console.log(`[init] Using hardcoded file format options:`, configOptions);
     } catch (error) {
       // Ignore if file doesn't exist
@@ -803,7 +830,7 @@ async function initRepo() {
 
       // Create .gitignore to limit git to only config files
       const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-      const gitignoreContent = generateGitignoreContent(nestedRepos);
+      const gitignoreContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
       try {
         await fsPromises.access(gitignorePath, fs.constants.F_OK);
         console.log('[init] .gitignore already exists in CONFIG_PATH');
@@ -854,24 +881,29 @@ async function initRepo() {
       throw new Error(`No write permission to CONFIG_PATH: ${CONFIG_PATH}`);
     }
 
-    // Create .gitignore to limit git to only config files (only for existing repos)
+    // Handle .gitignore for existing repos
     const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-    const gitignoreContent = generateGitignoreContent(nestedRepos);
 
     if (isRepo) {
       try {
-        // Check if .gitignore exists and if content matches
+        await fsPromises.access(gitignorePath, fs.constants.F_OK);
+
+        // Always update .gitignore to ensure extensions from config are applied
+        console.log('[init] Updating .gitignore with configured extensions...');
         const existingContent = await fsPromises.readFile(gitignorePath, 'utf8');
-        if (existingContent.trim() === gitignoreContent.trim()) {
-          console.log('[init] .gitignore already exists and is up to date');
+        const newContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
+
+        // Only update if content actually changed
+        if (existingContent.trim() !== newContent.trim()) {
+          await fsPromises.writeFile(gitignorePath, newContent, 'utf8');
+          console.log('[init] Updated .gitignore with extensions:', runtimeSettings.extensions);
         } else {
-          console.log('[init] Updating .gitignore (content changed)...');
-          await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
-          console.log('[init] Updated .gitignore in CONFIG_PATH');
+          console.log('[init] .gitignore already up to date');
         }
       } catch (error) {
-        // .gitignore doesn't exist, create it
-        console.log('[init] Creating .gitignore in CONFIG_PATH to limit git to config files only...');
+        // .gitignore doesn't exist, create default one
+        console.log('[init] Creating default .gitignore in CONFIG_PATH...');
+        const gitignoreContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
         await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
         console.log('[init] Created .gitignore in CONFIG_PATH');
       }
@@ -1017,7 +1049,29 @@ app.post('/api/runtime-settings', async (req, res) => {
       runtimeSettings.retentionUnit = newSettings.retentionUnit;
     }
 
+    // Handle extensions settings
+    if (newSettings.extensions !== undefined) {
+      if (newSettings.extensions.include !== undefined && Array.isArray(newSettings.extensions.include)) {
+        runtimeSettings.extensions.include = newSettings.extensions.include
+          .map(ext => ext.trim().replace(/^\./, '')) // Remove leading dots
+          .filter(ext => ext.length > 0);
+      }
+      if (newSettings.extensions.exclude !== undefined && Array.isArray(newSettings.extensions.exclude)) {
+        runtimeSettings.extensions.exclude = newSettings.extensions.exclude
+          .map(file => file.trim())
+          .filter(file => file.length > 0);
+      }
 
+      // Regenerate .gitignore with new extensions
+      try {
+        const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
+        const newContent = generateGitignoreContent(IGNORED_NESTED_REPOS, runtimeSettings.extensions);
+        await fsPromises.writeFile(gitignorePath, newContent, 'utf8');
+        console.log('[settings] Updated .gitignore with new extensions');
+      } catch (error) {
+        console.error('[settings] Failed to update .gitignore:', error);
+      }
+    }
 
     // Save to file
     await saveRuntimeSettings();
@@ -1089,6 +1143,287 @@ app.get('/api/files', async (req, res) => {
     const files = await walkDir(CONFIG_PATH);
     res.json({ success: true, files });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get deleted files (files that exist in git history but not on disk)
+app.get('/api/files/deleted', async (req, res) => {
+  try {
+    ensureGitInitialized();
+    console.log('[deleted-files] Scanning git history for deleted files...');
+
+    // Get all files currently on disk (returns absolute paths)
+    const currentFiles = await getConfigFiles();
+    // Convert to relative paths for comparison with git history
+    const currentFileSet = new Set(currentFiles.map(f => path.relative(CONFIG_PATH, f)));
+
+    // Get all files ever tracked in git history (returns relative paths)
+    // Use git log to find all files that were ever committed
+    const gitLogOutput = await gitRaw(['log', '--all', '--name-only', '--pretty=format:', '--diff-filter=ACMRD']);
+    const allHistoricalFiles = gitLogOutput
+      .split('\n')
+      .map(f => f.trim())
+      .filter(f => f && !f.startsWith('.git'));
+
+    // Get unique file paths from history
+    const historicalFileSet = new Set(allHistoricalFiles);
+
+    // Filter to only include configured extensions
+    const allowedExtensions = getConfiguredExtensions();
+    const deletedFiles = [];
+
+    for (const filePath of historicalFileSet) {
+      // Check if file matches allowed extensions or is lovelace file
+      const matchesExtension = allowedExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+      const isLovelaceFile = filePath.startsWith('.storage/lovelace');
+
+      // Check if file exists on disk (using absolute path)
+      const absolutePath = path.join(CONFIG_PATH, filePath);
+      const fileExistsOnDisk = fs.existsSync(absolutePath);
+
+      if ((matchesExtension || isLovelaceFile) && !fileExistsOnDisk) {
+        // File was tracked but no longer exists - find when it was last seen
+        try {
+          const lastCommitOutput = await gitRaw(['log', '-1', '--format=%H|%aI|%s', '--', filePath]);
+          if (lastCommitOutput.trim()) {
+            const [hash, date, message] = lastCommitOutput.trim().split('|');
+            deletedFiles.push({
+              path: filePath,
+              name: path.basename(filePath),
+              lastSeenDate: date,
+              lastSeenHash: hash,
+              lastSeenMessage: message
+            });
+          }
+        } catch (e) {
+          // File might not have proper history, skip it
+          console.log(`[deleted-files] Could not get history for ${filePath}:`, e.message);
+        }
+      }
+    }
+
+    // Sort by last seen date (most recent first)
+    deletedFiles.sort((a, b) => new Date(b.lastSeenDate) - new Date(a.lastSeenDate));
+
+    console.log(`[deleted-files] Found ${deletedFiles.length} deleted files`);
+    res.json({ success: true, files: deletedFiles });
+  } catch (error) {
+    console.error('[deleted-files] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get deleted automations (automations that exist in git history but not in current config)
+app.get('/api/automations/deleted', async (req, res) => {
+  try {
+    ensureGitInitialized();
+    console.log('[deleted-automations] Scanning git history for deleted automations...');
+
+    // Get current automations
+    const currentAutomations = await extractAutomations(CONFIG_PATH);
+    const currentAutomationIds = new Set(currentAutomations.map(a => a.id));
+
+    // Get all commits that touched automation files
+    const { automationPaths } = await getConfigFilePaths(CONFIG_PATH);
+    const allAutomationIds = new Map(); // id -> { name, file, lastSeenDate, lastSeenHash }
+
+    // Scan each automation file's history
+    for (const filePath of automationPaths) {
+      const relPath = path.relative(CONFIG_PATH, filePath);
+      try {
+        // Get commit history for this file
+        const logOutput = await gitRaw(['log', '--format=%H|%aI', '--', relPath]);
+        const commits = logOutput.trim().split('\n').filter(l => l);
+
+        for (const commitLine of commits.slice(0, 50)) { // Limit to 50 commits per file for performance
+          const [hash, date] = commitLine.split('|');
+          try {
+            // Get file content at this commit
+            const content = await gitShowFileAtCommit(hash, relPath);
+            if (content) {
+              // Parse YAML to find automation IDs
+              const parsed = yaml.load(content);
+              const automations = Array.isArray(parsed) ? parsed : (parsed && parsed.automations ? parsed.automations : []);
+
+              const isArray = Array.isArray(automations);
+              const collection = isArray ? automations : (typeof automations === 'object' ? automations : {});
+
+              if (isArray) {
+                collection.forEach((auto, index) => {
+                  if (auto && typeof auto === 'object' && auto.alias) {
+                    const uniqueId = auto.id || index;
+                    const fullId = `automations:${encodeURIComponent(relPath)}:${uniqueId}`;
+
+                    if (!currentAutomationIds.has(fullId)) {
+                      // Double check: if we used index, maybe the current version has a UUID now?
+                      // But we can't easily check that without loading the current automation content again.
+                      // For now, relying on the ID format consistency should fix the main "everything deleted" bug.
+                      // Also check if the raw ID exists in current set if available
+                      // This is tricky because currentAutomationIds IS the set of full IDs.
+
+                      // Attempt to match by raw ID if available, as a fallback?
+                      // No, extractAutomations puts UUID in the ID if available. 
+                      // So if history has UUID, fullId uses UUID. Current has UUID, fullId uses UUID. It matches.
+
+                      const existing = allAutomationIds.get(fullId);
+                      if (!existing || new Date(date) > new Date(existing.lastSeenDate)) {
+                        allAutomationIds.set(fullId, {
+                          id: fullId,
+                          rawId: auto.id,
+                          name: auto.alias || 'Unknown Automation',
+                          file: relPath,
+                          lastSeenDate: date,
+                          lastSeenHash: hash
+                        });
+                      }
+                    }
+                  }
+                });
+              } else {
+                // Object format
+                Object.keys(collection).forEach(key => {
+                  const auto = collection[key];
+                  if (auto && typeof auto === 'object' && auto.alias) {
+                    const uniqueId = auto.id || key;
+                    const fullId = `automations:${encodeURIComponent(relPath)}:${uniqueId}`;
+
+                    if (!currentAutomationIds.has(fullId)) {
+                      const existing = allAutomationIds.get(fullId);
+                      if (!existing || new Date(date) > new Date(existing.lastSeenDate)) {
+                        allAutomationIds.set(fullId, {
+                          id: fullId,
+                          rawId: auto.id,
+                          name: auto.alias || key,
+                          file: relPath,
+                          lastSeenDate: date,
+                          lastSeenHash: hash
+                        });
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          } catch (e) {
+            // Skip commits where file/parsing fails
+          }
+        }
+      } catch (e) {
+        console.log(`[deleted-automations] Error scanning ${relPath}:`, e.message);
+      }
+    }
+
+    // Convert to array and sort by last seen date
+    const deletedAutomations = Array.from(allAutomationIds.values());
+    deletedAutomations.sort((a, b) => new Date(b.lastSeenDate) - new Date(a.lastSeenDate));
+
+    console.log(`[deleted-automations] Found ${deletedAutomations.length} deleted automations`);
+    res.json({ success: true, automations: deletedAutomations });
+  } catch (error) {
+    console.error('[deleted-automations] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get deleted scripts (scripts that exist in git history but not in current config)
+app.get('/api/scripts/deleted', async (req, res) => {
+  try {
+    ensureGitInitialized();
+    console.log('[deleted-scripts] Scanning git history for deleted scripts...');
+
+    // Get current scripts
+    const currentScripts = await extractScripts(CONFIG_PATH);
+    const currentScriptIds = new Set(currentScripts.map(s => s.id));
+
+    // Get all commits that touched script files
+    const { scriptPaths } = await getConfigFilePaths(CONFIG_PATH);
+    const allScriptIds = new Map(); // id -> { name, file, lastSeenDate, lastSeenHash }
+
+    // Scan each script file's history
+    for (const filePath of scriptPaths) {
+      const relPath = path.relative(CONFIG_PATH, filePath);
+      try {
+        // Get commit history for this file
+        const logOutput = await gitRaw(['log', '--format=%H|%aI', '--', relPath]);
+        const commits = logOutput.trim().split('\n').filter(l => l);
+
+        for (const commitLine of commits.slice(0, 50)) { // Limit to 50 commits per file for performance
+          const [hash, date] = commitLine.split('|');
+          try {
+            // Get file content at this commit
+            const content = await gitShowFileAtCommit(hash, relPath);
+            if (content) {
+              // Parse YAML to find script IDs
+              const parsed = yaml.load(content);
+              if (parsed && typeof parsed === 'object') {
+                // Standard scripts.yaml is an object key->config
+                // But could technically be an array in some split configs? safely assume object for now as per previous logic
+                // Actually extractScripts handles arrays too. Let's start with Object support as that's standard for scripts.yaml
+
+                // Support array if it happens (though rare for scripts)
+                if (Array.isArray(parsed)) {
+                  parsed.forEach((script, index) => {
+                    if (script && script.alias) {
+                      const uniqueId = script.id || index;
+                      const fullId = `scripts:${encodeURIComponent(relPath)}:${uniqueId}`;
+                      if (!currentScriptIds.has(fullId)) {
+                        const existing = allScriptIds.get(fullId);
+                        if (!existing || new Date(date) > new Date(existing.lastSeenDate)) {
+                          allScriptIds.set(fullId, {
+                            id: fullId,
+                            rawId: script.id,
+                            name: script.alias || 'Unknown Script',
+                            file: relPath,
+                            lastSeenDate: date,
+                            lastSeenHash: hash
+                          });
+                        }
+                      }
+                    }
+                  });
+                } else {
+                  for (const [key, scriptConfig] of Object.entries(parsed)) {
+                    // scriptConfig might be null or not have alias
+                    if (scriptConfig && typeof scriptConfig === 'object') {
+                      const uniqueId = scriptConfig.id || key;
+                      const fullId = `scripts:${encodeURIComponent(relPath)}:${uniqueId}`;
+
+                      if (!currentScriptIds.has(fullId)) {
+                        const existing = allScriptIds.get(fullId);
+                        if (!existing || new Date(date) > new Date(existing.lastSeenDate)) {
+                          allScriptIds.set(fullId, {
+                            id: fullId,
+                            rawId: scriptConfig.id,
+                            name: scriptConfig.alias || key,
+                            file: relPath,
+                            lastSeenDate: date,
+                            lastSeenHash: hash
+                          });
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Skip commits where file/parsing fails
+          }
+        }
+      } catch (e) {
+        console.log(`[deleted-scripts] Error scanning ${relPath}:`, e.message);
+      }
+    }
+
+    // Convert to array and sort by last seen date
+    const deletedScripts = Array.from(allScriptIds.values());
+    deletedScripts.sort((a, b) => new Date(b.lastSeenDate) - new Date(a.lastSeenDate));
+
+    console.log(`[deleted-scripts] Found ${deletedScripts.length} deleted scripts`);
+    res.json({ success: true, scripts: deletedScripts });
+  } catch (error) {
+    console.error('[deleted-scripts] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -1520,6 +1855,109 @@ app.post('/api/git/hard-reset', async (req, res) => {
   }
 });
 
+// Soft reset to a specific commit (removes commits from history but keeps files unchanged)
+app.post('/api/git/soft-reset', async (req, res) => {
+  try {
+    const { commitHash } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+
+    console.log(`[soft-reset] Soft resetting to commit ${commitHash.substring(0, 8)}`);
+
+    // 1. Validate commit exists
+    let commitExists;
+    try {
+      commitExists = await gitRaw(['cat-file', '-t', commitHash]);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: `Commit ${commitHash.substring(0, 8)} not found`
+      });
+    }
+
+    if (!commitExists.trim().startsWith('commit')) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid commit: ${commitHash.substring(0, 8)}`
+      });
+    }
+
+    // 2. Count how many commits will be removed
+    let commitsToRemove = 0;
+    try {
+      const logOutput = await gitRaw(['log', '--oneline', `${commitHash}..HEAD`]);
+      commitsToRemove = logOutput.trim().split('\n').filter(l => l).length;
+    } catch (error) {
+      // If this fails, we can still proceed
+      console.log('[soft-reset] Could not count commits to remove:', error.message);
+    }
+
+    // 3. Perform soft reset
+    try {
+      // Log current HEAD before reset
+      const headBefore = (await gitRaw(['rev-parse', 'HEAD'])).trim();
+      console.log(`[soft-reset] HEAD before reset: ${headBefore.substring(0, 8)}`);
+
+      await gitRaw(['reset', '--soft', commitHash]);
+      console.log(`[soft-reset] Executed git reset --soft to ${commitHash.substring(0, 8)}`);
+
+      // Verify HEAD actually changed
+      const headAfter = (await gitRaw(['rev-parse', 'HEAD'])).trim();
+      console.log(`[soft-reset] HEAD after reset: ${headAfter.substring(0, 8)}`);
+
+      if (headBefore === headAfter) {
+        console.error('[soft-reset] WARNING: HEAD did not change!');
+      }
+
+      // 4. Unstage all changes so file watcher doesn't immediately re-commit them
+      // Soft reset stages all the changes from removed commits, which the file watcher 
+      // would pick up and commit again. We need to unstage them.
+      await gitRaw(['reset']);
+      console.log('[soft-reset] Unstaged changes to prevent auto-re-commit');
+    } catch (error) {
+      console.error('[soft-reset] Reset failed:', error);
+      return res.status(500).json({
+        success: false,
+        error: `Soft reset failed: ${error.message}`
+      });
+    }
+
+    // 5. Get the commit date for the response
+    let commitDate = '';
+    try {
+      const dateStr = (await gitRaw(['show', '-s', '--format=%aI', commitHash])).trim();
+      const date = new Date(dateStr);
+      const datePart = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const timePart = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+      commitDate = `${datePart} ${timePart}`;
+    } catch (error) {
+      commitDate = commitHash.substring(0, 8);
+    }
+
+    res.json({
+      success: true,
+      commitHash: commitHash.substring(0, 8),
+      commitsRemoved: commitsToRemove,
+      commitDate: commitDate,
+      message: `Soft reset to ${commitDate}. ${commitsToRemove} commit(s) removed from history.`
+    });
+
+  } catch (error) {
+    console.error('[soft-reset] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 // Git status
 app.get('/api/git/status', async (req, res) => {
@@ -1563,19 +2001,10 @@ const debounceTimers = new Map();
 let watcher = null;
 
 function initializeWatcher() {
-  const allowedExtensions = getConfiguredExtensions();
-  const extensionsStr = allowedExtensions.map(ext => ext.substring(1)).join(','); // Remove dot for pattern
-  console.log(`[init] Setting up file watcher for: ${CONFIG_PATH}/**/*{${extensionsStr}}`);
+  console.log(`[init] Setting up file watcher for: ${CONFIG_PATH}/**/*`);
 
-  // Use a more specific pattern to avoid ELOOP errors
-  // Also watch lovelace storage files
-  const watchPattern = [
-    `${CONFIG_PATH}/**/*{${extensionsStr}}`,
-    `${CONFIG_PATH}/.storage/lovelace`,
-    `${CONFIG_PATH}/.storage/lovelace_dashboards`,
-    `${CONFIG_PATH}/.storage/lovelace_resources`,
-    `${CONFIG_PATH}/.storage/lovelace.*`
-  ];
+  // Watch all files - let git's .gitignore handle filtering
+  const watchPattern = `${CONFIG_PATH}/**/*`;
 
   watcher = chokidar.watch(watchPattern, {
     persistent: true,
@@ -1589,19 +2018,40 @@ function initializeWatcher() {
       stabilityThreshold: 2000,
       pollInterval: 100
     },
-    ignored: (path, stats) => {
+    ignored: (filePath, stats) => {
       // Ignore if path contains these directories (but not .storage for lovelace files)
-      if (/(\/|^)\.(git|hg|svn|ssh|docker|ssl|keys|certs|node_modules)(\/|$)/.test(path)) {
+      if (/(\/|^)\.(git|hg|svn|ssh|docker|ssl|keys|certs|node_modules)(\/|$)/.test(filePath)) {
         return true;
       }
 
       // Explicitly ignore .storage files except lovelace files
-      if (path.includes('/.storage/') && !path.includes('/.storage/lovelace')) {
+      if (filePath.includes('/.storage/') && !filePath.includes('/.storage/lovelace')) {
+        return true;
+      }
+
+      // Ignore database files and related files (very frequent writes)
+      if (/\.(db|db-wal|db-shm|db-journal)$/.test(filePath)) {
+        return true;
+      }
+
+      // Ignore log files
+      if (/\.log(\.\d+)?$/.test(filePath) || filePath.includes('/log/')) {
+        return true;
+      }
+
+      // Ignore common binary and temporary files
+      if (/\.(pyc|pyo|tmp|temp|bak|swp|swo)$/.test(filePath)) {
+        return true;
+      }
+
+      // Ignore zigbee2mqtt runtime files (state.json, database.db, logs)
+      if (filePath.includes('/zigbee2mqtt/') &&
+        (filePath.includes('/log/') || filePath.endsWith('state.json') || filePath.endsWith('database.db'))) {
         return true;
       }
 
       // Avoid infinite loops - if path has too many repetitions of /config/
-      const configCount = (path.match(/\/config\//g) || []).length;
+      const configCount = (filePath.match(/\/config\//g) || []).length;
       if (configCount > 3) {
         return true;
       }
@@ -1629,62 +2079,37 @@ function initializeWatcher() {
           await initRepo();
         }
 
-        // Check if file is a config file (has allowed extension) or is a lovelace storage file
-        const hasAllowedExt = getConfiguredExtensions().some(ext =>
-          relativePath.toLowerCase().endsWith(ext)
-        );
-
-        const isLovelaceFile = relativePath.startsWith('.storage/lovelace');
-
-        if (!hasAllowedExt && !isLovelaceFile) {
-          console.log(`[watcher] Skipping non-config file: ${relativePath}`);
-          debounceTimers.delete(filePath);
-          return;
-        }
+        // No extension filtering here - let git's .gitignore handle what gets committed
+        // The watcher triggers on any file change, git add . respects user's .gitignore
 
         // Check if this is only a formatting change (for YAML files)
         // Removed: We want to track ALL changes, including comments and formatting
 
         // Clear staging area to prevent accumulation of files from previous changes
         await gitRaw(['reset']);
-        console.log(`[watcher] Adding file: ${relativePath}`);
-        await gitAdd(relativePath);
+
+        // Use git add . to stage all changes - git will respect user's .gitignore
+        console.log(`[watcher] Triggered by: ${relativePath}, running git add .`);
+        await gitAdd('.');
 
         // Check if there are actually changes to commit
         const status = await gitStatus();
         if (status.isClean()) {
-          console.log(`[watcher] No changes to commit for ${relativePath} (already up to date)`);
+          console.log(`[watcher] No changes to commit (repo is clean per .gitignore)`);
           debounceTimers.delete(filePath);
           return;
         }
 
-        // Get all staged files and filter to only include allowed patterns
-        const allStagedFiles = status.files
-          .filter(f => f.index !== ' ' && f.index !== '?');
+        // Get all staged files (git already filtered based on .gitignore)
+        const stagedFiles = status.files
+          .filter(f => f.index !== ' ' && f.index !== '?')
+          .map(f => f.path.trim());
 
-        // Filter out any files that shouldn't be tracked
-        const stagedFiles = allStagedFiles
-          .filter(f => {
-            const filePath = f.path.trim(); // Trim to remove leading/trailing spaces from git status
-            const hasAllowedExt = getConfiguredExtensions().some(ext => filePath.endsWith(ext));
-            const isLovelaceFile = filePath.startsWith('.storage/lovelace');
-            const shouldInclude = hasAllowedExt || isLovelaceFile;
-
-            // Debug logging
-            if (!shouldInclude) {
-              console.log(`[watcher] Filtering out file: ${filePath} (hasAllowedExt: ${hasAllowedExt}, isLovelaceFile: ${isLovelaceFile})`);
-            }
-
-            return shouldInclude;
-          })
-          .map(f => f.path.trim()); // Also trim when extracting the path
-
-        // Debug: show what files passed the filter
-        console.log(`[watcher] Files after filtering: ${stagedFiles.join(', ')} (${stagedFiles.length} file(s))`);
+        console.log(`[watcher] Staged files (respecting .gitignore): ${stagedFiles.join(', ')} (${stagedFiles.length} file(s))`);
 
         // Safety check: if no valid files to commit, clean up and return
         if (stagedFiles.length === 0) {
-          console.log(`[watcher] No valid files to commit after filtering`);
+          console.log(`[watcher] No staged files to commit`);
           await gitRaw(['reset']);
           debounceTimers.delete(filePath);
           return;
@@ -1708,6 +2133,19 @@ function initializeWatcher() {
         if (runtimeSettings.historyRetention) {
           console.log('[watcher] Running retention cleanup after commit...');
           await runRetentionCleanup();
+        }
+
+        // Cloud sync push if enabled and configured for every commit
+        if (runtimeSettings.cloudSync.enabled &&
+          runtimeSettings.cloudSync.pushFrequency === 'every_commit' &&
+          runtimeSettings.cloudSync.remoteUrl) {
+          console.log('[watcher] Running cloud sync push after commit...');
+          try {
+            await setupGitRemote(runtimeSettings.cloudSync.remoteUrl, runtimeSettings.cloudSync.authToken);
+            await pushToRemote(runtimeSettings.cloudSync.includeSecrets);
+          } catch (e) {
+            console.error('[watcher] Cloud sync push failed:', e.message);
+          }
         }
 
         // Clean up the timer reference
@@ -1738,6 +2176,11 @@ function initializeWatcher() {
   // Watch for new files being added
   watcher.on('add', async (filePath) => {
     await handleFileEvent(filePath, 'added');
+  });
+
+  // Watch for files being deleted
+  watcher.on('unlink', async (filePath) => {
+    await handleFileEvent(filePath, 'deleted');
   });
 
   watcher.on('ready', () => {
@@ -2484,7 +2927,7 @@ const server = app.listen(PORT, HOST, (err) => {
   }
 
   console.log('='.repeat(60));
-  console.log('Home Assistant Version Control v1.0.0');
+  console.log('Home Assistant Version Control v1.1.0');
   console.log('='.repeat(60));
   console.log(`Server running at http://${HOST}:${PORT}`);
 
@@ -2492,11 +2935,57 @@ const server = app.listen(PORT, HOST, (err) => {
   initRepo()
     .then(() => {
       initializeWatcher();
+
+      // Start cloud sync scheduler (check every hour)
+      startCloudSyncScheduler();
     })
     .catch((error) => {
       console.error('[init] Background initialization error:', error);
     });
 });
+
+// Cloud sync scheduler - checks if push is due
+let cloudSyncInterval = null;
+
+function startCloudSyncScheduler() {
+  // Check every hour if a scheduled push is due
+  cloudSyncInterval = setInterval(async () => {
+    try {
+      const settings = runtimeSettings.cloudSync;
+
+      // Skip if not enabled or manual mode
+      if (!settings.enabled || !settings.remoteUrl || settings.pushFrequency === 'manual' || settings.pushFrequency === 'every_commit') {
+        return;
+      }
+
+      const now = new Date();
+      const lastPush = settings.lastPushTime ? new Date(settings.lastPushTime) : null;
+
+      let shouldPush = false;
+
+      if (!lastPush) {
+        // Never pushed, do it now
+        shouldPush = true;
+      } else if (settings.pushFrequency === 'hourly') {
+        // Push if more than 1 hour since last push
+        shouldPush = (now - lastPush) >= 60 * 60 * 1000;
+      } else if (settings.pushFrequency === 'daily') {
+        // Push if more than 24 hours since last push
+        shouldPush = (now - lastPush) >= 24 * 60 * 60 * 1000;
+      }
+
+      if (shouldPush) {
+        console.log(`[cloud-sync scheduler] Running ${settings.pushFrequency} push...`);
+        await setupGitRemote(settings.remoteUrl, settings.authToken);
+        await pushToRemote(settings.includeSecrets);
+      }
+    } catch (error) {
+      console.error('[cloud-sync scheduler] Error:', error.message);
+    }
+  }, 60 * 60 * 1000); // Check every hour
+
+  console.log('[cloud-sync] Scheduler started (checking hourly for scheduled pushes)');
+}
 
 // Get all automations
 app.get('/api/automations', async (req, res) => {
@@ -2540,6 +3029,62 @@ app.get('/api/script/:id/history', async (req, res) => {
     res.json({ success, history, debugMessages });
   } catch (error) {
     console.error('[script history] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get automation history metadata (fast - no YAML parsing)
+app.get('/api/automation/:id/history-metadata', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await getAutomationHistoryMetadata(id, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[automation history-metadata] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get automation content at specific commit
+app.get('/api/automation/:id/at-commit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commitHash } = req.query;
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+    const result = await getAutomationAtCommit(id, commitHash, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[automation at-commit] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get script history metadata (fast - no YAML parsing)
+app.get('/api/script/:id/history-metadata', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await getScriptHistoryMetadata(id, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[script history-metadata] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Progressive loading: Get script content at specific commit
+app.get('/api/script/:id/at-commit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commitHash } = req.query;
+    if (!commitHash) {
+      return res.status(400).json({ success: false, error: 'commitHash is required' });
+    }
+    const result = await getScriptAtCommit(id, commitHash, CONFIG_PATH);
+    res.json(result);
+  } catch (error) {
+    console.error('[script at-commit] Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -2619,6 +3164,816 @@ app.post('/api/script/:id/restore', async (req, res) => {
   } catch (error) {
     console.error('[restore script] Error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =====================================
+// Cloud Sync Functions
+// =====================================
+
+/**
+ * Set up or update the git remote for cloud sync
+ * @param {string} url - Remote repository URL
+ * @param {string} token - Authentication token
+ * @returns {Object} Result with success status
+ */
+async function setupGitRemote(url, token) {
+  try {
+    let authenticatedUrl = url;
+
+    // Check if URL already has credentials embedded (user@host pattern)
+    const hasEmbeddedAuth = url.match(/:\/\/[^@]+@/);
+
+    if (!hasEmbeddedAuth && token) {
+      // Insert token into URL for HTTPS or HTTP URLs
+      if (url.startsWith('https://')) {
+        authenticatedUrl = url.replace('https://', `https://${token}@`);
+      } else if (url.startsWith('http://')) {
+        authenticatedUrl = url.replace('http://', `http://${token}@`);
+      }
+    }
+
+    // Log the URL being used (mask any token for security)
+    const maskedUrl = authenticatedUrl.replace(/:\/\/([^@]+)@/, '://***@');
+    console.log('[cloud-sync] Setting up remote with URL:', maskedUrl);
+
+    // Check if origin remote exists
+    try {
+      await gitExec(['remote', 'get-url', 'origin']);
+      // Remote exists, update it
+      await gitExec(['remote', 'set-url', 'origin', authenticatedUrl]);
+      console.log('[cloud-sync] Updated existing remote origin');
+    } catch (e) {
+      // Remote doesn't exist, add it
+      await gitExec(['remote', 'add', 'origin', authenticatedUrl]);
+      console.log('[cloud-sync] Added new remote origin');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[cloud-sync] Error setting up remote:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+/**
+ * Configure secrets.yaml tracking based on settings
+ * @param {boolean} include - Whether to include secrets.yaml
+ */
+async function configureSecretsTracking(include) {
+  const secretsPath = 'secrets.yaml';
+  const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
+
+  try {
+    // 1. Manage .gitignore using the centralized generator
+    // This ensures consistency with init/update logic
+    const nestedRepos = await findNestedGitRepos();
+    const desiredGitignoreContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
+
+    let currentGitignoreContent = '';
+    try {
+      currentGitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+    } catch (e) {
+      // File doesn't exist
+    }
+
+    let gitignoreChanged = false;
+    if (desiredGitignoreContent.trim() !== currentGitignoreContent.trim()) {
+      await fsPromises.writeFile(gitignorePath, desiredGitignoreContent);
+      gitignoreChanged = true;
+      console.log(`[cloud-sync] Updated .gitignore (secrets included: ${include})`);
+    } else {
+      console.log('[cloud-sync] .gitignore is up to date');
+    }
+
+    // 2. Manage Git Index (Tracked/Untracked)
+    const { stdout: trackedFiles } = await gitExec(['ls-files', secretsPath]);
+    const isTracked = trackedFiles.trim() !== '';
+    console.log(`[cloud-sync] secrets.yaml tracked: ${isTracked}, include: ${include}`);
+
+    if (!include && isTracked) {
+      // Stop tracking (keep file on disk)
+      // This will register as a "delete" in git, which when pushed will remove it from the remote
+      await gitExec(['rm', '--cached', secretsPath]);
+      console.log('[cloud-sync] Untracked secrets.yaml from index');
+
+      // Stage .gitignore if it changed
+      if (gitignoreChanged) {
+        await gitExec(['add', '.gitignore']);
+      }
+
+      // Commit this metadata change so the remote knows it was deleted/untracked
+      try {
+        const msg = gitignoreChanged ? 'secrets.yaml, .gitignore' : 'secrets.yaml';
+        await gitExec(['commit', '-m', msg]);
+        console.log(`[cloud-sync] Committed secrets exclusion: ${msg}`);
+      } catch (commitError) {
+        // Commit might fail if there's nothing to commit (already done)
+        console.log('[cloud-sync] Commit skipped (may already be excluded):', commitError.message);
+      }
+    } else if (include && !isTracked) {
+      // Start tracking
+      try {
+        await gitExec(['add', secretsPath]);
+        // Stage .gitignore if it changed
+        if (gitignoreChanged) {
+          await gitExec(['add', '.gitignore']);
+        }
+        console.log('[cloud-sync] Added secrets.yaml to tracking');
+      } catch (e) {
+        // File might not exist
+        console.log('[cloud-sync] Could not add secrets.yaml:', e.message);
+      }
+
+      // Commit the addition (was previously missing)
+      try {
+        const msg = gitignoreChanged ? 'secrets.yaml, .gitignore' : 'secrets.yaml';
+        await gitExec(['commit', '-m', msg]);
+        console.log(`[cloud-sync] Committed secrets inclusion: ${msg}`);
+      } catch (e) {
+        console.log('[cloud-sync] Commit skipped (may already be tracked):', e.message);
+      }
+    } else if (gitignoreChanged) {
+      // Just stage and commit .gitignore change
+      try {
+        await gitExec(['add', '.gitignore']);
+        await gitExec(['commit', '-m', '.gitignore']);
+        console.log('[cloud-sync] Committed .gitignore update');
+      } catch (e) {
+        console.log('[cloud-sync] Could not commit .gitignore update:', e.message);
+      }
+    }
+
+  } catch (error) {
+    console.error('[cloud-sync] Error configuring secrets:', error);
+  }
+}
+
+/**
+ * Push to remote repository
+ * @param {boolean} includeSecrets - Whether to include secrets.yaml
+ * @returns {Object} Result with success status
+ */
+async function pushToRemote(includeSecrets = false) {
+  try {
+    // Configure secrets tracking before pushing
+    await configureSecretsTracking(includeSecrets);
+
+    // Get current local branch
+    let localBranch = 'develop';
+    try {
+      const branchResult = await gitRevparse(['--abbrev-ref', 'HEAD']);
+      localBranch = branchResult.trim() || 'develop';
+    } catch (e) {
+      console.log('[cloud-sync] Could not determine branch, using develop');
+    }
+
+    // Always push to 'develop' on remote (new default branch)
+    const remoteBranch = 'develop';
+    console.log(`[cloud-sync] Pushing ${localBranch} to origin/${remoteBranch}...`);
+    await gitExec(['push', '-f', '-u', 'origin', `${localBranch}:${remoteBranch}`]);
+    console.log(`[cloud-sync] Successfully pushed to origin/${remoteBranch}`);
+
+    // Update status
+    const timestamp = new Date().toISOString();
+    runtimeSettings.cloudSync.lastPushTime = timestamp;
+    runtimeSettings.cloudSync.lastPushStatus = 'success';
+    runtimeSettings.cloudSync.lastPushError = null;
+    await saveRuntimeSettings();
+
+    return { success: true, branch: remoteBranch };
+
+  } catch (error) {
+    console.error('[cloud-sync] Push failed:', error);
+
+    // Update status
+    runtimeSettings.cloudSync.lastPushTime = new Date().toISOString();
+    runtimeSettings.cloudSync.lastPushStatus = 'error';
+    runtimeSettings.cloudSync.lastPushError = error.message;
+    await saveRuntimeSettings();
+
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Test connection to remote repository
+ * @returns {Object} Result with success status
+ */
+async function testRemoteConnection() {
+  try {
+    // Use ls-remote to test connection without actually pushing
+    // Note: Don't use --exit-code as it fails on empty repos (exit code 2)
+    await gitExec(['ls-remote', 'origin']);
+    console.log('[cloud-sync] Remote connection test successful');
+    return { success: true };
+  } catch (error) {
+    console.error('[cloud-sync] Remote connection test failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// =====================================
+// GitHub OAuth Device Flow
+// =====================================
+
+const GITHUB_CLIENT_ID = '178c6fc778ccc68e1d6a'; // Using GitHub CLI Client ID as fallback due to app restrictions
+
+// Initiate GitHub Device Flow
+app.post('/api/github/device-flow/initiate', async (req, res) => {
+  try {
+    const response = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl/1.1.0'
+      },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        scope: 'repo'
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      const errorMsg = data.error_description || data.error || 'Unknown GitHub error';
+      console.error('[github device flow] Error:', errorMsg);
+      return res.status(400).json({ success: false, error: errorMsg });
+    }
+
+    console.log('[github device flow] Initiated, user_code:', data.user_code);
+
+    res.json({
+      success: true,
+      device_code: data.device_code,
+      user_code: data.user_code,
+      verification_uri: data.verification_uri,
+      expires_in: data.expires_in,
+      interval: data.interval
+    });
+  } catch (error) {
+    console.error('[github device flow] Initiate error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Poll for GitHub Device Flow token
+app.post('/api/github/device-flow/poll', async (req, res) => {
+  try {
+    const { device_code } = req.body;
+
+    if (!device_code) {
+      return res.status(400).json({ success: false, error: 'device_code is required' });
+    }
+
+    const response = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl/1.1.0'
+      },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        device_code: device_code,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      // console.log('[github device flow] Poll status:', data.error); 
+
+      if (data.error === 'authorization_pending') {
+        return res.json({ success: false, pending: true, error: 'Authorization pending' });
+      }
+      if (data.error === 'slow_down') {
+        return res.json({ success: false, slow_down: true, error: 'Slow down' });
+      }
+      if (data.error === 'expired_token') {
+        return res.json({ success: false, expired: true, error: 'Code expired' });
+      }
+      if (data.error === 'access_denied') {
+        return res.json({ success: false, denied: true, error: 'Access denied by user' });
+      }
+
+      console.error('[github device flow] Poll error response:', data);
+      return res.status(400).json({ success: false, error: data.error_description || data.error });
+    }
+
+    if (data.access_token) {
+      console.log('[github device flow] Token received successfully');
+
+      // Save the token to cloud sync settings and enable sync
+      runtimeSettings.cloudSync.authToken = data.access_token;
+      runtimeSettings.cloudSync.authProvider = 'github';
+      runtimeSettings.cloudSync.enabled = true; // Auto-enable when connected
+      await saveRuntimeSettings();
+
+      res.json({
+        success: true,
+        access_token: data.access_token,
+        token_type: data.token_type,
+        scope: data.scope
+      });
+    } else {
+      res.json({ success: false, error: 'No access token in response' });
+    }
+  } catch (error) {
+    console.error('[github device flow] Poll error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get GitHub user info (to show who's connected)
+app.get('/api/github/user', async (req, res) => {
+  try {
+    const token = runtimeSettings.cloudSync.authToken;
+
+    if (!token) {
+      return res.json({ success: false, error: 'Not authenticated' });
+    }
+
+    const response = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'HomeAssistantVersionControl'
+      }
+    });
+
+    if (!response.ok) {
+      return res.json({ success: false, error: 'Invalid token' });
+    }
+
+    const user = await response.json();
+
+    res.json({
+      success: true,
+      user: {
+        login: user.login,
+        avatar_url: user.avatar_url,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    console.error('[github user] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Disconnect GitHub (clear token)
+app.post('/api/github/disconnect', async (req, res) => {
+  try {
+    runtimeSettings.cloudSync.authToken = '';
+    runtimeSettings.cloudSync.authProvider = '';
+    runtimeSettings.cloudSync.remoteUrl = '';
+    runtimeSettings.cloudSync.lastPushTime = null;
+    runtimeSettings.cloudSync.lastPushStatus = null;
+    runtimeSettings.cloudSync.lastPushError = null;
+    await saveRuntimeSettings();
+
+    // Also remove the git remote to clear any embedded tokens
+    try {
+      await gitExec(['remote', 'remove', 'origin']);
+      console.log('[github] Removed git remote origin');
+    } catch (e) {
+      // Remote might not exist, that's okay
+      console.log('[github] No git remote to remove');
+    }
+
+    console.log('[github] Disconnected and cleared all cloud sync settings');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[github disconnect] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create GitHub repository
+app.post('/api/github/create-repo', async (req, res) => {
+  try {
+    const { repoName } = req.body;
+    const token = runtimeSettings.cloudSync.authToken;
+
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Not authenticated with GitHub' });
+    }
+
+    if (!repoName) {
+      return res.status(400).json({ success: false, error: 'Repository name is required' });
+    }
+
+    // Create private repository via GitHub API
+    const response = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'HomeAssistantVersionControl'
+      },
+      body: JSON.stringify({
+        name: repoName,
+        description: 'Home Assistant configuration backup managed by Home Assistant Version Control',
+        private: true,
+        auto_init: false // Don't create README, we'll push our own content
+      })
+    });
+
+    const data = await response.json();
+
+    // Check if repo already exists - if so, fetch and use it
+    if (!response.ok) {
+      const alreadyExists = data.errors?.some(e => e.message?.includes('already exists')) ||
+        data.message?.includes('already exists');
+
+      if (alreadyExists) {
+        console.log('[github create-repo] Repository already exists, fetching existing repo...');
+
+        // Get the authenticated user to build the repo URL
+        const userResponse = await fetch('https://api.github.com/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'HomeAssistantVersionControl'
+          }
+        });
+
+        if (!userResponse.ok) {
+          return res.status(500).json({ success: false, error: 'Failed to get user info' });
+        }
+
+        const userData = await userResponse.json();
+
+        // Fetch the existing repo
+        const repoResponse = await fetch(`https://api.github.com/repos/${userData.login}/${repoName}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'HomeAssistantVersionControl'
+          }
+        });
+
+        if (!repoResponse.ok) {
+          return res.status(500).json({ success: false, error: 'Repository exists but could not be accessed' });
+        }
+
+        const repoData = await repoResponse.json();
+        console.log('[github create-repo] Using existing repository:', repoData.clone_url);
+
+        // Save the remote URL (both active and GitHub-specific)
+        runtimeSettings.cloudSync.remoteUrl = repoData.clone_url;
+        runtimeSettings.cloudSync.githubRemoteUrl = repoData.clone_url;
+        await saveRuntimeSettings();
+
+        // Set up the git remote
+        await setupGitRemote(repoData.clone_url, token);
+
+        return res.json({
+          success: true,
+          existing: true,
+          repo: {
+            name: repoData.name,
+            full_name: repoData.full_name,
+            url: repoData.html_url,
+            clone_url: repoData.clone_url
+          }
+        });
+      }
+
+      console.error('[github create-repo] Error:', data.message);
+      return res.status(response.status).json({
+        success: false,
+        error: data.message || 'Failed to create repository'
+      });
+    }
+
+    console.log('[github create-repo] Created repository:', data.clone_url);
+
+    // Save the remote URL (both active and GitHub-specific)
+    runtimeSettings.cloudSync.remoteUrl = data.clone_url;
+    runtimeSettings.cloudSync.githubRemoteUrl = data.clone_url;
+    await saveRuntimeSettings();
+
+    // Set up the git remote
+    await setupGitRemote(data.clone_url, token);
+
+    res.json({
+      success: true,
+      repo: {
+        name: data.name,
+        full_name: data.full_name,
+        url: data.html_url,
+        clone_url: data.clone_url
+      }
+    });
+  } catch (error) {
+    console.error('[github create-repo] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =====================================
+// Cloud Sync API Endpoints
+// =====================================
+
+// Get cloud sync status
+app.get('/api/cloud-sync/status', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      enabled: runtimeSettings.cloudSync.enabled,
+      lastPushTime: runtimeSettings.cloudSync.lastPushTime,
+      lastPushStatus: runtimeSettings.cloudSync.lastPushStatus,
+      lastPushError: runtimeSettings.cloudSync.lastPushError,
+      pushFrequency: runtimeSettings.cloudSync.pushFrequency
+    });
+  } catch (error) {
+    console.error('[cloud-sync status] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test cloud sync connection
+// Test cloud sync connection
+app.post('/api/cloud-sync/test', async (req, res) => {
+  try {
+    const { remoteUrl, authToken } = req.body;
+
+    // Use provided URL or fall back to stored URL
+    const targetUrl = remoteUrl || runtimeSettings.cloudSync.remoteUrl;
+
+    if (!targetUrl) {
+      return res.status(400).json({ success: false, error: 'Remote URL is required' });
+    }
+
+    // Use provided token or fall back to stored token
+    const token = authToken || runtimeSettings.cloudSync.authToken;
+
+    // Set up the remote with provided credentials
+    const setupResult = await setupGitRemote(targetUrl, token);
+    if (!setupResult.success) {
+      return res.json({ success: false, error: setupResult.error });
+    }
+
+    // Test the connection
+    const testResult = await testRemoteConnection();
+    res.json(testResult);
+  } catch (error) {
+    console.error('[cloud-sync test] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Push to remote now
+app.post('/api/cloud-sync/push', async (req, res) => {
+  try {
+    if (!runtimeSettings.cloudSync.enabled && !req.body.force) {
+      return res.status(400).json({ success: false, error: 'Cloud sync is not enabled' });
+    }
+
+    if (!runtimeSettings.cloudSync.remoteUrl) {
+      return res.status(400).json({ success: false, error: 'Remote URL not configured' });
+    }
+
+    // Set up remote (in case settings changed)
+    const setupResult = await setupGitRemote(
+      runtimeSettings.cloudSync.remoteUrl,
+      runtimeSettings.cloudSync.authToken
+    );
+    if (!setupResult.success) {
+      return res.json({ success: false, error: setupResult.error });
+    }
+
+    // Push
+    const pushResult = await pushToRemote(runtimeSettings.cloudSync.includeSecrets);
+    res.json(pushResult);
+  } catch (error) {
+    console.error('[cloud-sync push] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+// Save cloud sync settings
+app.post('/api/cloud-sync/settings', async (req, res) => {
+  try {
+    console.log('[cloud-sync settings] Received request:', JSON.stringify(req.body, null, 2));
+    const { enabled, remoteUrl, authToken, pushFrequency, includeSecrets, authProvider } = req.body;
+
+    // Update basic settings
+    console.log('[cloud-sync settings] Updating local settings...');
+    if (enabled !== undefined) runtimeSettings.cloudSync.enabled = enabled;
+    if (authToken !== undefined) runtimeSettings.cloudSync.authToken = authToken;
+    if (pushFrequency !== undefined) runtimeSettings.cloudSync.pushFrequency = pushFrequency;
+    if (includeSecrets !== undefined) runtimeSettings.cloudSync.includeSecrets = includeSecrets;
+
+    // Handle provider and URL switching
+    const oldProvider = runtimeSettings.cloudSync.authProvider;
+    const newProvider = authProvider !== undefined ? authProvider : oldProvider;
+
+    if (authProvider !== undefined) {
+      runtimeSettings.cloudSync.authProvider = authProvider;
+    }
+
+    // Determine which URL to use based on provider
+    let effectiveUrl = remoteUrl;
+
+    if (newProvider === 'github') {
+      // Switching to GitHub - use stored GitHub URL if available, or provided URL
+      if (remoteUrl) {
+        // Save to GitHub-specific storage
+        runtimeSettings.cloudSync.githubRemoteUrl = remoteUrl;
+        effectiveUrl = remoteUrl;
+      } else if (runtimeSettings.cloudSync.githubRemoteUrl) {
+        // Restore stored GitHub URL
+        effectiveUrl = runtimeSettings.cloudSync.githubRemoteUrl;
+        console.log('[cloud-sync settings] Restored GitHub URL:', effectiveUrl);
+      } else {
+        // Fallback: check if current remoteUrl is a GitHub URL (migration case)
+        const currentUrl = runtimeSettings.cloudSync.remoteUrl || '';
+        if (currentUrl.includes('github.com')) {
+          effectiveUrl = currentUrl;
+          runtimeSettings.cloudSync.githubRemoteUrl = currentUrl;
+          console.log('[cloud-sync settings] Migrated GitHub URL from remoteUrl:', effectiveUrl);
+        } else {
+          console.log('[cloud-sync settings] No GitHub URL found - user needs to connect GitHub');
+        }
+      }
+    } else if (newProvider === 'generic') {
+      // Switching to Custom - use provided URL or stored custom URL
+      if (remoteUrl) {
+        // Save to custom-specific storage
+        runtimeSettings.cloudSync.customRemoteUrl = remoteUrl;
+        effectiveUrl = remoteUrl;
+      } else if (runtimeSettings.cloudSync.customRemoteUrl) {
+        // Restore stored custom URL
+        effectiveUrl = runtimeSettings.cloudSync.customRemoteUrl;
+        console.log('[cloud-sync settings] Restored Custom URL:', effectiveUrl);
+      } else {
+        // Fallback: check if current remoteUrl is NOT a GitHub URL
+        const currentUrl = runtimeSettings.cloudSync.remoteUrl || '';
+        if (currentUrl && !currentUrl.includes('github.com')) {
+          effectiveUrl = currentUrl;
+          runtimeSettings.cloudSync.customRemoteUrl = currentUrl;
+          console.log('[cloud-sync settings] Migrated Custom URL from remoteUrl:', effectiveUrl);
+        }
+      }
+    }
+
+    // Update the active URL
+    if (effectiveUrl !== undefined) {
+      runtimeSettings.cloudSync.remoteUrl = effectiveUrl;
+    }
+
+    // Set up remote if URL and token provided
+    if (effectiveUrl && enabled) {
+      console.log('[cloud-sync settings] Setting up git remote...');
+      await setupGitRemote(effectiveUrl, authToken || runtimeSettings.cloudSync.authToken);
+    }
+
+    // Apply secrets tracking configuration immediately
+    console.log('[cloud-sync settings] Configuring secrets tracking...');
+    await configureSecretsTracking(runtimeSettings.cloudSync.includeSecrets);
+
+    console.log('[cloud-sync settings] Saving runtime settings...');
+    await saveRuntimeSettings();
+    console.log('[cloud-sync settings] Success!');
+    res.json({ success: true, settings: runtimeSettings.cloudSync });
+  } catch (error) {
+    console.error('[cloud-sync settings] Error:', error);
+    console.error('[cloud-sync settings] Stack:', error.stack);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get cloud sync settings (excluding sensitive token)
+app.get('/api/cloud-sync/settings', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      settings: {
+        enabled: runtimeSettings.cloudSync.enabled,
+        remoteUrl: runtimeSettings.cloudSync.remoteUrl,
+        githubRemoteUrl: runtimeSettings.cloudSync.githubRemoteUrl,
+        customRemoteUrl: runtimeSettings.cloudSync.customRemoteUrl,
+        authProvider: runtimeSettings.cloudSync.authProvider,
+        hasAuthToken: !!runtimeSettings.cloudSync.authToken,
+        pushFrequency: runtimeSettings.cloudSync.pushFrequency,
+        includeSecrets: runtimeSettings.cloudSync.includeSecrets,
+        lastPushTime: runtimeSettings.cloudSync.lastPushTime,
+        lastPushStatus: runtimeSettings.cloudSync.lastPushStatus,
+        lastPushError: runtimeSettings.cloudSync.lastPushError
+      }
+    });
+  } catch (error) {
+    console.error('[cloud-sync settings] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get avatar URL for custom repo (Gitea/Forgejo)
+app.get('/api/cloud-sync/avatar', async (req, res) => {
+  try {
+    const { remoteUrl } = req.query;
+    if (!remoteUrl) {
+      return res.status(400).json({ success: false, error: 'remoteUrl is required' });
+    }
+
+    // Use stored token if available for authentication
+    const settings = runtimeSettings.cloudSync || {};
+    let token = '';
+
+    // Extract token from stored URL if present
+    if (settings.remoteUrl && settings.remoteUrl.includes('@')) {
+      const match = settings.remoteUrl.match(/:\/\/(.*?)@/);
+      if (match) token = match[1];
+    }
+
+    // Parse URL to get base URL and username
+    const cleanUrl = remoteUrl.replace(/:\/\/(.*?)@/, '://'); // Strip token for parsing
+    const urlObj = new URL(cleanUrl);
+    const pathParts = urlObj.pathname.split('/').filter(p => p);
+
+    if (pathParts.length < 2) {
+      return res.status(400).json({ success: false, error: 'Invalid repo URL format' });
+    }
+
+    const username = pathParts[0];
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `token ${token}`;
+    }
+
+    // Try to detect provider type by testing different APIs
+    let provider = 'custom';
+    let userData = null;
+
+    // Try Gitea/Forgejo API first (most common for self-hosted)
+    try {
+      const giteaUrl = `${urlObj.origin}/api/v1/users/${username}`;
+      console.log(`[avatar] Trying Gitea API: ${giteaUrl}`);
+      const giteaRes = await fetch(giteaUrl, { headers });
+      if (giteaRes.ok) {
+        userData = await giteaRes.json();
+        provider = 'gitea';
+        console.log(`[avatar] Detected Gitea/Forgejo provider`);
+      }
+    } catch (e) {
+      console.log(`[avatar] Gitea API failed: ${e.message}`);
+    }
+
+    // Try GitLab API if Gitea didn't work
+    if (!userData) {
+      try {
+        const gitlabHeaders = { ...headers };
+        if (token) {
+          gitlabHeaders['PRIVATE-TOKEN'] = token;
+          delete gitlabHeaders['Authorization'];
+        }
+        const gitlabUrl = `${urlObj.origin}/api/v4/users?username=${username}`;
+        console.log(`[avatar] Trying GitLab API: ${gitlabUrl}`);
+        const gitlabRes = await fetch(gitlabUrl, { headers: gitlabHeaders });
+        if (gitlabRes.ok) {
+          const users = await gitlabRes.json();
+          if (Array.isArray(users) && users.length > 0) {
+            userData = users[0];
+            provider = 'gitlab';
+            console.log(`[avatar] Detected GitLab provider`);
+          }
+        }
+      } catch (e) {
+        console.log(`[avatar] GitLab API failed: ${e.message}`);
+      }
+    }
+
+    if (userData) {
+      res.json({
+        success: true,
+        provider: provider,
+        avatarUrl: userData.avatar_url || null,
+        username: userData.login || userData.username || username,
+        fullName: userData.full_name || userData.name || userData.login || userData.username || username
+      });
+    } else {
+      // Couldn't detect provider, return basic info
+      res.json({
+        success: true,
+        provider: 'custom',
+        avatarUrl: null,
+        username: username,
+        fullName: username
+      });
+    }
+
+  } catch (error) {
+    console.warn(`[avatar] Failed to fetch user info: ${error.message}`);
+    res.json({ success: false, error: error.message });
   }
 });
 
