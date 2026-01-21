@@ -154,6 +154,8 @@
     "debounce_time_desc": "Time to wait before creating a version after file changes",
     "history_retention": "Clean Up History",
     "history_retention_desc": "Merge versions older than a certain time period",
+    "max_commits": "Max Commits to Show",
+    "max_commits_desc": "Maximum number of commits to display in the timeline",
     "retention_type": "Retention Type",
     "retention_value": "Retention Value",
     "retention_unit": "Retention Unit",
