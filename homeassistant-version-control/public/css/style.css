@@ -181,7 +181,7 @@ body {
 .tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: clamp(9px, 1.5vh, 21px);
+  margin-bottom: clamp(6px, 1vh, 14px);
   padding: 6px;
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
@@ -220,7 +220,7 @@ body {
   gap: 24px;
   max-width: 100%;
   box-sizing: border-box;
-  margin-top: 16px;
+  margin-top: 11px;
   padding: 0;
   flex: 1;
   min-height: 0;
