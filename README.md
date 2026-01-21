@@ -14,11 +14,11 @@ Home Assistant Version Control provides complete version history for your setup.
 *   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
 
 
-![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.png)
-![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.1.png)
-![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.png)
-![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/4.png)
-![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.png)
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.2.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.2.png)
+![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/4.2.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.2.png)
 
 ##  Key Features
 
