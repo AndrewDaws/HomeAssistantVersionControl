@@ -249,6 +249,9 @@ Invalid values will trigger warnings:
 ### Restore Actions
 * **Restore Single File:** Click the "Restore" button on any file in the timeline.
 * **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
+* **Timeline Context Menu:** Right-click on any version in the timeline to access:
+  * **Reset Timeline Here:** Remove all versions newer than the selected point (keeps your files unchanged, only cleans up timeline history).
+  * **Restore All Files Here:** Revert all tracked files back to their state at the selected version.
 
 ---
 
@@ -367,4 +370,4 @@ Want the latest features? The [develop branch](https://github.com/saihgupr/HomeA
 
 ## Support
 
-Enjoying this project? Consider [buying me a coffee](https://ko-fi.com/saihgupr) or leaving a star on the repository!
+If you find this project useful, please consider giving it a star, or [buy me a coffee](https://ko-fi.com/saihgupr) if you'd like!
