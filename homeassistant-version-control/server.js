@@ -3253,25 +3253,27 @@ async function configureSecretsTracking(include) {
     console.log(`[cloud-sync] secrets.yaml tracked: ${isTracked}, include: ${include}`);
 
     if (!include && isTracked) {
-      // Stop tracking (keep file on disk)
-      // This will register as a "delete" in git, which when pushed will remove it from the remote
-      await gitExec(['rm', '--cached', secretsPath]);
-      console.log('[cloud-sync] Untracked secrets.yaml from index');
+      // Stop tracking: Update .gitignore to exclude the file
+      // IMPORTANT: We do NOT use 'git rm --cached' because it creates a deletion commit
+      // that would remove the file from the remote repository when pushed.
+      // Instead, we rely on .gitignore (already updated above) to prevent future tracking.
+      // The file remains in repository history but won't be modified going forward.
 
-      // Stage .gitignore if it changed
+      console.log('[cloud-sync] Excluding secrets.yaml via .gitignore (file remains in history, no deletion commit)');
+
+      // Only commit .gitignore change if it was updated
       if (gitignoreChanged) {
-        await gitExec(['add', '.gitignore']);
+        try {
+          await gitExec(['add', '.gitignore']);
+          await gitExec(['commit', '-m', 'Update .gitignore to exclude secrets.yaml']);
+          console.log('[cloud-sync] Committed .gitignore update to exclude secrets.yaml');
+        } catch (e) {
+          console.log('[cloud-sync] Could not commit .gitignore update:', e.message);
+        }
       }
 
-      // Commit this metadata change so the remote knows it was deleted/untracked
-      try {
-        const msg = gitignoreChanged ? 'secrets.yaml, .gitignore' : 'secrets.yaml';
-        await gitExec(['commit', '-m', msg]);
-        console.log(`[cloud-sync] Committed secrets exclusion: ${msg}`);
-      } catch (commitError) {
-        // Commit might fail if there's nothing to commit (already done)
-        console.log('[cloud-sync] Commit skipped (may already be excluded):', commitError.message);
-      }
+      // Note: We do NOT stage/commit the removal of secrets.yaml itself
+      // This prevents creating a deletion commit that would remove it from the remote
     } else if (include && !isTracked) {
       // Start tracking
       try {

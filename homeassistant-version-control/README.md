@@ -267,9 +267,13 @@ The add-on automatically tracks configuration files while ignoring system files.
 | `esphome/*.yaml` | Temporary files |
 | All other `.yaml` and `.yml` files | Files in `.gitignore` |
 
+> [!CAUTION]
+> **Secrets Management & Cloud Backup:**
+> By default, `secrets.yaml` is **excluded** from version control to protect sensitive information like passwords and API keys. If you use the Cloud Backup feature and choose to include `secrets.yaml`, ensure your remote repository is **private** and understand that secrets will be stored in Git history. Consider using Home Assistant's built-in secrets management or environment variables for sensitive data instead.
+
 > [!TIP]
-> **Excluding Files (e.g., secrets.yaml):**
-> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to hide, and the add-on will automatically exclude them from version control.
+> **Excluding Files:**
+> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the add-on will automatically ignore them from version control.
 
 ---
 

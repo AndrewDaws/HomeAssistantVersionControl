@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1]
+
+### Fixed
+- Fixed issue with `secrets.yaml` exclusion in cloud sync
+
 ## [1.1.0]
 
 ### Added
