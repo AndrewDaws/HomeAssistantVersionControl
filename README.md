@@ -4,11 +4,20 @@
 
 Home Assistant Version Control provides complete version history for your setup. It automatically tracks every change to your YAML configuration files using a robust local Git backend. Browse your history, visualize diffs, and restore individual files or your entire configuration to any previous state with a single click.
 
-![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/1.png)
-![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/2.1.png)
-![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/3.png)
-![Screenshot 4](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/4.png)
-![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/images/screenshots/5.png)
+
+##  What's New!
+
+*   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
+*   **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
+*   **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
+*   **Progressive History Loading:** Versions now load faster, displaying results as they're found.
+*   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
+
+
+![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
+![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.2.png)
+![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.2.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.2.png)
 
 ##  Key Features
 
@@ -38,7 +47,12 @@ Home Assistant Version Control provides complete version history for your setup.
     * **Current (Default):** Compare against your **Current File** on disk to see how far you've deviated since that backup.
     * **Changes:** Compare against the **Previous Version** to see exactly what changed in that specific backup.
 
----
+### Restore Actions
+* **Restore Single File:** Click the "Restore" button on any file in the timeline.
+* **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
+* **Timeline Context Menu:** Right-click on any version in the timeline to access:
+  * **Reset Timeline Here:** Remove all versions newer than the selected point (keeps your files unchanged, only cleans up timeline history).
+  * **Restore All Files Here:** Revert all tracked files back to their state at the selected version.
 
 ## Installation
 
@@ -77,7 +91,7 @@ For Docker users who aren't using the Home Assistant add-on, you have three depl
 
 1. Download the compose.yaml file:
    ```bash
-   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/main/compose.yaml
+   curl -o compose.yaml https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/compose.yaml
    ```
 
 2. Edit the file to set your paths and timezone:
@@ -130,8 +144,6 @@ docker run -d \
 > The `SUPERVISOR_TOKEN` and `HA_URL` are optional. You can omit those lines if you don't need Home Assistant restart/reload features.
 
 Access the interface at `http://localhost:54001`.
-
----
 
 ## Configuration
 
@@ -233,14 +245,6 @@ Invalid values will trigger warnings:
 ```
 [init] Warning: Invalid DEBOUNCE_TIME='abc', Expected integer, got: 'abc'. Using default: 5
 ```
-
----
-
-### Restore Actions
-* **Restore Single File:** Click the "Restore" button on any file in the timeline.
-* **Restore All Files:** Long-press (2 seconds) the "Restore" button on a timeline entry to revert **all tracked files** to that exact moment.
-
----
 
 ## How It Works
 
@@ -347,12 +351,14 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
----
+## Contributing
 
-## Support & Contributing
+Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
 
-Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- **Found a bug?** Please [open an issue on GitHub](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
-- **Want to contribute?** Use the `develop` branch for new features; bug fixes are welcome on `main`.
-- **Finding this helpful?** Consider [buying me a coffee](https://ko-fi.com/saihgupr) or simply leaving a ⭐ star on the repository!
+Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
+
+## Support
+
+If you find this project useful, please consider giving it a star, or [buy me a coffee](https://ko-fi.com/saihgupr) if you'd like!
