@@ -2927,7 +2927,7 @@ const server = app.listen(PORT, HOST, (err) => {
   }
 
   console.log('='.repeat(60));
-  console.log('Home Assistant Version Control v1.1.0');
+  console.log('Home Assistant Version Control v1.1.1');
   console.log('='.repeat(60));
   console.log(`Server running at http://${HOST}:${PORT}`);
 
@@ -3390,7 +3390,7 @@ app.post('/api/github/device-flow/initiate', async (req, res) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'User-Agent': 'HomeAssistantVersionControl/1.1.0'
+        'User-Agent': 'HomeAssistantVersionControl/1.1.1'
       },
       body: JSON.stringify({
         client_id: GITHUB_CLIENT_ID,
@@ -3436,7 +3436,7 @@ app.post('/api/github/device-flow/poll', async (req, res) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'User-Agent': 'HomeAssistantVersionControl/1.1.0'
+        'User-Agent': 'HomeAssistantVersionControl/1.1.1'
       },
       body: JSON.stringify({
         client_id: GITHUB_CLIENT_ID,
