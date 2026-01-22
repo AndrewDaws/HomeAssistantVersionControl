@@ -17,7 +17,7 @@ Home Assistant Version Control provides complete version history for your setup.
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
 ![Screenshot 2](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/2.2.png)
 ![Screenshot 3](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/3.2.png)
-![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.3.png)
+![Screenshot 5](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/5.2.png)
 
 ##  Key Features
 
