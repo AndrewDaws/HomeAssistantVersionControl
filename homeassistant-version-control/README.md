@@ -275,7 +275,19 @@ The add-on automatically tracks configuration files while ignoring system files.
 > **Excluding Files:**
 > You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the add-on will automatically ignore them from version control.
 
----
+## Cloud Sync (GitHub/Gitea)
+
+You can automatically sync your configuration to a private remote repository. This is highly recommended for off-site backups.
+
+### Custom Repository Setup (Gitea/Self-Hosted)
+
+If you are using a custom Git server like Gitea, follow these steps to ensure a smooth sync (note: this is **not** required for standard GitHub setups):
+
+1.  **Create a Private Repository:** Log in to your Git server and manually create a **private** repository named `VersionControlBackup` before attempting to sync from the UI.
+2.  **Authentication URL:** Use the following URL format in the Cloud Sync settings, substituting your token, IP/domain, and username:
+    ```
+    http://YOUR_API_TOKEN@YOUR_SERVER_IP:PORT/YOUR_USERNAME/VersionControlBackup.git
+    ```
 
 ## API
 
