@@ -2040,7 +2040,7 @@ function getDateBucket(dateString) {
 
   // 5. Current Year -> Month Name (e.g. November)
   if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleString('default', { month: 'long' });
+    return date.toLocaleString(undefined, { month: 'long' });
   }
 
   // 6. Previous Years -> Year (e.g. 2024)
@@ -2611,15 +2611,7 @@ async function displayCommits(commits) {
           `;
 
       for (const commit of groups[bucket]) {
-        const commitDate = new Date(commit.date);
-        // Use browser default locale
-        const timeString = commitDate.toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit'
-        });
+        const timeString = getFormattedDate(commit.date);
 
         // Extract just the filename from the commit message
         let fileName = commit.message;
@@ -6227,18 +6219,7 @@ function showHardResetConfirmation(hash) {
 
   let formattedDate = 'Unknown';
   if (commit) {
-    const dateObj = new Date(commit.date);
-    // Format: Nov 26 2025 7:30:51 AM (remove commas)
-    const options = {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true
-    };
-    formattedDate = dateObj.toLocaleString('en-US', options).replace(/,/g, '');
+    formattedDate = getFormattedDate(commit.date);
   }
 
   // Create minimal modal HTML
@@ -6625,13 +6606,7 @@ function showTimelineContextMenu(event, commitHash) {
 
   // Get commit info for display
   const commit = allCommits.find(c => c.hash === commitHash);
-  const commitDate = commit ? new Date(commit.date).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  }) : commitHash.substring(0, 8);
+  const commitDate = commit ? getFormattedDate(commit.date) : commitHash.substring(0, 8);
 
   // Count commits that will be removed
   const commitIndex = allCommits.findIndex(c => c.hash === commitHash);
@@ -6685,17 +6660,7 @@ function confirmSoftReset(commitHash, commitsToRemove) {
   const commit = allCommits.find(c => c.hash === commitHash);
   let formattedDate = 'Unknown';
   if (commit) {
-    const dateObj = new Date(commit.date);
-    const options = {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true
-    };
-    formattedDate = dateObj.toLocaleString('en-US', options).replace(/,/g, '');
+    formattedDate = getFormattedDate(commit.date);
   }
 
   // Check if this is the most recent commit

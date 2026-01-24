@@ -1807,19 +1807,14 @@ app.post('/api/git/hard-reset', async (req, res) => {
       try {
         const dateStr = (await gitRaw(['show', '-s', '--format=%aI', commitHash])).trim();
         const date = new Date(dateStr);
-
-        // Format as "Nov 26, 2025 12:30 PM" (no comma after year)
-        const datePart = date.toLocaleDateString('en-US', {
+        commitDate = date.toLocaleString(undefined, {
           month: 'short',
           day: 'numeric',
-          year: 'numeric'
-        });
-        const timePart = date.toLocaleTimeString('en-US', {
+          year: 'numeric',
           hour: 'numeric',
           minute: '2-digit',
           hour12: true
-        });
-        commitDate = `${datePart} ${timePart}`;
+        }).replace(',', '');
       } catch (error) {
         console.error('[hard-reset] Failed to get commit date:', error);
         commitDate = commitHash.substring(0, 8);
@@ -1929,17 +1924,14 @@ app.post('/api/git/soft-reset', async (req, res) => {
     try {
       const dateStr = (await gitRaw(['show', '-s', '--format=%aI', commitHash])).trim();
       const date = new Date(dateStr);
-      const datePart = date.toLocaleDateString('en-US', {
+      commitDate = date.toLocaleString(undefined, {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
-      });
-      const timePart = date.toLocaleTimeString('en-US', {
+        year: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
-      });
-      commitDate = `${datePart} ${timePart}`;
+      }).replace(',', '');
     } catch (error) {
       commitDate = commitHash.substring(0, 8);
     }
