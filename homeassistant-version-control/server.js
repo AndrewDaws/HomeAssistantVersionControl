@@ -768,6 +768,81 @@ async function findNestedGitRepos() {
 }
 
 
+/**
+ * Set up SSH keys from the persistent /config/.ssh directory
+ * This allows SSH keys to persist across addon updates/restarts
+ */
+async function setupSshKeys() {
+  try {
+    const sourceDir = path.join(CONFIG_PATH, '.ssh');
+    const destDir = path.join(process.env.HOME || '/root', '.ssh');
+
+    // Check if source directory exists
+    try {
+      await fsPromises.access(sourceDir);
+    } catch (e) {
+      // Source .ssh directory doesn't exist, nothing to do
+      return;
+    }
+
+    console.log(`[ssh] Found SSH directory at ${sourceDir}, setting up system SSH...`);
+
+    // Ensure destination directory exists
+    try {
+      await fsPromises.access(destDir);
+    } catch (e) {
+      await fsPromises.mkdir(destDir, { recursive: true, mode: 0o700 });
+    }
+
+    // List files in source directory
+    const files = await fsPromises.readdir(sourceDir);
+
+    for (const file of files) {
+      const srcPath = path.join(sourceDir, file);
+      const destPath = path.join(destDir, file);
+
+      // Skip directories (like sockets or subdirs)
+      const stats = await fsPromises.stat(srcPath);
+      if (stats.isDirectory()) continue;
+
+      // Copy file
+      await fsPromises.copyFile(srcPath, destPath);
+
+      // Set permissions: 600 for keys (SSH is strict about this)
+      await fsPromises.chmod(destPath, 0o600);
+      console.log(`[ssh] Copied and secured: ${file}`);
+    }
+
+    // Default SSH config if none exists in source
+    const destConfigFile = path.join(destDir, 'config');
+    try {
+      await fsPromises.access(destConfigFile);
+    } catch (e) {
+      // Create a default config to disable host key checking for common git providers
+      // This improves UX since users can't easily answer the "trust this host?" prompt
+      const defaultSSHConfig = `
+Host github.com
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+
+Host gitlab.com
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+
+Host bitbucket.org
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+`;
+      await fsPromises.writeFile(destConfigFile, defaultSSHConfig, { mode: 0o600 });
+      console.log('[ssh] Created default SSH config with StrictHostKeyChecking disabled for common hosts');
+    }
+
+    console.log('[ssh] SSH setup complete');
+  } catch (error) {
+    console.error('[ssh] Setup failed:', error.message);
+  }
+}
+
 async function initRepo() {
   // Load runtime settings first
   await loadRuntimeSettings();
@@ -811,6 +886,9 @@ async function initRepo() {
 
     console.log(`[init] CONFIG_PATH: ${CONFIG_PATH}`);
     console.log(`[init] Current working directory: ${process.cwd()}`);
+
+    // Set up SSH keys from /config/.ssh if present
+    await setupSshKeys();
 
     // Initialize git with the correct path
     global.CONFIG_PATH = CONFIG_PATH;
