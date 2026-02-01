@@ -332,7 +332,7 @@ let runtimeSettings = {
   retentionType: 'age', // 'count' or 'age'
   retentionValue: 30,
   retentionUnit: 'days', // for age type
-  maxCommits: 50, 
+  maxCommits: 50,
   // Cloud Sync Settings
   cloudSync: {
     enabled: false,
@@ -586,7 +586,6 @@ async function loadRuntimeSettings() {
   const envResult = loadSettingsFromEnv();
   runtimeSettings = { ...runtimeSettings, ...envResult.settings };
   Object.assign(settingSources, envResult.sources);
-  console.log(runtimeSettings);
 
   // Layer 2: Apply file settings (highest precedence)
   try {
