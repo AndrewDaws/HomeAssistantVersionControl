@@ -5,6 +5,7 @@
 ### Added
 - **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
 - **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
+- **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them.
 
 ### Fixed
 - **Cloud Sync Branch:** Fixed logic to mirror the local branch on the remote instead of hardcoding `develop`.
