@@ -3336,8 +3336,8 @@ async function pushToRemote(includeSecrets = false) {
       console.log('[cloud-sync] Could not determine branch, using develop');
     }
 
-    // Always push to 'develop' on remote (new default branch)
-    const remoteBranch = 'develop';
+    // Push to the same branch on remote as local
+    const remoteBranch = localBranch;
     console.log(`[cloud-sync] Pushing ${localBranch} to origin/${remoteBranch}...`);
     await gitExec(['push', '-f', '-u', 'origin', `${localBranch}:${remoteBranch}`]);
     console.log(`[cloud-sync] Successfully pushed to origin/${remoteBranch}`);
