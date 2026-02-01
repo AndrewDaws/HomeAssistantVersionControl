@@ -237,39 +237,13 @@ body {
   min-width: 0;
 }
 
-/* === Resizer === */
+/* === Resizer (Invisble) === */
 .resizer {
-  width: 12px;
+  width: 24px;
   cursor: col-resize;
   background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: all 0.2s ease;
   z-index: 10;
-  margin: 0 -6px;
-  /* Overlap slightly with panels */
-}
-
-.resizer::after {
-  content: '';
-  width: 2px;
-  height: 40px;
-  background: var(--border-subtle);
-  border-radius: 2px;
-  transition: all 0.2s ease;
-}
-
-.resizer:hover::after,
-.resizing .resizer::after {
-  background: var(--accent-primary);
-  height: 60px;
-  width: 3px;
-}
-
-.resizer:hover {
-  background: rgba(59, 130, 246, 0.05);
+  flex-shrink: 0;
 }
 
 body.resizing {
