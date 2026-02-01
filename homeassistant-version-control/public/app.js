@@ -261,7 +261,7 @@ function initResizer() {
 
     // Constraints
     if (newWidth > 15 && newWidth < 70) {
-      leftSide.style.width = `${newWidth}%`;
+      leftSide.style.setProperty('width', `${newWidth}%`, 'important');
     }
   };
 
@@ -272,10 +272,17 @@ function initResizer() {
 
     // Save to localStorage
     localStorage.setItem('panel-width', leftSide.style.width);
+
+    // Remove the temporary head style if it still exists (it shouldn't)
+    document.getElementById('resizer-init-style')?.remove();
   };
 
   resizer.addEventListener('mousedown', (e) => {
     e.preventDefault();
+
+    // Remove the early-load style so inline styles can take over
+    document.getElementById('resizer-init-style')?.remove();
+
     x = e.clientX;
     const scrollWidth = leftSide.getBoundingClientRect().width;
     w = scrollWidth;

@@ -7,7 +7,8 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ##  What's New!
 
-*   **Adjustable Panels:** Drag the gap between the Timeline and Detail panels to customize your workspace layout. Your preference is saved automatically!
+*   **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them. Your preference is saved automatically!
+*   **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
 
 
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
@@ -35,7 +36,7 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
 ### Customization
-* **Color Theme:** Choose from seven preset color palettes.
+* **Color Theme:** Choose from seven preset color palettes in settings, or tap the **Header Title/Logo** to cycle through them instantly.
 * **Light Themes:** Toggle between Light and Dark modes.
 * **Comparison View:**
   * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.). Tap the header bar of any file diff to instantly cycle through styles.
