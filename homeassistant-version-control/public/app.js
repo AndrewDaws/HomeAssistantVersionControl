@@ -670,6 +670,42 @@ const PICASSO_PALETTE = [
   { name: 'Ocean', primary: '#2193b0', secondary: '#6dd5ed' }
 ];
 
+/**
+ * Cycle through defined color palettes
+ */
+function cyclePicassoPalette() {
+  const primaryInput = document.getElementById('picassoPrimaryColor');
+  const secondaryInput = document.getElementById('picassoSecondaryColor');
+  if (!primaryInput || !secondaryInput) return;
+
+  const currentPrimary = primaryInput.value.toLowerCase();
+  const currentSecondary = secondaryInput.value.toLowerCase();
+
+  // Find current index
+  let currentIndex = PICASSO_PALETTE.findIndex(p =>
+    p.primary.toLowerCase() === currentPrimary &&
+    p.secondary.toLowerCase() === currentSecondary
+  );
+
+  // Move to next
+  const nextIndex = (currentIndex + 1) % PICASSO_PALETTE.length;
+  const nextPalette = PICASSO_PALETTE[nextIndex];
+
+  // Apply
+  primaryInput.value = nextPalette.primary;
+  secondaryInput.value = nextPalette.secondary;
+
+  // Trigger input events manually to apply and save
+  primaryInput.dispatchEvent(new Event('input'));
+  secondaryInput.dispatchEvent(new Event('input'));
+
+  // Update visual selection in settings if open
+  updatePaletteSelection(nextPalette.primary, nextPalette.secondary);
+
+  // Show notification
+  showNotification(`Theme Palette: ${nextPalette.name}`, 'info', 1500);
+}
+
 function initializeColorPalettes() {
   const container = document.getElementById('combinedPaletteContainer');
   console.log('[App] initializeColorPalettes called. Container:', container);
