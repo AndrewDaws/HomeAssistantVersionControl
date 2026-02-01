@@ -247,8 +247,9 @@ body {
 }
 
 body.resizing {
-  cursor: col-resize;
-  user-select: none;
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 /* Adjust layout for smaller screens */

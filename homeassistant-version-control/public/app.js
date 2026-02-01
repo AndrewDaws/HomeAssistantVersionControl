@@ -281,6 +281,7 @@ function initResizer() {
   };
 
   resizer.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     x = e.clientX;
     const scrollWidth = leftSide.getBoundingClientRect().width;
     w = scrollWidth;
