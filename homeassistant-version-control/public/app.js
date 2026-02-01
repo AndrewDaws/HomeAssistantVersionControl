@@ -243,6 +243,54 @@ async function loadSettings() {
   }
 }
 
+/**
+ * Initialize the panel resizer
+ */
+function initResizer() {
+  const resizer = document.getElementById('resizer');
+  const leftSide = resizer?.previousElementSibling;
+
+  if (!resizer || !leftSide) return;
+
+  // Load saved width
+  const savedWidth = localStorage.getItem('panel-width');
+  if (savedWidth && window.innerWidth > 768) {
+    leftSide.style.width = savedWidth;
+  }
+
+  let x = 0;
+  let w = 0;
+
+  const onMouseMove = (e) => {
+    const dx = e.clientX - x;
+    const newWidth = ((w + dx) / resizer.parentNode.getBoundingClientRect().width) * 100;
+
+    // Constraints
+    if (newWidth > 15 && newWidth < 70) {
+      leftSide.style.width = `${newWidth}%`;
+    }
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.body.classList.remove('resizing');
+
+    // Save to localStorage
+    localStorage.setItem('panel-width', leftSide.style.width);
+  };
+
+  resizer.addEventListener('mousedown', (e) => {
+    x = e.clientX;
+    const scrollWidth = leftSide.getBoundingClientRect().width;
+    w = scrollWidth;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.body.classList.add('resizing');
+  });
+}
+
 // Load settings from localStorage on page load
 window.addEventListener('DOMContentLoaded', async () => {
   // Load language first
@@ -270,6 +318,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   applyFontToDiffs();
   updateFontButton();
   updateFontSizeButton();
+
+  // Initialize resizer
+  initResizer();
 
 
   // Load other settings that are not in runtime settings
