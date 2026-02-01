@@ -332,6 +332,7 @@ let runtimeSettings = {
   retentionType: 'age', // 'count' or 'age'
   retentionValue: 30,
   retentionUnit: 'days', // for age type
+  maxCommits: 50, 
   // Cloud Sync Settings
   cloudSync: {
     enabled: false,
@@ -383,6 +384,12 @@ const RUNTIME_SETTINGS_SCHEMA = {
     type: 'enum',
     values: ['hours', 'days', 'weeks', 'months'],
     envKey: 'RETENTION_UNIT'
+  },
+  maxCommits: {
+    type: 'number',
+    min: 50,
+    max: 10000,
+    envKey: 'MAX_COMMITS'
   }
 };
 
@@ -579,6 +586,7 @@ async function loadRuntimeSettings() {
   const envResult = loadSettingsFromEnv();
   runtimeSettings = { ...runtimeSettings, ...envResult.settings };
   Object.assign(settingSources, envResult.sources);
+  console.log(runtimeSettings);
 
   // Layer 2: Apply file settings (highest precedence)
   try {
@@ -1049,6 +1057,13 @@ app.post('/api/runtime-settings', async (req, res) => {
       runtimeSettings.retentionUnit = newSettings.retentionUnit;
     }
 
+    if (newSettings.maxCommits !== undefined) {
+      const maxCommits = parseInt(newSettings.maxCommits);
+      if (maxCommits >= 0) {
+        runtimeSettings.maxCommits = maxCommits;
+      }
+    }
+
     // Handle extensions settings
     if (newSettings.extensions !== undefined) {
       if (newSettings.extensions.include !== undefined && Array.isArray(newSettings.extensions.include)) {
@@ -1431,7 +1446,7 @@ app.get('/api/scripts/deleted', async (req, res) => {
 // Git History
 app.get('/api/git/history', async (req, res) => {
   try {
-    const log = await gitLog({ maxCount: 50 });
+    const log = await gitLog({ maxCount: runtimeSettings.maxCommits });
     res.json({ success: true, log });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1499,8 +1514,7 @@ app.get('/api/file-content', async (req, res) => {
 app.get('/api/git/file-history', async (req, res) => {
   try {
     const { filePath } = req.query;
-    const maxCount = 50; // Increased from 20 to show more history
-    const log = await gitLog({ file: filePath, maxCount });
+    const log = await gitLog({ file: filePath, maxCount: runtimeSettings.maxCommits });
 
     // Get current file hash
     let currentHash = '';

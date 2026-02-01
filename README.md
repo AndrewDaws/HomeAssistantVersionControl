@@ -118,7 +118,7 @@ docker run -d \
   -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   -e HA_URL=http://homeassistant.local:8123 \
   --name home-assistant-version-control \
-  ghcr.io/saihgupr/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/home-assistant-version-control:latest
 ```
 
 Replace `/path/to/your/config` with the actual path to your Home Assistant configuration directory.
@@ -160,6 +160,7 @@ The application can be configured through the web UI Settings page or via enviro
 | **Retention Type** | Keep history based on time or number of versions | `time` |
 | **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
 | **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
+| **Max Commits** | How many commits to show in the timeline | `days` |
 
 #### Environment Variable Configuration
 
@@ -183,6 +184,7 @@ For containerized deployments (especially when not persisting the `/data` direct
 | `RETENTION_TYPE` | Retention Type | String | `time`, `versions` | `time` |
 | `RETENTION_VALUE` | Retention Value | Number | ≥ 1 | `90` |
 | `RETENTION_UNIT` | Retention Unit | String | `hours`, `days`, `weeks`, `months` | `days` |
+| `MAX_COMMITS` | Max Commits | Number | ≥ 50 / ≤ 10000 | `50` |
 
 **Notes:**
 - Boolean values are case-insensitive and accept: `true`/`false`, `yes`/`no`, `1`/`0`
@@ -197,7 +199,7 @@ For containerized deployments (especially when not persisting the `/data` direct
 version: '3.8'
 services:
   havc:
-    image: ghcr.io/saihgupr/homeassistantversioncontrol:latest
+    image: ghcr.io/saihgupr/home-assistant-version-control:latest
     ports:
       - "54001:54001"
     volumes:
@@ -210,6 +212,7 @@ services:
       - RETENTION_TYPE=time
       - RETENTION_VALUE=30
       - RETENTION_UNIT=days
+      - MAX_COMMITS=50
 ```
 
 **Docker Run with environment variables:**
@@ -225,7 +228,7 @@ docker run -d \
   -e RETENTION_VALUE=30 \
   -e RETENTION_UNIT=days \
   --name home-assistant-version-control \
-  ghcr.io/saihgupr/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/home-assistant-version-control:latest
 ```
 
 **Validation and Logging:**
@@ -239,6 +242,7 @@ When the container starts, you'll see detailed logging showing where each settin
 [init]   retentionType: 'time' (default)
 [init]   retentionValue: 30 (env: RETENTION_VALUE)
 [init]   retentionUnit: 'days' (default)
+[init]   maxCommits: 50 (default)
 ```
 
 Invalid values will trigger warnings:
