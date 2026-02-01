@@ -252,12 +252,6 @@ function initResizer() {
 
   if (!resizer || !leftSide) return;
 
-  // Load saved width
-  const savedWidth = localStorage.getItem('panel-width');
-  if (savedWidth && window.innerWidth > 768) {
-    leftSide.style.width = savedWidth;
-  }
-
   let x = 0;
   let w = 0;
 

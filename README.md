@@ -7,11 +7,7 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ##  What's New!
 
-*   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
-*   **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
-*   **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
-*   **Progressive History Loading:** Versions now load faster, displaying results as they're found.
-*   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
+*   **Adjustable Panels:** Drag the gap between the Timeline and Detail panels to customize your workspace layout. Your preference is saved automatically!
 
 
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
@@ -24,13 +20,14 @@ Home Assistant Version Control provides complete version history for your setup.
 ###  Automatic & Smart Tracking
 * **Zero-Effort Backups:** Every edit is saved automatically.
 * **Smart Debouncing:** Multiple rapid edits are grouped into a single save snapshot (customizable delay).
-* **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files (both UI and YAML mode).
-* **Efficient Storage:** Uses Git deduplication to minimize disk usage by storing only the differences between versions.
+* **Track Any File:** Configure custom file extensions (e.g., `.sh`, `.py`, `.json`) in the add-on settings to track more than just YAML.
+* **Efficient Storage:** Uses Git deduplication to minimize disk usage.
 
 ### Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
-* **Visual Comparisons:** Compare the current version against any backup side-by-side. Additions are highlighted in **green**, deletions in **red**.
-* **History Management:** Automatically merges versions older than the specified time period to keep your history clean.
+* **Visual Comparisons:** Compare versions side-by-side with color-coded highlighting.
+* **Recover Deleted Items:** View and restore files that have been deleted using the "Deleted" filter.
+* **History Management:** Automatically merge old commits or set a custom **Max Commits** limit to keep the UI fast.
 
 ### Instant Restore
 * **Granular Control:** Restore specific files or revert your entire configuration.
@@ -41,7 +38,7 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Color Theme:** Choose from seven preset color palettes.
 * **Light Themes:** Toggle between Light and Dark modes.
 * **Comparison View:**
-  * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.).
+  * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.). Tap the header bar of any file diff to instantly cycle through styles.
   * **Layout:** Choose between Stacked (Unified) or Side-by-Side views.
   * **Comparison:**
     * **Current (Default):** Compare against your **Current File** on disk to see how far you've deviated since that backup.
@@ -281,7 +278,7 @@ The add-on automatically tracks configuration files while ignoring system files.
 
 ## Cloud Sync (GitHub/Gitea)
 
-You can automatically sync your configuration to a private remote repository. This is highly recommended for off-site backups.
+Push your configuration to a private GitHub or Gitea repository. Choose between manual sync, daily backups, or automatic sync after every change.
 
 ### Custom Repository Setup (Gitea/Self-Hosted)
 
@@ -375,10 +372,10 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 
 Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
 
-Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Want to contribute? Check out [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
 
 ## Support
 
-If you find this project useful, please consider giving it a star, or [buy me a coffee](https://ko-fi.com/saihgupr) if you'd like!
+If you find this project useful, please consider giving it a star ⭐, or donating if you like.
