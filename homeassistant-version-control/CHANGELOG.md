@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0-beta.2]
+
+### Added
+- **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
+- **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
+
+### Fixed
+- **Cloud Sync Branch:** Fixed logic to mirror the local branch on the remote instead of hardcoding `develop`.
+- **UI Refinement:** Re-ordered settings menu for better logical flow (Max Commits moved below history retention).
+- **Documentation:** Fixed Docker image name typo in README.
+
+## [1.2.0-beta.1]
+- Initial beta release with internal refactoring.
+
 ## [1.1.1]
 
 ### Fixed
