@@ -1143,6 +1143,8 @@ app.post('/api/runtime-settings', async (req, res) => {
 
     // Handle extensions settings
     if (newSettings.extensions !== undefined) {
+      const oldExclude = [...(runtimeSettings.extensions.exclude || [])];
+
       if (newSettings.extensions.include !== undefined && Array.isArray(newSettings.extensions.include)) {
         runtimeSettings.extensions.include = newSettings.extensions.include
           .map(ext => ext.trim().replace(/^\./, '')) // Remove leading dots
@@ -1154,14 +1156,56 @@ app.post('/api/runtime-settings', async (req, res) => {
           .filter(file => file.length > 0);
       }
 
+      const newExclude = runtimeSettings.extensions.exclude || [];
+      const newlyExcluded = newExclude.filter(file => !oldExclude.includes(file));
+
       // Regenerate .gitignore with new extensions
       try {
         const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
         const newContent = generateGitignoreContent(IGNORED_NESTED_REPOS, runtimeSettings.extensions);
         await fsPromises.writeFile(gitignorePath, newContent, 'utf8');
         console.log('[settings] Updated .gitignore with new extensions');
+
+        // Automatically untrack files that were just added to the exclude list
+        if (newlyExcluded.length > 0) {
+          console.log(`[settings] Newly excluded files detected: ${newlyExcluded.join(', ')}`);
+          let removedAny = false;
+
+          for (const file of newlyExcluded) {
+            const removed = await gitRmCached(file);
+            if (removed) {
+              console.log(`[settings] Successfully untracked newly excluded file: ${file}`);
+              removedAny = true;
+            }
+          }
+
+          if (removedAny || true) { // Always commit if .gitignore changed or files untracked
+            try {
+              await gitAdd('.gitignore');
+              const msg = newlyExcluded.length > 0 ?
+                `Exclude ${newlyExcluded.join(', ')} and update .gitignore` :
+                'Update .gitignore';
+              await gitCommit(msg);
+              console.log(`[settings] Committed exclusion changes: ${msg}`);
+            } catch (e) {
+              console.log('[settings] Failed to commit exclusion changes:', e.message);
+            }
+          }
+        } else {
+          // Just commit .gitignore if it changed (though usually newlyExcluded check covers the reason for change)
+          try {
+            await gitAdd('.gitignore');
+            const status = await gitStatus();
+            if (!status.isClean()) {
+              await gitCommit('Update .gitignore');
+              console.log('[settings] Committed .gitignore update');
+            }
+          } catch (e) {
+            // Ignore if nothing to commit
+          }
+        }
       } catch (error) {
-        console.error('[settings] Failed to update .gitignore:', error);
+        console.error('[settings] Failed to update .gitignore or untrack files:', error);
       }
     }
 
