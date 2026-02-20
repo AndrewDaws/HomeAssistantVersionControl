@@ -486,6 +486,13 @@
                     data-i18n="settings.cloud_remote_url_desc">
                     Supports HTTPS URLs (GitLab, Gitea, Bitbucket, etc.)
                   </p>
+                  <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.cloud_ignore_ssl">Ignore SSL Errors</span>
+                    <div class="toggle-switch">
+                      <input type="checkbox" id="cloudIgnoreSslErrors" style="display: none;">
+                      <label for="cloudIgnoreSslErrors" class="toggle-slider"></label>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Connected State -->

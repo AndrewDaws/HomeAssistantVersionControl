@@ -10,7 +10,7 @@ export async function gitExec(args, options = {}) {
     if (!global.CONFIG_PATH) {
         throw new Error('CONFIG_PATH not initialized');
     }
-    const { timeout = 30000, env } = options;
+    const { timeout = 30000, env, ignoreSslErrors = false } = options;
 
     const execOptions = {
         cwd: global.CONFIG_PATH,
@@ -25,7 +25,12 @@ export async function gitExec(args, options = {}) {
         ...(env || {})
     };
 
-    return execFileAsync('git', args, execOptions);
+    const finalArgs = [...args];
+    if (ignoreSslErrors) {
+        finalArgs.unshift('-c', 'http.sslVerify=false');
+    }
+
+    return execFileAsync('git', finalArgs, execOptions);
 }
 
 // ──────────────────────────────────────────────────

@@ -343,6 +343,7 @@ let runtimeSettings = {
     authToken: '', // OAuth token or PAT
     pushFrequency: 'manual', // 'manual', 'every_commit', 'hourly', 'daily'
     includeSecrets: false, // Default to FALSE (exclude by default)
+    ignoreSslErrors: false, // Whether to ignore SSL certificate validation errors
     lastPushTime: null,
     lastPushStatus: null, // 'success', 'failed'
     lastPushError: null
@@ -3461,7 +3462,9 @@ async function pushToRemote(includeSecrets = false) {
     // Push to the same branch on remote as local
     const remoteBranch = localBranch;
     console.log(`[cloud-sync] Pushing ${localBranch} to origin/${remoteBranch}...`);
-    await gitExec(['push', '-f', '-u', 'origin', `${localBranch}:${remoteBranch}`]);
+    await gitExec(['push', '-f', '-u', 'origin', `${localBranch}:${remoteBranch}`], {
+      ignoreSslErrors: runtimeSettings.cloudSync.ignoreSslErrors
+    });
     console.log(`[cloud-sync] Successfully pushed to origin/${remoteBranch}`);
 
     // Update status
@@ -3494,7 +3497,9 @@ async function testRemoteConnection() {
   try {
     // Use ls-remote to test connection without actually pushing
     // Note: Don't use --exit-code as it fails on empty repos (exit code 2)
-    await gitExec(['ls-remote', 'origin']);
+    await gitExec(['ls-remote', 'origin'], {
+      ignoreSslErrors: runtimeSettings.cloudSync.ignoreSslErrors
+    });
     console.log('[cloud-sync] Remote connection test successful');
     return { success: true };
   } catch (error) {
@@ -3832,7 +3837,7 @@ app.get('/api/cloud-sync/status', async (req, res) => {
 // Test cloud sync connection
 app.post('/api/cloud-sync/test', async (req, res) => {
   try {
-    const { remoteUrl, authToken } = req.body;
+    const { remoteUrl, authToken, ignoreSslErrors } = req.body;
 
     // Use provided URL or fall back to stored URL
     const targetUrl = remoteUrl || runtimeSettings.cloudSync.remoteUrl;
@@ -3844,6 +3849,12 @@ app.post('/api/cloud-sync/test', async (req, res) => {
     // Use provided token or fall back to stored token
     const token = authToken || runtimeSettings.cloudSync.authToken;
 
+    // Temporarily update ignoreSslErrors if provided for the test
+    const oldIgnoreSsl = runtimeSettings.cloudSync.ignoreSslErrors;
+    if (ignoreSslErrors !== undefined) {
+      runtimeSettings.cloudSync.ignoreSslErrors = ignoreSslErrors;
+    }
+
     // Set up the remote with provided credentials
     const setupResult = await setupGitRemote(targetUrl, token);
     if (!setupResult.success) {
@@ -3852,6 +3863,10 @@ app.post('/api/cloud-sync/test', async (req, res) => {
 
     // Test the connection
     const testResult = await testRemoteConnection();
+
+    // Restore ignoreSslErrors
+    runtimeSettings.cloudSync.ignoreSslErrors = oldIgnoreSsl;
+
     res.json(testResult);
   } catch (error) {
     console.error('[cloud-sync test] Error:', error);
@@ -3893,7 +3908,7 @@ app.post('/api/cloud-sync/push', async (req, res) => {
 app.post('/api/cloud-sync/settings', async (req, res) => {
   try {
     console.log('[cloud-sync settings] Received request:', JSON.stringify(req.body, null, 2));
-    const { enabled, remoteUrl, authToken, pushFrequency, includeSecrets, authProvider } = req.body;
+    const { enabled, remoteUrl, authToken, pushFrequency, includeSecrets, ignoreSslErrors, authProvider } = req.body;
 
     // Update basic settings
     console.log('[cloud-sync settings] Updating local settings...');
@@ -3901,6 +3916,7 @@ app.post('/api/cloud-sync/settings', async (req, res) => {
     if (authToken !== undefined) runtimeSettings.cloudSync.authToken = authToken;
     if (pushFrequency !== undefined) runtimeSettings.cloudSync.pushFrequency = pushFrequency;
     if (includeSecrets !== undefined) runtimeSettings.cloudSync.includeSecrets = includeSecrets;
+    if (ignoreSslErrors !== undefined) runtimeSettings.cloudSync.ignoreSslErrors = ignoreSslErrors;
 
     // Handle provider and URL switching
     const oldProvider = runtimeSettings.cloudSync.authProvider;

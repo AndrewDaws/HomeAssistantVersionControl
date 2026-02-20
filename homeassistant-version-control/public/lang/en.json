@@ -200,6 +200,7 @@
     "cloud_push_hourly": "Hourly",
     "cloud_push_daily": "Daily",
     "cloud_include_secrets": "Include secrets.yaml",
+    "cloud_ignore_ssl": "Ignore SSL Errors",
     "cloud_test_connection": "Test Connection",
     "cloud_push_now": "Push Now",
     "cloud_last_push": "Last push:",

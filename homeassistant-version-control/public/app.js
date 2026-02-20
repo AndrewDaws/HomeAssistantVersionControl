@@ -1464,6 +1464,11 @@ async function loadCloudSyncSettings() {
         includeSecretsCheckbox.checked = settings.includeSecrets === true;
       }
 
+      const ignoreSslCheckbox = document.getElementById('cloudIgnoreSslErrors');
+      if (ignoreSslCheckbox) {
+        ignoreSslCheckbox.checked = settings.ignoreSslErrors === true;
+      }
+
       // Hide secrets toggle if secrets.yaml is already in exclude_files (making toggle irrelevant)
       const secretsToggleContainer = document.getElementById('secretsToggleContainer');
       if (secretsToggleContainer) {
@@ -1616,6 +1621,7 @@ async function saveCloudSyncSettings(silent = false) {
 
   const pushFrequency = document.getElementById('cloudPushFrequency').value;
   const includeSecrets = document.getElementById('cloudIncludeSecrets').checked;
+  const ignoreSslErrors = document.getElementById('cloudIgnoreSslErrors').checked;
 
   try {
     const payload = {
@@ -1623,6 +1629,7 @@ async function saveCloudSyncSettings(silent = false) {
       remoteUrl,
       pushFrequency,
       includeSecrets,
+      ignoreSslErrors,
       authProvider
     };
     console.log('[saveCloudSyncSettings] Sending payload:', payload);
@@ -1671,7 +1678,10 @@ async function testCloudConnection() {
     const response = await fetch(`${API}/cloud-sync/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ remoteUrl })
+      body: JSON.stringify({
+        remoteUrl,
+        ignoreSslErrors: document.getElementById('cloudIgnoreSslErrors').checked
+      })
     });
 
     const data = await response.json();
@@ -1707,7 +1717,10 @@ async function testCustomConnection() {
     const response = await fetch(`${API}/cloud-sync/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ remoteUrl })
+      body: JSON.stringify({
+        remoteUrl,
+        ignoreSslErrors: document.getElementById('cloudIgnoreSslErrors').checked
+      })
     });
 
     const data = await response.json();
