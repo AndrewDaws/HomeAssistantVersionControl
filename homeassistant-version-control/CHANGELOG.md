@@ -10,6 +10,7 @@
 - **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
 
 ### Fixed
+- **Dynamic File Formats:** Fixed issue where `.py`, `.json`, and `.txt` formats were hardcoded to `false` in `server.js`, ignoring the `include_extensions` configuration.
 - **Cloud Sync Branch:** Fixed logic to mirror the local branch on the remote instead of hardcoding `develop`.
 - **UI Refinement:** Re-ordered settings menu for better logical flow (Max Commits moved below history retention).
 - **Documentation:** Fixed Docker image name typo in README.

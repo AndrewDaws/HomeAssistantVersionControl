@@ -931,13 +931,21 @@ async function initRepo() {
           .filter(file => file.length > 0);
         console.log(`[init] Exclude files from config:`, runtimeSettings.extensions.exclude);
       }
-      console.log(`[init] Using hardcoded file format options:`, configOptions);
     } catch (error) {
       // Ignore if file doesn't exist
     }
 
     // Load runtime settings
     await loadRuntimeSettings();
+
+    // Synchronize format options with final extensions configuration
+    const include = runtimeSettings.extensions.include || [];
+    configOptions.json_format = include.includes('json');
+    configOptions.py_format = include.includes('py');
+    configOptions.txt_format = include.includes('txt');
+    configOptions.yaml_format = include.includes('yaml') || include.includes('yml');
+
+    console.log(`[init] Synchronized file format options:`, configOptions);
 
     // Default to /config
     if (!CONFIG_PATH) {
@@ -1218,6 +1226,14 @@ app.post('/api/runtime-settings', async (req, res) => {
           .map(file => file.trim())
           .filter(file => file.length > 0);
       }
+
+      // Synchronize format options with updated extensions
+      const include = runtimeSettings.extensions.include || [];
+      configOptions.json_format = include.includes('json');
+      configOptions.py_format = include.includes('py');
+      configOptions.txt_format = include.includes('txt');
+      configOptions.yaml_format = include.includes('yaml') || include.includes('yml');
+      console.log(`[settings] Updated file format options:`, configOptions);
 
       const newExclude = runtimeSettings.extensions.exclude || [];
       const newlyExcluded = newExclude.filter(file => !oldExclude.includes(file));
