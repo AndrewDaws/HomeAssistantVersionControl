@@ -4,6 +4,7 @@
 
 ### Added
 - **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
+- **Trusted CA Certificates:** Automatically sync and trust root CA certificates from `/config/additional_ca` for secure connections to private Git remotes.
 - **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
 - **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them.
 - **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.

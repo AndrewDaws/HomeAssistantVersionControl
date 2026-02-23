@@ -844,6 +844,65 @@ Host bitbucket.org
   }
 }
 
+/**
+ * Set up CA certificates from the persistent /config/additional_ca directory
+ * This allows the addon to trust the same root CAs as Home Assistant
+ */
+async function setupCaCertificates() {
+  try {
+    const sourceDir = path.join(CONFIG_PATH, 'additional_ca');
+    const destDir = '/usr/local/share/ca-certificates';
+
+    // Check if source directory exists
+    try {
+      await fsPromises.access(sourceDir);
+    } catch (e) {
+      // Source directory doesn't exist, nothing to do
+      return;
+    }
+
+    console.log(`[init] Found additional CA directory at ${sourceDir}, setting up system certificates...`);
+
+    // Ensure destination directory exists (usually it does in alpine)
+    try {
+      await fsPromises.access(destDir);
+    } catch (e) {
+      await fsPromises.mkdir(destDir, { recursive: true });
+    }
+
+    // List files in source directory
+    const files = await fsPromises.readdir(sourceDir);
+    let copiedCount = 0;
+
+    for (const file of files) {
+      if (file.toLowerCase().endsWith('.crt')) {
+        const srcPath = path.join(sourceDir, file);
+        const destPath = path.join(destDir, file);
+
+        // Copy file
+        await fsPromises.copyFile(srcPath, destPath);
+        console.log(`[init] Copied CA certificate: ${file}`);
+        copiedCount++;
+      }
+    }
+
+    if (copiedCount > 0) {
+      console.log(`[init] Updating system CA trust store...`);
+      try {
+        execSync('update-ca-certificates', { stdio: 'pipe' });
+        console.log('[init] CA certificates updated successfully');
+      } catch (updateError) {
+        console.error('[init] Failed to update CA certificates:', updateError.message);
+      }
+    } else {
+      console.log('[init] No .crt files found in additional_ca directory');
+    }
+
+  } catch (error) {
+    console.error('[init] CA certificate setup failed:', error.message);
+  }
+}
+
 async function initRepo() {
   // Load runtime settings first
   await loadRuntimeSettings();
@@ -890,6 +949,9 @@ async function initRepo() {
 
     // Set up SSH keys from /config/.ssh if present
     await setupSshKeys();
+
+    // Set up CA certificates from /config/additional_ca if present
+    await setupCaCertificates();
 
     // Initialize git with the correct path
     global.CONFIG_PATH = CONFIG_PATH;
