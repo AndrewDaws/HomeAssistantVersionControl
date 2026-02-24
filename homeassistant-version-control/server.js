@@ -489,6 +489,50 @@ function getConfiguredExtensions() {
   return [...new Set(fallback)];
 }
 
+function getConfiguredStoragePatterns() {
+  const storage = runtimeSettings?.extensions?.storage;
+  const defaults = ['lovelace', 'lovelace_dashboards', 'lovelace_resources', 'lovelace.*'];
+  const selected = Array.isArray(storage) && storage.length > 0 ? storage : defaults;
+
+  return [...new Set(
+    selected
+      .map(pattern => String(pattern || '').trim())
+      .filter(Boolean)
+      .map(pattern => pattern.replace(/^\.storage\//, '').replace(/^\/+/, ''))
+      .filter(Boolean)
+  )];
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesGlobPattern(value, pattern) {
+  const regexStr = `^${escapeRegex(pattern).replace(/\\\*/g, '.*').replace(/\\\?/g, '.')}$`;
+  return new RegExp(regexStr).test(value);
+}
+
+function isConfiguredStorageRepoPath(repoPath) {
+  const normalized = normalizeRepoRelativePath(repoPath);
+  if (!normalized || !normalized.startsWith('.storage/')) {
+    return false;
+  }
+
+  const storageRelPath = normalized.slice('.storage/'.length);
+  const patterns = getConfiguredStoragePatterns();
+  return patterns.some(pattern => matchesGlobPattern(storageRelPath, pattern));
+}
+
+function isConfiguredStorageAbsolutePath(absolutePath) {
+  const normalized = normalizeAbsolutePath(absolutePath);
+  if (!normalized || !CONFIG_PATH || !isPathUnder(CONFIG_PATH, normalized)) {
+    return false;
+  }
+
+  const repoPath = absolutePathToRepoPath(normalized);
+  return isConfiguredStorageRepoPath(repoPath);
+}
+
 function normalizeAbsolutePath(inputPath) {
   if (typeof inputPath !== 'string') return null;
   const trimmed = inputPath.trim();
@@ -960,24 +1004,40 @@ function getDebounceTimeMs() {
 async function getConfigFiles() {
   const { glob } = await import('fs');
   const extensions = getConfiguredExtensions();
+  const storagePatterns = getConfiguredStoragePatterns();
 
-  if (extensions.length === 0) {
-    console.log('[getConfigFiles] No file formats enabled, returning empty array');
+  if (extensions.length === 0 && storagePatterns.length === 0) {
+    console.log('[getConfigFiles] No file formats or storage patterns enabled, returning empty array');
     return [];
   }
 
-  // Build pattern like: /config/**/*.{yaml,yml,conf}
-  const extensionNames = extensions
-    .map(ext => ext.replace(/^\./, ''))
-    .filter(Boolean);
-  const pattern = `${CONFIG_PATH}/**/*.{${extensionNames.join(',')}}`;
-
-  return new Promise((resolve, reject) => {
+  const globSearch = (pattern) => new Promise((resolve, reject) => {
     glob(pattern, { nodir: true }, (err, files) => {
       if (err) reject(err);
       else resolve(files);
     });
   });
+
+  const fileSet = new Set();
+
+  if (extensions.length > 0) {
+    // Build pattern like: /config/**/*.{yaml,yml,conf}
+    const extensionNames = extensions
+      .map(ext => ext.replace(/^\./, ''))
+      .filter(Boolean);
+    const extensionPattern = `${CONFIG_PATH}/**/*.{${extensionNames.join(',')}}`;
+    const extensionFiles = await globSearch(extensionPattern);
+    extensionFiles.forEach(file => fileSet.add(file));
+  }
+
+  for (const storagePattern of storagePatterns) {
+    const cleanPattern = storagePattern.replace(/^\/+/, '');
+    const pattern = `${CONFIG_PATH}/.storage/${cleanPattern}`;
+    const storageFiles = await globSearch(pattern);
+    storageFiles.forEach(file => fileSet.add(file));
+  }
+
+  return Array.from(fileSet);
 }
 
 /**
@@ -1646,13 +1706,13 @@ app.get('/api/files', async (req, res) => {
         if (entry.isDirectory() && !entry.name.startsWith('.git') && !entry.name.startsWith('node_modules')) {
           files.push(...await walkDir(fullPath, relPath));
         } else if (entry.isFile()) {
-          // Check if file matches any of the configured extensions or is a lovelace file
+          // Check if file matches any configured extension or configured .storage pattern
           const matchesExtension = allowedExtensions.some(ext =>
             entry.name.toLowerCase().endsWith(ext)
           );
-          const isLovelaceFile = relPath.startsWith('.storage/lovelace');
+          const isStorageFile = isConfiguredStorageRepoPath(relPath);
 
-          if (matchesExtension || isLovelaceFile) {
+          if (matchesExtension || isStorageFile) {
             // Get file stats for mtime
             try {
               const stats = await fsPromises.stat(fullPath);
@@ -1707,15 +1767,15 @@ app.get('/api/files/deleted', async (req, res) => {
     const deletedFiles = [];
 
     for (const filePath of historicalFileSet) {
-      // Check if file matches allowed extensions or is lovelace file
+      // Check if file matches allowed extensions or configured .storage pattern
       const matchesExtension = allowedExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
-      const isLovelaceFile = filePath.startsWith('.storage/lovelace');
+      const isStorageFile = isConfiguredStorageRepoPath(filePath);
 
       // Check if file exists on disk (using absolute path)
       const absolutePath = path.join(CONFIG_PATH, filePath);
       const fileExistsOnDisk = fs.existsSync(absolutePath);
 
-      if ((matchesExtension || isLovelaceFile) && !fileExistsOnDisk) {
+      if ((matchesExtension || isStorageFile) && !fileExistsOnDisk) {
         // File was tracked but no longer exists - find when it was last seen
         try {
           const lastCommitOutput = await gitRaw(['log', '-1', '--format=%H|%aI|%s', '--', filePath]);
@@ -2178,8 +2238,8 @@ app.post('/api/restore-commit', async (req, res) => {
       const hasAllowedExt = allowedExtensions.some(ext =>
         file.toLowerCase().endsWith(ext)
       );
-      const isLovelaceFile = file.includes('.storage/lovelace');
-      return hasAllowedExt || isLovelaceFile;
+      const isStorageFile = isConfiguredStorageRepoPath(file);
+      return hasAllowedExt || isStorageFile;
     });
 
     if (configFiles.length !== files.length) {
@@ -2199,8 +2259,8 @@ app.post('/api/restore-commit', async (req, res) => {
         const hasAllowedExt = allowedExtensions.some(ext =>
           file.toLowerCase().endsWith(ext)
         );
-        const isLovelaceFile = file.includes('.storage/lovelace');
-        return hasAllowedExt || isLovelaceFile;
+        const isStorageFile = isConfiguredStorageRepoPath(file);
+        return hasAllowedExt || isStorageFile;
       });
 
       configFiles.push(...filteredAltFiles);
@@ -2539,8 +2599,8 @@ function shouldIgnoreWatchPath(filePath) {
     return true;
   }
 
-  // Explicitly ignore .storage files except lovelace files
-  if (filePath.includes('/.storage/') && !filePath.includes('/.storage/lovelace')) {
+  // Ignore .storage files unless explicitly configured via include_storage
+  if (filePath.includes('/.storage/') && !isConfiguredStorageAbsolutePath(filePath)) {
     return true;
   }
 
@@ -2976,7 +3036,8 @@ async function cleanupHistoryOrphanMethod(options) {
       // Add files matching configured patterns only (not all files)
       const extensions = getConfiguredExtensions();
       const patterns = extensions.map(ext => `**/*${ext}`);
-      patterns.push('.storage/lovelace*'); // Include lovelace files
+      const storagePatterns = getConfiguredStoragePatterns().map(pattern => `.storage/${pattern}`);
+      patterns.push(...storagePatterns);
 
       for (const pattern of patterns) {
         try {
@@ -2999,8 +3060,8 @@ async function cleanupHistoryOrphanMethod(options) {
         .filter(f => {
           const filePath = f.path.trim(); // Trim to remove leading/trailing spaces from git status
           const hasAllowedExt = getConfiguredExtensions().some(ext => filePath.endsWith(ext));
-          const isLovelaceFile = filePath.startsWith('.storage/lovelace');
-          return hasAllowedExt || isLovelaceFile;
+          const isStorageFile = isConfiguredStorageRepoPath(filePath);
+          return hasAllowedExt || isStorageFile;
         })
         .map(f => f.path.trim()); // Also trim when extracting the path
 
