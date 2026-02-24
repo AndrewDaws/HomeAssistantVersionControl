@@ -352,7 +352,8 @@ let runtimeSettings = {
   // File extension configuration - what gets tracked/ignored
   extensions: {
     include: ['yaml', 'yml'], // File extensions to track
-    exclude: ['secrets.yaml'] // Specific files to ignore (always ignored regardless of extension)
+    exclude: ['secrets.yaml'], // Specific files to ignore (always ignored regardless of extension)
+    storage: ['lovelace', 'lovelace_dashboards', 'lovelace_resources', 'lovelace.*'] // Files in .storage to track
   }
 };
 
@@ -520,12 +521,14 @@ function generateGitignoreContent(extraIgnores = [], extensions = null) {
     }
   }
 
-  // Add lovelace storage files
-  content += `\n# Track lovelace dashboard configuration files\n`;
-  content += `!.storage/lovelace\n`;
-  content += `!.storage/lovelace_dashboards\n`;
-  content += `!.storage/lovelace_resources\n`;
-  content += `!.storage/lovelace.*\n`;
+  // Add storage files
+  const storageFiles = ext.storage || ['lovelace', 'lovelace_dashboards', 'lovelace_resources', 'lovelace.*'];
+  if (storageFiles.length > 0) {
+    content += `\n# Track specific .storage configuration files\n`;
+    for (const file of storageFiles) {
+      content += `!.storage/${file}\n`;
+    }
+  }
 
   // End managed section
   content += `${MANAGED_END}\n`;
@@ -931,6 +934,12 @@ async function initRepo() {
           .map(file => file.trim())
           .filter(file => file.length > 0);
         console.log(`[init] Exclude files from config:`, runtimeSettings.extensions.exclude);
+      }
+      if (config.include_storage && Array.isArray(config.include_storage)) {
+        runtimeSettings.extensions.storage = config.include_storage
+          .map(file => file.trim())
+          .filter(file => file.length > 0);
+        console.log(`[init] Include storage files from config:`, runtimeSettings.extensions.storage);
       }
     } catch (error) {
       // Ignore if file doesn't exist

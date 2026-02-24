@@ -37,6 +37,12 @@
     ],
     "exclude_files": [
       "secrets.yaml"
+    ],
+    "include_storage": [
+      "lovelace",
+      "lovelace_dashboards",
+      "lovelace_resources",
+      "lovelace.*"
     ]
   },
   "schema": {
@@ -44,6 +50,9 @@
       "str"
     ],
     "exclude_files": [
+      "str"
+    ],
+    "include_storage": [
       "str"
     ]
   },
