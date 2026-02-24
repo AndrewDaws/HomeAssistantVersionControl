@@ -8,6 +8,7 @@
 - **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
 - **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them.
 - **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
+- **Configurable Storage Tracking:** Added `include_storage` option to explicitly whitelist and version control specific files/patterns in the `.storage` directory (e.g., helpers, entities).
 
 ### Fixed
 - **Dynamic File Formats:** Fixed issue where `.py`, `.json`, and `.txt` formats were hardcoded to `false` in `server.js`, ignoring the `include_extensions` configuration.
