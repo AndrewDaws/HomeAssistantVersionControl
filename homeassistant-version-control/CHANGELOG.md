@@ -9,6 +9,7 @@
 - **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them.
 - **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
 - **Configurable Storage Tracking:** Added `include_storage` option to explicitly whitelist and version control specific files/patterns in the `.storage` directory (e.g., helpers, entities).
+- **Additional Paths Tracking:** Added `additional_paths` option to track files outside `/config` (including mapped paths like `/share` and `/media`) while syncing them into version control.
 - **Remote URL Configuration:** Added `remote_url` option to the addon configuration to allow easily changing the remote repository URL from the Home Assistant UI.
 
 ### Fixed
@@ -17,6 +18,8 @@
 - **Cloud Sync Branch:** Improved dynamic detection to ensure sync always follows the active local branch.
 - **Storage File UX:** `include_storage` entries now appear in Files/history and participate in restore/filter flows exactly as configured (not limited to `lovelace*` files).
 - **UI Refinement:** Re-ordered settings menu for better logical flow (Max Commits moved below history retention).
+- **Timeline Path Display:** Fixed issue where file paths in the timeline tab were showing the `.havc_external/` prefix for additional paths.
+- **Files Tab External Path Display:** External mirrored paths now render as virtual `/share/...` and `/media/...` paths, with top-level `share` and `media` folders shown directly instead of `.havc_external`.
 - **Documentation:** Fixed Docker image name typo in README.
 
 ## [1.2.0-beta.1]

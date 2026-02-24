@@ -2788,6 +2788,9 @@ async function displayCommits(commits) {
         // Remove surrounding quotes from filenames (e.g. "pizza-avocado 1 copy.yaml" becomes pizza-avocado 1 copy.yaml)
         fileName = fileName.replace(/^["']|["']$/g, '');
 
+        // Apply toDisplayPath to strip .havc_external/ mirror prefix if present
+        fileName = toDisplayPath(fileName, { leadingSlash: true });
+
         html += `
               <div class="commit" onclick="showCommit('${commit.hash}')" oncontextmenu="showTimelineContextMenu(event, '${commit.hash}')" id="commit-${commit.hash}">
                 <div class="commit-time">${timeString}</div>
