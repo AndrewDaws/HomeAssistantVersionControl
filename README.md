@@ -147,6 +147,28 @@ Access the interface at `http://localhost:54001`.
 
 ## Configuration
 
+### Add-on Options
+
+In Home Assistant add-on mode, you can track files outside `/config` by setting `additional_paths` in the add-on configuration.
+
+Example:
+
+```yaml
+include_extensions:
+  - yaml
+  - yml
+  - conf
+additional_paths:
+  - /share
+  - /share/mqtt
+```
+
+Notes:
+- Paths must be absolute and currently support `/share`, `/media`, `/ssl`, and `/config` prefixes.
+- Paths under `/config` are skipped because `/config` is already tracked automatically.
+- Files are still filtered by `include_extensions` and `exclude_files`.
+- For `.conf` files, add `conf` to `include_extensions`.
+
 ### Runtime Settings
 
 The application can be configured through the web UI Settings page or via environment variables for containerized deployments.

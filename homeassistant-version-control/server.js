@@ -69,6 +69,8 @@ console.error = function (...args) {
 const app = express();
 const PORT = process.env.PORT || 54001;
 const HOST = process.env.HOST || '::';
+const EXTERNAL_MIRROR_DIR = '.havc_external';
+const ALLOWED_ADDITIONAL_PATH_PREFIXES = ['/share', '/media', '/ssl', '/config'];
 
 // Ensure HOME is set for git
 if (!process.env.HOME) {
@@ -317,6 +319,7 @@ process.on('SIGINT', () => {
 let CONFIG_PATH = null;
 global.CONFIG_PATH = null;
 let gitInitialized = false;
+let additionalTrackedPaths = [];
 let configOptions = {
   yaml_format: true,
   json_format: false,
@@ -354,7 +357,8 @@ let runtimeSettings = {
     include: ['yaml', 'yml'], // File extensions to track
     exclude: ['secrets.yaml'], // Specific files to ignore (always ignored regardless of extension)
     storage: ['lovelace', 'lovelace_dashboards', 'lovelace_resources', 'lovelace.*'] // Files in .storage to track
-  }
+  },
+  additionalPaths: []
 };
 
 // Schema for runtime settings with validation rules and environment variable mapping
@@ -467,22 +471,271 @@ function ensureGitInitialized() {
  * @returns {Array<string>} Array of extensions like ['.yaml', '.yml']
  */
 function getConfiguredExtensions() {
-  const extensions = [];
-
-  if (configOptions.yaml_format) {
-    extensions.push('.yaml', '.yml');
-  }
-  if (configOptions.json_format) {
-    extensions.push('.json');
-  }
-  if (configOptions.py_format) {
-    extensions.push('.py');
-  }
-  if (configOptions.txt_format) {
-    extensions.push('.txt');
+  const include = runtimeSettings?.extensions?.include;
+  if (Array.isArray(include) && include.length > 0) {
+    return [...new Set(
+      include
+        .map(ext => String(ext || '').trim().toLowerCase().replace(/^\./, ''))
+        .filter(Boolean)
+        .map(ext => `.${ext}`)
+    )];
   }
 
-  return extensions;
+  const fallback = [];
+  if (configOptions.yaml_format) fallback.push('.yaml', '.yml');
+  if (configOptions.json_format) fallback.push('.json');
+  if (configOptions.py_format) fallback.push('.py');
+  if (configOptions.txt_format) fallback.push('.txt');
+  return [...new Set(fallback)];
+}
+
+function normalizeAbsolutePath(inputPath) {
+  if (typeof inputPath !== 'string') return null;
+  const trimmed = inputPath.trim();
+  if (!trimmed.startsWith('/')) return null;
+  const normalized = path.posix.normalize(trimmed);
+  if (!normalized.startsWith('/')) return null;
+  return normalized;
+}
+
+function normalizeRepoRelativePath(repoPath) {
+  if (typeof repoPath !== 'string') return null;
+  const normalized = path.posix.normalize(repoPath.trim().replace(/\\/g, '/')).replace(/^\/+/, '');
+  if (!normalized || normalized === '.' || normalized.startsWith('..')) return null;
+  return normalized;
+}
+
+function isPathUnder(basePath, targetPath) {
+  const base = normalizeAbsolutePath(basePath);
+  const target = normalizeAbsolutePath(targetPath);
+  if (!base || !target) return false;
+  return target === base || target.startsWith(`${base}/`);
+}
+
+function sanitizeAdditionalPaths(paths) {
+  if (!Array.isArray(paths)) return [];
+
+  const normalized = [];
+  for (const rawPath of paths) {
+    const candidate = normalizeAbsolutePath(String(rawPath || '').replace(/\/+$/, ''));
+    if (!candidate || candidate === '/') continue;
+
+    const allowedPrefix = ALLOWED_ADDITIONAL_PATH_PREFIXES.find(prefix => isPathUnder(prefix, candidate));
+    if (!allowedPrefix) {
+      console.log(`[external-sync] Skipping unsupported additional path: ${rawPath}`);
+      continue;
+    }
+
+    // /config is already tracked as the main repository root.
+    if (CONFIG_PATH && isPathUnder(CONFIG_PATH, candidate)) {
+      console.log(`[external-sync] Skipping additional path already under CONFIG_PATH: ${candidate}`);
+      continue;
+    }
+
+    if (!normalized.includes(candidate)) {
+      normalized.push(candidate);
+    }
+  }
+
+  return normalized;
+}
+
+function isMirroredExternalRepoPath(repoPath) {
+  const normalized = normalizeRepoRelativePath(repoPath);
+  if (!normalized) return false;
+  return normalized.startsWith(`${EXTERNAL_MIRROR_DIR}/`);
+}
+
+function repoPathToExternalAbsolute(repoPath) {
+  const normalized = normalizeRepoRelativePath(repoPath);
+  if (!normalized || !isMirroredExternalRepoPath(normalized)) return null;
+
+  const withoutPrefix = normalized.slice(EXTERNAL_MIRROR_DIR.length + 1);
+  if (!withoutPrefix) return null;
+  return normalizeAbsolutePath(`/${withoutPrefix}`);
+}
+
+function externalAbsoluteToMirrorAbsolute(externalAbsolutePath) {
+  const normalized = normalizeAbsolutePath(externalAbsolutePath);
+  if (!normalized || !CONFIG_PATH) return null;
+  const relativeFromRoot = normalized.replace(/^\/+/, '');
+  return path.join(CONFIG_PATH, EXTERNAL_MIRROR_DIR, ...relativeFromRoot.split('/'));
+}
+
+function absolutePathToRepoPath(absolutePath) {
+  if (!CONFIG_PATH) return null;
+  const relative = path.relative(CONFIG_PATH, absolutePath).replace(/\\/g, '/');
+  if (!relative || relative.startsWith('..')) return null;
+  return relative;
+}
+
+function isFileTrackableForSync(absolutePath) {
+  const normalized = normalizeAbsolutePath(absolutePath);
+  if (!normalized) return false;
+  if (path.posix.basename(normalized).startsWith('._')) return false;
+
+  const lowerPath = normalized.toLowerCase();
+  const extensions = getConfiguredExtensions();
+  return extensions.some(ext => lowerPath.endsWith(ext));
+}
+
+function isPathInConfiguredAdditionalPaths(absolutePath) {
+  return additionalTrackedPaths.some(basePath => isPathUnder(basePath, absolutePath));
+}
+
+async function removeMirrorFileForExternalPath(externalPath) {
+  const mirrorAbsolute = externalAbsoluteToMirrorAbsolute(externalPath);
+  if (!mirrorAbsolute) return null;
+  await fsPromises.rm(mirrorAbsolute, { force: true });
+  await pruneEmptyMirrorDirectories(path.dirname(mirrorAbsolute));
+  return absolutePathToRepoPath(mirrorAbsolute);
+}
+
+async function syncExternalFileToMirror(externalPath) {
+  const normalized = normalizeAbsolutePath(externalPath);
+  if (!normalized || !isPathInConfiguredAdditionalPaths(normalized)) return null;
+
+  const mirrorAbsolute = externalAbsoluteToMirrorAbsolute(normalized);
+  if (!mirrorAbsolute) return null;
+
+  if (!isFileTrackableForSync(normalized)) {
+    return removeMirrorFileForExternalPath(normalized);
+  }
+
+  await fsPromises.mkdir(path.dirname(mirrorAbsolute), { recursive: true });
+  await fsPromises.copyFile(normalized, mirrorAbsolute);
+  return absolutePathToRepoPath(mirrorAbsolute);
+}
+
+async function walkFilesRecursive(dirPath, onFile) {
+  let entries = [];
+  try {
+    entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error(`[external-sync] Failed reading directory ${dirPath}:`, error.message);
+    }
+    return;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+
+    if (entry.isSymbolicLink()) {
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      if (entry.name === '.git' || entry.name === 'node_modules') {
+        continue;
+      }
+      await walkFilesRecursive(fullPath, onFile);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      await onFile(fullPath);
+    }
+  }
+}
+
+async function pruneEmptyMirrorDirectories(startDir) {
+  const mirrorRoot = path.join(CONFIG_PATH, EXTERNAL_MIRROR_DIR);
+  let current = startDir;
+
+  while (current.startsWith(mirrorRoot)) {
+    let entries;
+    try {
+      entries = await fsPromises.readdir(current);
+    } catch (error) {
+      break;
+    }
+
+    if (entries.length > 0) {
+      break;
+    }
+
+    await fsPromises.rmdir(current);
+    if (current === mirrorRoot) {
+      break;
+    }
+    current = path.dirname(current);
+  }
+}
+
+async function syncSingleAdditionalPathToMirror(additionalPath) {
+  const mirrorRootForPath = externalAbsoluteToMirrorAbsolute(additionalPath);
+  if (!mirrorRootForPath) return { copied: 0, removed: 0 };
+
+  const desiredRepoPaths = new Set();
+  let copied = 0;
+
+  await walkFilesRecursive(additionalPath, async (absoluteFilePath) => {
+    const normalized = normalizeAbsolutePath(absoluteFilePath);
+    if (!normalized) return;
+
+    if (!isFileTrackableForSync(normalized)) return;
+
+    const repoPath = await syncExternalFileToMirror(normalized);
+    if (repoPath) {
+      desiredRepoPaths.add(repoPath);
+      copied += 1;
+    }
+  });
+
+  let removed = 0;
+  await walkFilesRecursive(mirrorRootForPath, async (mirrorFilePath) => {
+    const repoPath = absolutePathToRepoPath(mirrorFilePath);
+    if (!repoPath) return;
+
+    if (!desiredRepoPaths.has(repoPath)) {
+      await fsPromises.rm(mirrorFilePath, { force: true });
+      removed += 1;
+    }
+  });
+  await pruneEmptyMirrorDirectories(mirrorRootForPath);
+
+  return { copied, removed };
+}
+
+async function syncAllAdditionalPathsToMirror() {
+  if (!additionalTrackedPaths.length) {
+    if (CONFIG_PATH) {
+      await fsPromises.rm(path.join(CONFIG_PATH, EXTERNAL_MIRROR_DIR), { recursive: true, force: true });
+    }
+    return { copied: 0, removed: 0, paths: 0 };
+  }
+
+  let copied = 0;
+  let removed = 0;
+  for (const additionalPath of additionalTrackedPaths) {
+    const stats = await syncSingleAdditionalPathToMirror(additionalPath);
+    copied += stats.copied;
+    removed += stats.removed;
+  }
+  return { copied, removed, paths: additionalTrackedPaths.length };
+}
+
+async function writeFileFromCommitToExternalPath(commitHash, repoPath) {
+  const externalPath = repoPathToExternalAbsolute(repoPath);
+  if (!externalPath) {
+    throw new Error(`Invalid mirrored external path: ${repoPath}`);
+  }
+  if (!isPathInConfiguredAdditionalPaths(externalPath)) {
+    throw new Error(`External path is not currently configured for tracking: ${externalPath}`);
+  }
+
+  const content = await gitShowFileAtCommit(commitHash, repoPath);
+  await fsPromises.mkdir(path.dirname(externalPath), { recursive: true });
+  await fsPromises.writeFile(externalPath, content, 'utf8');
+}
+
+async function restorePathToCommit(commitHash, repoPath) {
+  if (isMirroredExternalRepoPath(repoPath)) {
+    await writeFileFromCommitToExternalPath(commitHash, repoPath);
+    return;
+  }
+  await gitCheckoutSafe(commitHash, repoPath);
 }
 
 /**
@@ -713,9 +966,11 @@ async function getConfigFiles() {
     return [];
   }
 
-  // Build pattern like: /config/**/*.{yaml,yml}
-  const extensionsStr = extensions.join(',');
-  const pattern = `${CONFIG_PATH}/**/*{${extensionsStr.substring(1)}}`; // Remove first dot and join
+  // Build pattern like: /config/**/*.{yaml,yml,conf}
+  const extensionNames = extensions
+    .map(ext => ext.replace(/^\./, ''))
+    .filter(Boolean);
+  const pattern = `${CONFIG_PATH}/**/*.{${extensionNames.join(',')}}`;
 
   return new Promise((resolve, reject) => {
     glob(pattern, { nodir: true }, (err, files) => {
@@ -941,6 +1196,32 @@ async function initRepo() {
           .filter(file => file.length > 0);
         console.log(`[init] Include storage files from config:`, runtimeSettings.extensions.storage);
       }
+      if (config.additional_paths && Array.isArray(config.additional_paths)) {
+        runtimeSettings.additionalPaths = config.additional_paths
+          .map(p => String(p || '').trim())
+          .filter(Boolean);
+        console.log(`[init] Additional tracked paths from config:`, runtimeSettings.additionalPaths);
+      }
+
+      // Handle remote_url from config.json
+      if (config.remote_url && config.remote_url.trim() !== '' && config.remote_url !== runtimeSettings.cloudSync.remoteUrl) {
+        console.log(`[init] Remote URL from config: ${config.remote_url}`);
+        runtimeSettings.cloudSync.remoteUrl = config.remote_url;
+
+        // Auto-detect provider if not set
+        if (!runtimeSettings.cloudSync.authProvider) {
+          if (config.remote_url.includes('github.com')) {
+            runtimeSettings.cloudSync.authProvider = 'github';
+            runtimeSettings.cloudSync.githubRemoteUrl = config.remote_url;
+          } else {
+            runtimeSettings.cloudSync.authProvider = 'custom';
+            runtimeSettings.cloudSync.customRemoteUrl = config.remote_url;
+          }
+        }
+
+        // We will apply this to git after initialization/verification
+        global.pendingRemoteUpdate = true;
+      }
     } catch (error) {
       // Ignore if file doesn't exist
     }
@@ -962,7 +1243,11 @@ async function initRepo() {
       CONFIG_PATH = '/config';
     }
 
+    additionalTrackedPaths = sanitizeAdditionalPaths(runtimeSettings.additionalPaths || []);
+    runtimeSettings.additionalPaths = additionalTrackedPaths;
+
     console.log(`[init] CONFIG_PATH: ${CONFIG_PATH}`);
+    console.log(`[init] Additional tracked paths:`, additionalTrackedPaths);
     console.log(`[init] Current working directory: ${process.cwd()}`);
 
     // Set up SSH keys from /config/.ssh if present
@@ -980,6 +1265,11 @@ async function initRepo() {
     } catch (error) {
       console.log(`[init] CONFIG_PATH does not exist, creating it...`);
       await fsPromises.mkdir(CONFIG_PATH, { recursive: true });
+    }
+
+    const externalSyncStats = await syncAllAdditionalPathsToMirror();
+    if (externalSyncStats.paths > 0) {
+      console.log(`[external-sync] Startup sync complete: paths=${externalSyncStats.paths}, copied=${externalSyncStats.copied}, removed=${externalSyncStats.removed}`);
     }
 
     const isRepo = await gitCheckIsRepo();
@@ -1142,6 +1432,19 @@ async function initRepo() {
       console.log('[init] No changes to backup for existing repository');
     }
 
+    // Apply pending remote update from config
+    if (global.pendingRemoteUpdate && runtimeSettings.cloudSync.remoteUrl) {
+      console.log(`[init] Applying pending remote URL update: ${runtimeSettings.cloudSync.remoteUrl}`);
+      const remoteResult = await setupGitRemote(runtimeSettings.cloudSync.remoteUrl, runtimeSettings.cloudSync.authToken);
+      if (remoteResult.success) {
+        console.log('[init] Successfully updated git remote from config');
+        await saveRuntimeSettings();
+      } else {
+        console.error('[init] Failed to update git remote from config:', remoteResult.error);
+      }
+      global.pendingRemoteUpdate = false;
+    }
+
     gitInitialized = true;
   } catch (error) {
     console.error('Git init error:', error);
@@ -1254,6 +1557,11 @@ app.post('/api/runtime-settings', async (req, res) => {
         const newContent = generateGitignoreContent(IGNORED_NESTED_REPOS, runtimeSettings.extensions);
         await fsPromises.writeFile(gitignorePath, newContent, 'utf8');
         console.log('[settings] Updated .gitignore with new extensions');
+
+        const externalSyncStats = await syncAllAdditionalPathsToMirror();
+        if (externalSyncStats.paths > 0) {
+          console.log(`[external-sync] Re-synced additional paths after extension update: copied=${externalSyncStats.copied}, removed=${externalSyncStats.removed}`);
+        }
 
         // Automatically untrack files that were just added to the exclude list
         if (newlyExcluded.length > 0) {
@@ -1712,7 +2020,15 @@ app.get('/api/git/file-at-commit', async (req, res) => {
 app.get('/api/file-content', async (req, res) => {
   try {
     const { filePath } = req.query;
-    const fullPath = path.join(CONFIG_PATH, filePath);
+
+    let fullPath = path.join(CONFIG_PATH, filePath);
+    if (isMirroredExternalRepoPath(filePath)) {
+      const externalPath = repoPathToExternalAbsolute(filePath);
+      if (externalPath && isPathInConfiguredAdditionalPaths(externalPath)) {
+        fullPath = externalPath;
+      }
+    }
+
     const content = await fsPromises.readFile(fullPath, 'utf-8');
     res.json({ success: true, content });
   } catch (error) {
@@ -1795,7 +2111,7 @@ app.post('/api/restore-file', async (req, res) => {
     const commitDate = new Date(dateStr).toLocaleString();
 
     // Restore the file - file watcher will detect and auto-commit
-    await gitCheckoutSafe(commitHash, filePath);
+    await restorePathToCommit(commitHash, filePath);
     console.log(`[restore] File restored: ${filePath}`);
     console.log(`[restore] File watcher will auto-commit this change`);
 
@@ -1898,7 +2214,7 @@ app.post('/api/restore-commit', async (req, res) => {
     // Restore each file to TARGET version - file watcher will detect and auto-commit all changes
     for (const file of files) {
       console.log(`[restore] Restoring ${file} to version ${target.substring(0, 8)}`);
-      await gitCheckoutSafe(target, file);
+      await restorePathToCommit(target, file);
     }
 
     console.log(`[restore] All files restored (${files.length} files)`);
@@ -2022,7 +2338,7 @@ app.post('/api/git/hard-reset', async (req, res) => {
     try {
       // Checkout all files
       for (const file of filesInCommit) {
-        await gitCheckoutSafe(commitHash, file);
+        await restorePathToCommit(commitHash, file);
       }
       console.log(`[hard-reset] All files checked out from ${commitHash.substring(0, 8)}`);
 
@@ -2215,6 +2531,48 @@ app.post('/api/list-yaml-files', async (req, res) => {
 // Use a Map to track debounce timers per file
 const debounceTimers = new Map();
 let watcher = null;
+const externalWatchers = [];
+
+function shouldIgnoreWatchPath(filePath) {
+  // Ignore if path contains these directories (but not .storage for lovelace files)
+  if (/(\/|^)\.(git|hg|svn|ssh|docker|ssl|keys|certs|node_modules)(\/|$)/.test(filePath)) {
+    return true;
+  }
+
+  // Explicitly ignore .storage files except lovelace files
+  if (filePath.includes('/.storage/') && !filePath.includes('/.storage/lovelace')) {
+    return true;
+  }
+
+  // Ignore database files and related files (very frequent writes)
+  if (/\.(db|db-wal|db-shm|db-journal)$/.test(filePath)) {
+    return true;
+  }
+
+  // Ignore log files
+  if (/\.log(\.\d+)?$/.test(filePath) || filePath.includes('/log/')) {
+    return true;
+  }
+
+  // Ignore common binary and temporary files
+  if (/\.(pyc|pyo|tmp|temp|bak|swp|swo)$/.test(filePath)) {
+    return true;
+  }
+
+  // Ignore zigbee2mqtt runtime files (state.json, database.db, logs)
+  if (filePath.includes('/zigbee2mqtt/') &&
+    (filePath.includes('/log/') || filePath.endsWith('state.json') || filePath.endsWith('database.db'))) {
+    return true;
+  }
+
+  // Avoid infinite loops - if path has too many repetitions of /config/
+  const configCount = (filePath.match(/\/config\//g) || []).length;
+  if (configCount > 3) {
+    return true;
+  }
+
+  return false;
+}
 
 function initializeWatcher() {
   console.log(`[init] Setting up file watcher for: ${CONFIG_PATH}/**/*`);
@@ -2234,46 +2592,7 @@ function initializeWatcher() {
       stabilityThreshold: 2000,
       pollInterval: 100
     },
-    ignored: (filePath, stats) => {
-      // Ignore if path contains these directories (but not .storage for lovelace files)
-      if (/(\/|^)\.(git|hg|svn|ssh|docker|ssl|keys|certs|node_modules)(\/|$)/.test(filePath)) {
-        return true;
-      }
-
-      // Explicitly ignore .storage files except lovelace files
-      if (filePath.includes('/.storage/') && !filePath.includes('/.storage/lovelace')) {
-        return true;
-      }
-
-      // Ignore database files and related files (very frequent writes)
-      if (/\.(db|db-wal|db-shm|db-journal)$/.test(filePath)) {
-        return true;
-      }
-
-      // Ignore log files
-      if (/\.log(\.\d+)?$/.test(filePath) || filePath.includes('/log/')) {
-        return true;
-      }
-
-      // Ignore common binary and temporary files
-      if (/\.(pyc|pyo|tmp|temp|bak|swp|swo)$/.test(filePath)) {
-        return true;
-      }
-
-      // Ignore zigbee2mqtt runtime files (state.json, database.db, logs)
-      if (filePath.includes('/zigbee2mqtt/') &&
-        (filePath.includes('/log/') || filePath.endsWith('state.json') || filePath.endsWith('database.db'))) {
-        return true;
-      }
-
-      // Avoid infinite loops - if path has too many repetitions of /config/
-      const configCount = (filePath.match(/\/config\//g) || []).length;
-      if (configCount > 3) {
-        return true;
-      }
-
-      return false;
-    }
+    ignored: (filePath, stats) => shouldIgnoreWatchPath(filePath)
   });
 
   // Handler function for both 'change' and 'add' events
@@ -2408,6 +2727,85 @@ function initializeWatcher() {
   });
 }
 
+async function handleExternalWatcherEvent(filePath, eventType) {
+  const normalized = normalizeAbsolutePath(filePath);
+  if (!normalized || !isPathInConfiguredAdditionalPaths(normalized)) {
+    return;
+  }
+
+  try {
+    if (eventType === 'deleted') {
+      const removedPath = await removeMirrorFileForExternalPath(normalized);
+      if (removedPath) {
+        console.log(`[external-sync] Removed mirror for deleted file: ${normalized}`);
+      }
+      return;
+    }
+
+    const stats = await fsPromises.stat(normalized);
+    if (!stats.isFile()) {
+      return;
+    }
+
+    const mirroredPath = await syncExternalFileToMirror(normalized);
+    if (mirroredPath) {
+      console.log(`[external-sync] Synced ${eventType} file: ${normalized} -> ${mirroredPath}`);
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error(`[external-sync] Failed to process ${eventType} event for ${normalized}:`, error.message);
+    }
+  }
+}
+
+async function initializeExternalWatchers() {
+  while (externalWatchers.length > 0) {
+    const existingWatcher = externalWatchers.pop();
+    try {
+      await existingWatcher.close();
+    } catch (error) {
+      // Ignore close errors
+    }
+  }
+
+  if (!additionalTrackedPaths.length) {
+    return;
+  }
+
+  for (const additionalPath of additionalTrackedPaths) {
+    try {
+      await fsPromises.access(additionalPath, fs.constants.R_OK);
+    } catch (error) {
+      console.log(`[external-sync] Additional path not accessible, skipping watcher: ${additionalPath}`);
+      continue;
+    }
+
+    console.log(`[external-sync] Watching additional path: ${additionalPath}/**/*`);
+    const externalWatcher = chokidar.watch(`${additionalPath}/**/*`, {
+      persistent: true,
+      ignoreInitial: true,
+      depth: 15,
+      followSymlinks: false,
+      usePolling: true,
+      interval: 2000,
+      binaryInterval: 2000,
+      awaitWriteFinish: {
+        stabilityThreshold: 2000,
+        pollInterval: 100
+      },
+      ignored: (filePath, stats) => shouldIgnoreWatchPath(filePath)
+    });
+
+    externalWatcher.on('add', (filePath) => handleExternalWatcherEvent(filePath, 'added'));
+    externalWatcher.on('change', (filePath) => handleExternalWatcherEvent(filePath, 'changed'));
+    externalWatcher.on('unlink', (filePath) => handleExternalWatcherEvent(filePath, 'deleted'));
+    externalWatcher.on('ready', () => console.log(`[external-sync] Watcher ready: ${additionalPath}`));
+    externalWatcher.on('error', (error) => console.error(`[external-sync] Watcher error (${additionalPath}):`, error));
+
+    externalWatchers.push(externalWatcher);
+  }
+}
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -2416,6 +2814,8 @@ app.get('/api/health', (req, res) => {
     serverRunning: true,
     gitInitialized: gitInitialized || false,
     fileWatcherActive: watcher !== null,
+    externalWatchersActive: externalWatchers.length,
+    additionalTrackedPaths,
     watching: CONFIG_PATH || '/config',
     time: new Date().toISOString(),
     headers: req.headers,
@@ -3151,6 +3551,9 @@ const server = app.listen(PORT, HOST, (err) => {
   initRepo()
     .then(() => {
       initializeWatcher();
+      initializeExternalWatchers().catch((error) => {
+        console.error('[external-sync] Failed to initialize external watchers:', error);
+      });
 
       // Start cloud sync scheduler (check every hour)
       startCloudSyncScheduler();

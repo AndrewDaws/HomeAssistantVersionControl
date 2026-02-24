@@ -25,6 +25,7 @@
   },
   "map": [
     "config:rw",
+    "share:rw",
     "ssl"
   ],
   "environment": {
@@ -43,7 +44,9 @@
       "lovelace_dashboards",
       "lovelace_resources",
       "lovelace.*"
-    ]
+    ],
+    "additional_paths": [],
+    "remote_url": ""
   },
   "schema": {
     "include_extensions": [
@@ -54,7 +57,11 @@
     ],
     "include_storage": [
       "str"
-    ]
+    ],
+    "additional_paths": [
+      "str"
+    ],
+    "remote_url": "str?"
   },
   "healthcheck": {
     "test": [
