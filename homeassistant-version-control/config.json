@@ -23,11 +23,9 @@
   "ports": {
     "54001/tcp": null
   },
-  "full_access": true,
   "map": [
     "config:rw",
     "share:rw",
-    "media:rw",
     "ssl"
   ],
   "environment": {
