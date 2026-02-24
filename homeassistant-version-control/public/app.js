@@ -2209,6 +2209,18 @@ function formatDateForLabel(dateString) {
 }
 
 // File path utilities
+function toDisplayPath(repoPath, { leadingSlash = false } = {}) {
+  if (!repoPath) return repoPath;
+  const normalized = String(repoPath).replace(/\\/g, '/').replace(/^\/+/, '');
+  const mirrorPrefix = '.havc_external/';
+
+  if (normalized.startsWith(mirrorPrefix)) {
+    const virtualPath = normalized.substring(mirrorPrefix.length);
+    return leadingSlash ? `/${virtualPath}` : virtualPath;
+  }
+
+  return normalized;
+}
 
 function parseFilePath(filePath) {
   const parts = filePath.split('/');
@@ -2312,7 +2324,8 @@ function filterFiles(query) {
   const filtered = allFiles.filter(fileObj => {
     // Handle both string paths (legacy) and object paths (new format)
     const filePath = typeof fileObj === 'string' ? fileObj : fileObj.path;
-    return filePath.toLowerCase().includes(query);
+    const displayPath = toDisplayPath(filePath);
+    return filePath.toLowerCase().includes(query) || displayPath.toLowerCase().includes(query);
   });
 
   displayFileList(filtered);
@@ -2877,7 +2890,7 @@ function displayFiles(status, hash) {
   const lines = status.split('\n').filter(line => line.trim());
   const files = lines.slice(1).map(line => {
     const parts = line.split('\t');
-    return { status: parts[0], file: parts[1] };
+    return { status: parts[0], file: parts[1], displayFile: toDisplayPath(parts[1], { leadingSlash: true }) };
   }).filter(f => f.file);
 
   // Set panel title and clear actions
@@ -2893,7 +2906,7 @@ function displayFiles(status, hash) {
         <div class="file">
           <div class="file-icon"></div>
           <div class="file-path">
-            <div class="file-name">${file.file}</div>
+            <div class="file-name">${file.displayFile}</div>
             <div class="file-path-text">${file.status === 'A' ? t('file_status.added') : file.status === 'D' ? t('file_status.deleted') : t('file_status.modified')}</div>
           </div>
           <div>
@@ -2912,7 +2925,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
   const lines = status.split('\n').filter(line => line.trim());
   let files = lines.slice(1).map(line => {
     const parts = line.split('\t');
-    return { status: parts[0], file: parts[1] };
+    return { status: parts[0], file: parts[1], displayFile: toDisplayPath(parts[1], { leadingSlash: true }) };
   }).filter(f => f.file);
 
   // Sort files alphabetically, ignoring leading dots (so .storage sorts as storage)
@@ -3067,7 +3080,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
       const diffHtml = generateDiff(leftContent, commitContent, {
         leftLabel: leftLabel,
         rightLabel: rightLabel,
-        bannerText: file.status === 'A' ? `${file.file} (Added)` : file.file,
+        bannerText: file.status === 'A' ? `${file.displayFile} (Added)` : file.displayFile,
         returnNullIfNoChanges: true,
         filePath: file.file
       });
@@ -3101,7 +3114,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
       allDiffsHtml += `
         <div class="file-diff-section">
           <div class="file-diff-header ${expandedClass}" onclick="toggleFileDiff(this)">
-            <span class="file-name">${item.file.file} (${item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified'})</span>
+            <span class="file-name">${item.file.displayFile} (${item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified'})</span>
           </div>
           <div class="file-diff-content" style="${displayStyle}">
             <div class="diff-view-container">
@@ -3132,7 +3145,7 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
       allDiffsHtml += `
         <div class="file-diff-section">
           <div class="file-diff-header ${expandedClass}" onclick="toggleFileDiff(this)">
-            <span class="file-name">${item.file.file} (${item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified'})</span>
+            <span class="file-name">${item.file.displayFile} (${item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified'})</span>
           </div>
           <div class="file-diff-content" style="${displayStyle}">
             <div class="diff-view-container">
@@ -3168,12 +3181,12 @@ async function displayCommitDiff(status, hash, diff, commitDate = null) {
   // Create header with file list
   const changedFilesSummary = filesWithChanges.map(item => {
     const action = item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified';
-    return `${item.file.file} (${action})`;
+    return `${item.file.displayFile} (${action})`;
   });
 
   const unchangedFilesSummary = filesWithoutChanges.map(item => {
     const action = item.file.status === 'A' ? 'Added' : item.file.status === 'D' ? 'Deleted' : 'Modified';
-    return `${item.file.file} (${action})`;
+    return `${item.file.displayFile} (${action})`;
   });
 
   const fileSummary = [...changedFilesSummary, ...unchangedFilesSummary].join('<br>') || (showChangedOnly ? t('timeline.no_files_with_changes') : t('timeline.all_files'));
@@ -3327,11 +3340,12 @@ function displayDeletedFiles(files) {
   leftPanel.innerHTML = files.map(file => {
     const lastSeen = getFormattedDate(file.lastSeenDate);
     const fileId = 'deleted-file-' + file.path.replace(/[:/\.]/g, '-');
+    const displayPath = toDisplayPath(file.path, { leadingSlash: true });
     return `
       <div class="file deleted" id="${fileId}" onclick="selectDeletedFile('${escapeHtml(file.path)}', '${file.lastSeenHash}')">
         <div class="file-path">
           <div class="file-name">${escapeHtml(file.name)}</div>
-          <div class="file-path-text">${escapeHtml(file.path.replace(file.name, ''))}</div>
+          <div class="file-path-text">${escapeHtml(displayPath.replace(file.name, ''))}</div>
           <div class="file-last-seen">${t('files.last_seen').replace('{date}', lastSeen)}</div>
         </div>
       </div>
@@ -3475,11 +3489,13 @@ function displayFileList(files) {
   const folderSet = new Set();
 
   files.forEach(fileObj => {
-    // Handle both string paths (legacy/search) and object paths (new format)
-    const filePath = typeof fileObj === 'string' ? fileObj : fileObj.path;
+    // Handle both string paths (legacy/search) and object paths (new format),
+    // while rendering mirrored external files as virtual /share and /media paths.
+    const repoPath = typeof fileObj === 'string' ? fileObj : fileObj.path;
+    const displayPath = toDisplayPath(repoPath);
 
-    if (filePath.startsWith(currentFolder)) {
-      const relativePath = filePath.substring(currentFolder.length);
+    if (displayPath.startsWith(currentFolder)) {
+      const relativePath = displayPath.substring(currentFolder.length);
       const parts = relativePath.split('/');
       if (parts.length > 1) {
         // It's in a subfolder
@@ -3497,7 +3513,7 @@ function displayFileList(files) {
         items.push({
           name: relativePath,
           type: 'file',
-          path: filePath
+          path: repoPath
         });
       }
     }
@@ -4626,7 +4642,7 @@ function displayFileHistory(filePath) {
   }
 
   // Set the panel title - add "(Deleted)" if viewing a deleted file, or "(Added)" if the file was added
-  let title = filePath;
+  let title = toDisplayPath(filePath, { leadingSlash: true });
   if (currentSelection && currentSelection.type === 'deleted_file') {
     title += ' (Deleted)';
   } else if (currentFileHistory.length > 0) {
@@ -5936,7 +5952,7 @@ async function showCommitRestorePreview(commitHash, commitDate) {
     const lines = detailsData.status.split('\n').filter(line => line.trim());
     const files = lines.slice(1).map(line => {
       const parts = line.split('\t');
-      return { status: parts[0], file: parts[1] };
+      return { status: parts[0], file: parts[1], displayFile: toDisplayPath(parts[1], { leadingSlash: true }) };
     }).filter(f => f.file);
 
     // For each file, get current content and commit version, then compare
@@ -5963,7 +5979,7 @@ async function showCommitRestorePreview(commitHash, commitDate) {
         if (diffHtml.trim()) {
           allDiffsHtml += `<div class="diff-view-container">
                 <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px; font-weight: bold;">
-                  ${file.file} (${file.status === 'A' ? 'Added' : file.status === 'D' ? 'Deleted' : 'Modified'})
+                  ${file.displayFile} (${file.status === 'A' ? 'Added' : file.status === 'D' ? 'Deleted' : 'Modified'})
                 </div>
                 ${diffHtml}
               </div>`;
@@ -6012,7 +6028,7 @@ async function doRestore() {
 
       if (data.success) {
         const key = data.reloaded ? 'timeline.single_file_restored_reloaded' : 'timeline.single_file_restored';
-        const message = t(key).replace('{file}', filePath);
+        const message = t(key).replace('{file}', toDisplayPath(filePath, { leadingSlash: true }));
 
         // Check if it's a Lovelace file and offer restart
         if (filePath.includes('.storage/lovelace')) {
@@ -6041,7 +6057,7 @@ async function doRestore() {
       if (data.success) {
         // Build message based on what was reloaded
         const files = data.files || [];
-        const fileNames = files.join(', ');
+        const fileNames = files.map(f => toDisplayPath(f, { leadingSlash: true })).join(', ');
 
         let message;
         if (data.automationReloaded || data.scriptReloaded) {
@@ -6210,7 +6226,7 @@ async function restoreCommit(sourceHash, targetHash) {
         const filePath = data.files[0];
         // Use full path or relative path, not just filename to be more descriptive
         const key = isReloaded ? 'timeline.single_file_restored_reloaded' : 'timeline.single_file_restored';
-        message = t(key).replace('{file}', filePath);
+        message = t(key).replace('{file}', toDisplayPath(filePath, { leadingSlash: true }));
 
         // Check if it's a Lovelace file and offer restart
         if (filePath.includes('.storage/lovelace')) {
