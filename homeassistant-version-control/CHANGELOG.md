@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.0-beta.2]
+## [1.2.0-beta.3]
 
 ### Added
 - **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
@@ -15,6 +15,7 @@
 - **Dynamic File Formats:** Fixed issue where `.py`, `.json`, and `.txt` formats were hardcoded to `false` in `server.js`, ignoring the `include_extensions` configuration.
 - **Default Branch Transition:** New repositories now default to `main` (standard Git naming). Existing repositories on `master` or other branches are detected automatically and supported without intervention.
 - **Cloud Sync Branch:** Improved dynamic detection to ensure sync always follows the active local branch.
+- **Storage File UX:** `include_storage` entries now appear in Files/history and participate in restore/filter flows exactly as configured (not limited to `lovelace*` files).
 - **UI Refinement:** Re-ordered settings menu for better logical flow (Max Commits moved below history retention).
 - **Documentation:** Fixed Docker image name typo in README.
 
