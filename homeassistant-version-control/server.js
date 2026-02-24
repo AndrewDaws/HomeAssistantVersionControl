@@ -708,24 +708,66 @@ async function pruneEmptyMirrorDirectories(startDir) {
 }
 
 async function syncSingleAdditionalPathToMirror(additionalPath) {
+  try {
+    await fsPromises.access(additionalPath, fs.constants.R_OK);
+  } catch (error) {
+    console.log(`[external-sync] Path not readable, skipping sync: ${additionalPath} (${error.code || 'ERROR'}: ${error.message})`);
+
+    // Help the user debug ENOENT for /media or /share paths
+    if (error.code === 'ENOENT' && (additionalPath.startsWith('/media') || additionalPath.startsWith('/share'))) {
+      const parentDir = path.dirname(additionalPath);
+      console.log(`[smart-diagnostics] ${additionalPath} is missing. Auditing environment...`);
+      try {
+        const rootDirs = await fsPromises.readdir('/');
+        console.log(`[smart-diagnostics] Root directories (/):`, rootDirs);
+
+        for (const dir of ['/media', '/share', '/config']) {
+          try {
+            const contents = await fsPromises.readdir(dir);
+            console.log(`[smart-diagnostics] Contents of ${dir}:`, contents);
+          } catch (e) {
+            console.log(`[smart-diagnostics] Could not read ${dir}:`, e.message);
+          }
+        }
+        console.log(`[smart-diagnostics] Tip: If your files are on a Mac at '/Volumes/media-1', you must first mount that drive into Home Assistant's 'Media' folder in the HA System Settings.`);
+      } catch (diagErr) {
+        console.log(`[smart-diagnostics] Audit failed:`, diagErr.message);
+      }
+    }
+    return { copied: 0, removed: 0 };
+  }
+
   const mirrorRootForPath = externalAbsoluteToMirrorAbsolute(additionalPath);
   if (!mirrorRootForPath) return { copied: 0, removed: 0 };
 
   const desiredRepoPaths = new Set();
   let copied = 0;
 
+  const foundFiles = [];
   await walkFilesRecursive(additionalPath, async (absoluteFilePath) => {
     const normalized = normalizeAbsolutePath(absoluteFilePath);
     if (!normalized) return;
 
     if (!isFileTrackableForSync(normalized)) return;
 
+    foundFiles.push(normalized);
     const repoPath = await syncExternalFileToMirror(normalized);
     if (repoPath) {
       desiredRepoPaths.add(repoPath);
       copied += 1;
     }
   });
+
+  if (foundFiles.length > 0) {
+    console.log(`[external-sync] Found ${foundFiles.length} files in ${additionalPath}:`);
+    for (const f of foundFiles) {
+      const mirrorPath = externalAbsoluteToMirrorAbsolute(f);
+      const repoPath = absolutePathToRepoPath(mirrorPath);
+      console.log(`[external-sync]   - ${f} -> ${repoPath}`);
+    }
+  } else {
+    console.log(`[external-sync] No trackable files found in ${additionalPath}`);
+  }
 
   let removed = 0;
   await walkFilesRecursive(mirrorRootForPath, async (mirrorFilePath) => {
@@ -1286,8 +1328,6 @@ async function initRepo() {
       // Ignore if file doesn't exist
     }
 
-    // Load runtime settings
-    await loadRuntimeSettings();
 
     // Synchronize format options with final extensions configuration
     const include = runtimeSettings.extensions.include || [];
@@ -2836,7 +2876,7 @@ async function initializeExternalWatchers() {
     try {
       await fsPromises.access(additionalPath, fs.constants.R_OK);
     } catch (error) {
-      console.log(`[external-sync] Additional path not accessible, skipping watcher: ${additionalPath}`);
+      console.log(`[external-sync] Additional path not accessible, skipping watcher: ${additionalPath} (${error.code || 'ERROR'}: ${error.message})`);
       continue;
     }
 
