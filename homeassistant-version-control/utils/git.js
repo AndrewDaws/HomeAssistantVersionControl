@@ -131,7 +131,7 @@ export async function gitStatus() {
     const { stdout } = await gitExec(['status', '--porcelain', '--branch']);
     const lines = stdout.trim().split('\n');
     const files = [];
-    let branch = 'master';
+    let branch = 'main';
     for (const line of lines) {
         if (line.startsWith('##')) {
             branch = line.split(' ')[1]?.split('...')[0] || branch;

@@ -83,7 +83,8 @@ try {
   execSync('git config --global --add safe.directory /usr/src/app', { stdio: 'pipe' });
   execSync('git config --global user.email "havc@local"', { stdio: 'pipe' });
   execSync('git config --global user.name "Home Assistant Version Control"', { stdio: 'pipe' });
-  console.log('[init] Git configured: safe.directory and identity set');
+  execSync('git config --global init.defaultBranch main', { stdio: 'pipe' });
+  console.log('[init] Git configured: safe.directory, identity, and defaultBranch set');
 } catch (e) {
   console.error('[init] Failed to configure git:', e.message);
 }
@@ -982,7 +983,7 @@ async function initRepo() {
 
     if (!isRepo) {
       console.log(`[init] Initializing Git repo at ${CONFIG_PATH}...`);
-      await gitInit();
+      await gitExec(['init', '-b', 'main']);
 
       // Create .gitignore to limit git to only config files
       const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
@@ -3528,13 +3529,13 @@ async function pushToRemote(includeSecrets = false) {
     // Configure secrets tracking before pushing
     await configureSecretsTracking(includeSecrets);
 
-    // Get current local branch
-    let localBranch = 'develop';
+    let localBranch = 'main';
     try {
       const branchResult = await gitRevparse(['--abbrev-ref', 'HEAD']);
-      localBranch = branchResult.trim() || 'develop';
+      localBranch = branchResult.trim();
+      if (localBranch === 'HEAD') localBranch = 'main'; // Should not happen in normal repos
     } catch (e) {
-      console.log('[cloud-sync] Could not determine branch, using develop');
+      console.log('[cloud-sync] Could not determine branch, defaulting to main');
     }
 
     // Push to the same branch on remote as local

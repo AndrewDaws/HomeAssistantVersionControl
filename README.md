@@ -7,8 +7,11 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ##  What's New!
 
-*   **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them. Your preference is saved automatically!
-*   **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
+*   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
+*   **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
+*   **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
+*   **Progressive History Loading:** Versions now load faster, displaying results as they're found.
+*   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
 
 
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
@@ -21,14 +24,13 @@ Home Assistant Version Control provides complete version history for your setup.
 ###  Automatic & Smart Tracking
 * **Zero-Effort Backups:** Every edit is saved automatically.
 * **Smart Debouncing:** Multiple rapid edits are grouped into a single save snapshot (customizable delay).
-* **Track Any File:** Configure custom file extensions (e.g., `.sh`, `.py`, `.json`) in the add-on settings to track more than just YAML.
-* **Efficient Storage:** Uses Git deduplication to minimize disk usage.
+* **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files (both UI and YAML mode).
+* **Efficient Storage:** Uses Git deduplication to minimize disk usage by storing only the differences between versions.
 
 ### Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
-* **Visual Comparisons:** Compare versions side-by-side with color-coded highlighting.
-* **Recover Deleted Items:** View and restore files that have been deleted using the "Deleted" filter.
-* **History Management:** Automatically merge old commits or set a custom **Max Commits** limit to keep the UI fast.
+* **Visual Comparisons:** Compare the current version against any backup side-by-side. Additions are highlighted in **green**, deletions in **red**.
+* **History Management:** Automatically merges versions older than the specified time period to keep your history clean.
 
 ### Instant Restore
 * **Granular Control:** Restore specific files or revert your entire configuration.
@@ -36,10 +38,10 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
 ### Customization
-* **Color Theme:** Choose from seven preset color palettes in settings, or tap the **Header Title/Logo** to cycle through them instantly.
+* **Color Theme:** Choose from seven preset color palettes.
 * **Light Themes:** Toggle between Light and Dark modes.
 * **Comparison View:**
-  * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.). Tap the header bar of any file diff to instantly cycle through styles.
+  * **Style:** Customize your comparisons with 8 different themes (High Contrast, GitHub Classic, Neon, etc.).
   * **Layout:** Choose between Stacked (Unified) or Side-by-Side views.
   * **Comparison:**
     * **Current (Default):** Compare against your **Current File** on disk to see how far you've deviated since that backup.
@@ -158,7 +160,6 @@ The application can be configured through the web UI Settings page or via enviro
 | **Retention Type** | Keep history based on time or number of versions | `time` |
 | **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
 | **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
-| **Max Commits** | How many commits to show in the timeline | `days` |
 
 #### Environment Variable Configuration
 
@@ -182,7 +183,6 @@ For containerized deployments (especially when not persisting the `/data` direct
 | `RETENTION_TYPE` | Retention Type | String | `time`, `versions` | `time` |
 | `RETENTION_VALUE` | Retention Value | Number | ≥ 1 | `90` |
 | `RETENTION_UNIT` | Retention Unit | String | `hours`, `days`, `weeks`, `months` | `days` |
-| `MAX_COMMITS` | Max Commits | Number | ≥ 50 / ≤ 10000 | `50` |
 
 **Notes:**
 - Boolean values are case-insensitive and accept: `true`/`false`, `yes`/`no`, `1`/`0`
@@ -210,7 +210,6 @@ services:
       - RETENTION_TYPE=time
       - RETENTION_VALUE=30
       - RETENTION_UNIT=days
-      - MAX_COMMITS=50
 ```
 
 **Docker Run with environment variables:**
@@ -240,7 +239,6 @@ When the container starts, you'll see detailed logging showing where each settin
 [init]   retentionType: 'time' (default)
 [init]   retentionValue: 30 (env: RETENTION_VALUE)
 [init]   retentionUnit: 'days' (default)
-[init]   maxCommits: 50 (default)
 ```
 
 Invalid values will trigger warnings:
@@ -268,6 +266,13 @@ The add-on automatically tracks configuration files while ignoring system files.
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
 | `esphome/*.yaml` | Temporary files |
 | All other `.yaml` and `.yml` files | Files in `.gitignore` |
+| Files in `.storage/` | Temporary files |
+
+### Automatic Branch Detection
+The add-on is branch-agnostic and will automatically detect the active branch of your repository. 
+- **New Installations:** Automatically default to `main`.
+- **Existing Repositories:** If your repository already uses `master` (or any other branch), the add-on will detect it and continue to use it without intervention.
+- **Manual Branch Swapping:** If you manually rename your branch (e.g., `git branch -m master main`), the add-on will automatically update its sync logic to match the new branch name.
 
 > [!CAUTION]
 > **Secrets Management & Cloud Backup:**
@@ -279,7 +284,7 @@ The add-on automatically tracks configuration files while ignoring system files.
 
 ## Cloud Sync (GitHub/Gitea)
 
-Push your configuration to a private GitHub or Gitea repository. Choose between manual sync, daily backups, or automatic sync after every change.
+You can automatically sync your configuration to a private remote repository. This is highly recommended for off-site backups.
 
 ### Custom Repository Setup (Gitea/Self-Hosted)
 
@@ -373,10 +378,10 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 
 Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
 
-Want to contribute? Check out [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
+Want to contribute? Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Want the latest features? The [develop branch](https://github.com/saihgupr/HomeAssistantVersionControl/tree/develop) includes the most recent updates and features.
 
 ## Support
 
-If you find this project useful, please consider giving it a star ⭐, or donating if you like.
+If you find this project useful, please consider giving it a star, or [buy me a coffee](https://ko-fi.com/saihgupr) if you'd like!

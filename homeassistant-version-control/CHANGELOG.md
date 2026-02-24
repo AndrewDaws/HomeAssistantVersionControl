@@ -11,7 +11,8 @@
 
 ### Fixed
 - **Dynamic File Formats:** Fixed issue where `.py`, `.json`, and `.txt` formats were hardcoded to `false` in `server.js`, ignoring the `include_extensions` configuration.
-- **Cloud Sync Branch:** Fixed logic to mirror the local branch on the remote instead of hardcoding `develop`.
+- **Default Branch Transition:** New repositories now default to `main` (standard Git naming). Existing repositories on `master` or other branches are detected automatically and supported without intervention.
+- **Cloud Sync Branch:** Improved dynamic detection to ensure sync always follows the active local branch.
 - **UI Refinement:** Re-ordered settings menu for better logical flow (Max Commits moved below history retention).
 - **Documentation:** Fixed Docker image name typo in README.
 

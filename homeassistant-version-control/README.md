@@ -266,6 +266,13 @@ The add-on automatically tracks configuration files while ignoring system files.
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
 | `esphome/*.yaml` | Temporary files |
 | All other `.yaml` and `.yml` files | Files in `.gitignore` |
+| Files in `.storage/` | Temporary files |
+
+### Automatic Branch Detection
+The add-on is branch-agnostic and will automatically detect the active branch of your repository. 
+- **New Installations:** Automatically default to `main`.
+- **Existing Repositories:** If your repository already uses `master` (or any other branch), the add-on will detect it and continue to use it without intervention.
+- **Manual Branch Swapping:** If you manually rename your branch (e.g., `git branch -m master main`), the add-on will automatically update its sync logic to match the new branch name.
 
 > [!CAUTION]
 > **Secrets Management & Cloud Backup:**
