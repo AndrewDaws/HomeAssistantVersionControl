@@ -431,8 +431,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   injectSelectedColorStyle();
   injectHoverStyles();
 
-  // Initialize Winter Mode from localStorage
-  initWinterMode();
+  // Initialize Confetti Mode from localStorage
+  initConfettiMode();
 
   // Initialize the view
   switchMode(currentMode);
@@ -6072,6 +6072,7 @@ async function doRestore() {
         }
 
         showNotification(message);
+        triggerConfetti();
         closeRestorePreview();
         refreshCurrent();
       } else {
@@ -6091,6 +6092,7 @@ async function doRestore() {
         const key = data.reloaded ? 'automations.automation_restored_reloaded' : 'automations.automation_restored';
         const message = t(key).replace('{name}', auto ? auto.name : automationId);
         showNotification(message);
+        triggerConfetti();
         closeRestorePreview();
         loadAutomations();
       } else {
@@ -6110,6 +6112,7 @@ async function doRestore() {
         const key = data.reloaded ? 'scripts.script_restored_reloaded' : 'scripts.script_restored';
         const message = t(key).replace('{name}', script ? script.name : scriptId);
         showNotification(message);
+        triggerConfetti();
         closeRestorePreview();
         loadScripts();
       } else {
@@ -6123,6 +6126,7 @@ async function doRestore() {
     showNotification('Error restoring: ' + error.message, 'error');
   }
 }
+
 
 
 async function confirmRestore(file, hash) {
@@ -6150,6 +6154,7 @@ async function confirmRestore(file, hash) {
         });
       } else {
         showNotification(message, 'success');
+        triggerConfetti();
       }
 
       closeModal();
@@ -6196,6 +6201,7 @@ async function restoreFile(file, hash) {
         });
       } else {
         showNotification(message, 'success');
+        triggerConfetti();
       }
 
       refreshCurrent();
@@ -6261,6 +6267,7 @@ async function restoreCommit(sourceHash, targetHash) {
       }
 
       showNotification(message, 'success');
+      triggerConfetti();
       refreshCurrent();
     } else {
       showNotification('Error: ' + data.error, 'error');
@@ -6460,200 +6467,101 @@ function stepInput(id, step) {
 }
 
 // ========================================
-// HOLIDAY MODE FUNCTIONS
+// CONFETTI MODE FUNCTIONS
 // ========================================
 
-// Snowflake characters for variety
-const SNOWFLAKE_CHARS = ['❄', '❅', '❆', '✻', '✼', '❉'];
-
-// Number of snowflakes
-const SNOWFLAKE_COUNT = 28;
-
-// 10 Plaid Christmas Wrapping Paper Patterns (original style with color variations)
-const PLAID_PATTERNS = [
-  {
-    name: 'Classic Red & Green',
-    baseColor: '#8B1A1A', accentColor: 'rgba(0, 80, 0, 0.5)', threadColor: 'rgba(212, 175, 55, 0.25)'
-  },
-  {
-    name: 'Forest Green & Red',
-    baseColor: '#0D3D0D', accentColor: 'rgba(139, 26, 26, 0.5)', threadColor: 'rgba(212, 175, 55, 0.25)'
-  },
-  {
-    name: 'Royal Blue & Gold',
-    baseColor: '#0D47A1', accentColor: 'rgba(212, 175, 55, 0.4)', threadColor: 'rgba(255, 255, 255, 0.2)'
-  },
-  {
-    name: 'Burgundy & Gold',
-    baseColor: '#4A0E0E', accentColor: 'rgba(212, 175, 55, 0.4)', threadColor: 'rgba(255, 255, 255, 0.15)'
-  },
-  {
-    name: 'Winter Navy',
-    baseColor: '#1A237E', accentColor: 'rgba(255, 255, 255, 0.3)', threadColor: 'rgba(100, 149, 237, 0.3)'
-  },
-  {
-    name: 'Holly Berry',
-    baseColor: '#1B5E20', accentColor: 'rgba(200, 40, 40, 0.5)', threadColor: 'rgba(255, 255, 255, 0.2)'
-  },
-  {
-    name: 'Silver Frost',
-    baseColor: '#37474F', accentColor: 'rgba(255, 255, 255, 0.25)', threadColor: 'rgba(100, 200, 255, 0.2)'
-  },
-  {
-    name: 'Cranberry',
-    baseColor: '#880E4F', accentColor: 'rgba(255, 255, 255, 0.25)', threadColor: 'rgba(255, 182, 193, 0.3)'
-  },
-  {
-    name: 'Gold Luxe',
-    baseColor: '#8B6914', accentColor: 'rgba(139, 26, 26, 0.4)', threadColor: 'rgba(255, 255, 255, 0.2)'
-  },
-  {
-    name: 'Purple Velvet',
-    baseColor: '#4A148C', accentColor: 'rgba(212, 175, 55, 0.35)', threadColor: 'rgba(255, 255, 255, 0.2)'
-  }
+// Vibrant confetti colors — pairs of fill + stroke
+const CONFETTI_COLORS = [
+  '#ff6b6b', '#ff4757', '#ffa502', '#ff7f50',
+  '#ffdd59', '#ffd32a', '#7bed9f', '#2ed573',
+  '#70a1ff', '#1e90ff', '#eccc68', '#ff6348',
+  '#ff6b81', '#ff4757', '#a29bfe', '#6c5ce7',
+  '#fd79a8', '#e84393', '#55efc4', '#00b894'
 ];
 
-// Generate plaid pattern from color scheme
-function generatePlaidPattern(pattern, size, angle, intensity) {
-  const { baseColor, accentColor, threadColor } = pattern;
-  // intensity 0 = solid color, 100 = full gradient
-  const gradientStrength = (intensity || 50) / 100 * 30; // max 30% lighten/darken
-  return `
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent ${size}px,
-      ${accentColor} ${size}px,
-      ${accentColor} ${size + 4}px,
-      transparent ${size + 4}px,
-      transparent ${size * 2}px,
-      ${threadColor} ${size * 2}px,
-      ${threadColor} ${size * 2 + 2}px,
-      transparent ${size * 2 + 2}px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent ${size}px,
-      ${accentColor} ${size}px,
-      ${accentColor} ${size + 4}px,
-      transparent ${size + 4}px,
-      transparent ${size * 2}px,
-      ${threadColor} ${size * 2}px,
-      ${threadColor} ${size * 2 + 2}px,
-      transparent ${size * 2 + 2}px
-    ),
-    linear-gradient(${angle}deg, ${baseColor} 0%, ${lightenColor(baseColor, gradientStrength)} 25%, ${baseColor} 50%, ${darkenColor(baseColor, gradientStrength)} 75%, ${baseColor} 100%)
-  `;
-}
-
-// Helper to lighten a hex color
-function lightenColor(hex, percent) {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const amt = Math.round(2.55 * percent);
-  const R = Math.min(255, (num >> 16) + amt);
-  const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
-  const B = Math.min(255, (num & 0x0000FF) + amt);
-  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-}
-
-// Helper to darken a hex color
-function darkenColor(hex, percent) {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const amt = Math.round(2.55 * percent);
-  const R = Math.max(0, (num >> 16) - amt);
-  const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
-  const B = Math.max(0, (num & 0x0000FF) - amt);
-  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-}
-
-// Helper to blend two colors (0 = color1, 1 = color2)
-function blendColors(color1, color2, ratio) {
-  const c1 = parseInt(color1.replace('#', ''), 16);
-  const c2 = parseInt(color2.replace('#', ''), 16);
-  const R = Math.round((c1 >> 16) * (1 - ratio) + (c2 >> 16) * ratio);
-  const G = Math.round(((c1 >> 8) & 0xFF) * (1 - ratio) + ((c2 >> 8) & 0xFF) * ratio);
-  const B = Math.round((c1 & 0xFF) * (1 - ratio) + (c2 & 0xFF) * ratio);
-  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-}
-
-// Toggle Winter Mode
-function toggleWinterMode() {
-  const checkbox = document.getElementById('winterMode');
-  // Since onclick fires before the checkbox value changes, we check the OPPOSITE
+// Toggle Confetti Mode preference (saves to localStorage only; no visual effect on toggle)
+function toggleConfettiMode() {
+  const checkbox = document.getElementById('confettiMode');
+  // onclick fires before checkbox toggles, so check the OPPOSITE
   const willBeEnabled = !checkbox.checked;
-
-  if (willBeEnabled) {
-    document.body.classList.add('winter-mode');
-    createSnowflakes();
-    localStorage.setItem('winterModeEnabled', 'true');
-  } else {
-    document.body.classList.remove('winter-mode');
-    clearSnowflakes();
-    localStorage.setItem('winterModeEnabled', 'false');
-  }
+  localStorage.setItem('confettiModeEnabled', willBeEnabled ? 'true' : 'false');
 }
 
-// Initialize Winter Mode from localStorage
-function initWinterMode() {
-  const saved = localStorage.getItem('winterModeEnabled');
-  const checkbox = document.getElementById('winterMode');
-
-  if (saved === 'true') {
+// Initialize Confetti Mode from localStorage
+function initConfettiMode() {
+  const saved = localStorage.getItem('confettiModeEnabled');
+  const checkbox = document.getElementById('confettiMode');
+  if (checkbox && saved === 'true') {
     checkbox.checked = true;
-    document.body.classList.add('winter-mode');
-    createSnowflakes();
   }
 }
 
-// Create snowflakes
-function createSnowflakes() {
-  const container = document.getElementById('snowContainer');
+// Returns true if confetti mode is currently enabled
+function isConfettiModeEnabled() {
+  return localStorage.getItem('confettiModeEnabled') === 'true';
+}
+
+/**
+ * triggerConfetti() — fires a colorful burst of particles from the bottom of the screen.
+ * Call this after a successful restore, ONLY when confetti mode is on.
+ */
+function triggerConfetti() {
+  if (!isConfettiModeEnabled()) return;
+
+  const container = document.getElementById('confettiContainer');
   if (!container) return;
 
-  // Clear existing snowflakes first
-  container.innerHTML = '';
+  // Number of particles per burst
+  const COUNT = 120;
 
-  for (let i = 0; i < SNOWFLAKE_COUNT; i++) {
-    const snowflake = document.createElement('div');
-    snowflake.className = 'snowflake';
+  for (let i = 0; i < COUNT; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'confetti-particle';
 
-    // Random snowflake character
-    snowflake.textContent = SNOWFLAKE_CHARS[Math.floor(Math.random() * SNOWFLAKE_CHARS.length)];
+    // Random shape: rect, circle, or ribbon
+    const shapes = ['rect', 'circle', 'ribbon'];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    particle.dataset.shape = shape;
 
-    // Random horizontal position
-    snowflake.style.left = Math.random() * 100 + '%';
+    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    const size = 6 + Math.random() * 10; // 6–16 px
 
-    // Random size (small variation for graceful look)
-    const size = 8 + Math.random() * 8; // 8-16px
-    snowflake.style.fontSize = size + 'px';
+    // Base style
+    particle.style.cssText = `
+      position: absolute;
+      width: ${shape === 'ribbon' ? size * 0.35 : size}px;
+      height: ${shape === 'ribbon' ? size * 3 : size}px;
+      background: ${color};
+      border-radius: ${shape === 'circle' ? '50%' : shape === 'ribbon' ? '2px' : '2px'};
+      left: ${10 + Math.random() * 80}%;
+      bottom: 0;
+      opacity: 1;
+      pointer-events: none;
+    `;
 
-    // Random animation duration (slow, graceful: 10-18 seconds)
-    const duration = 10 + Math.random() * 8;
-    snowflake.style.animationDuration = duration + 's';
+    // Physics via CSS custom properties and animation
+    const vx    = (Math.random() - 0.5) * 600;  // horizontal velocity (px)
+    const vy    = -(350 + Math.random() * 450);  // upward velocity (px)
+    const spin  = (Math.random() - 0.5) * 900;  // degrees
+    const dur   = 900 + Math.random() * 800;     // ms total
+    const delay = Math.random() * 150;           // stagger
 
-    // Staggered animation delay (so they don't all start at once)
-    const delay = Math.random() * 15;
-    snowflake.style.animationDelay = delay + 's';
+    container.appendChild(particle);
 
-    // Random animation type for variety
-    const animations = ['snowfall', 'snowfall-alt1', 'snowfall-alt2'];
-    snowflake.style.animationName = animations[Math.floor(Math.random() * animations.length)];
-
-    // Slight opacity variation
-    snowflake.style.opacity = 0.6 + Math.random() * 0.4;
-
-    container.appendChild(snowflake);
+    // Animate with WAAPI for performance
+    particle.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${vx * 0.5}px, ${vy * 0.5}px) rotate(${spin * 0.5}deg)`, opacity: 1, offset: 0.4 },
+      { transform: `translate(${vx}px, ${vy + 600}px) rotate(${spin}deg)`, opacity: 0 }
+    ], {
+      duration: dur,
+      delay: delay,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      fill: 'forwards'
+    }).onfinish = () => particle.remove();
   }
 }
 
-// Clear snowflakes
-function clearSnowflakes() {
-  const container = document.getElementById('snowContainer');
-  if (container) {
-    container.innerHTML = '';
-  }
-}
 
 async function handleCloudProviderChange() {
   const isGithub = document.getElementById('cloudProviderGithub').checked;

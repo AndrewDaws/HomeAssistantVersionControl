@@ -23,8 +23,8 @@
 </head>
 
 <body class="dark-mode">
-  <!-- Snow Container for Holiday Mode -->
-  <div id="snowContainer" class="snow-container"></div>
+  <!-- Confetti Container for Confetti Mode -->
+  <div id="confettiContainer" class="confetti-container"></div>
   <div class="container">
     <div class="header">
       <div style="display: flex; align-items: center; gap: clamp(10px, 1.5vw, 14px); cursor: pointer;"
@@ -739,16 +739,15 @@
             </div>
           </div>
 
-          <!-- Holiday Mode at the very bottom -->
-          <!-- Winter Mode - Minimal at bottom -->
+          <!-- Confetti Mode at the very bottom -->
           <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.winter_mode">Winter
-                Mode</span>
+              <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.confetti_mode">Confetti Mode</span>
+              <p style="color: var(--text-tertiary); font-size: 12px; margin: 2px 0 0;">🎉 Celebrate every restore!</p>
             </div>
             <div class="toggle-switch">
-              <input type="checkbox" id="winterMode" style="display: none;">
-              <label for="winterMode" class="toggle-slider" onclick="toggleWinterMode()"></label>
+              <input type="checkbox" id="confettiMode" style="display: none;">
+              <label for="confettiMode" class="toggle-slider" onclick="toggleConfettiMode()"></label>
             </div>
           </div>
         </div>
