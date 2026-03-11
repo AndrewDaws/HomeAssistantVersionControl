@@ -409,6 +409,11 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
+## Related Projects
+
+- **[HomeAssistantEditor](https://github.com/saihgupr/HomeAssistantEditor)**: An intuitive visual editor for Home Assistant that utilizes this repository for advanced version control and history tracking features.
+- **[HomeAssistantTimeMachine](https://github.com/saihgupr/HomeAssistantTimeMachine)**: A seamless time-travel interface for Home Assistant that backs up individual automations and scripts as YAML files and lets you restore them to an earlier state.
+
 ## Contributing
 
 Found a bug? Feel free to [open an issue](https://github.com/saihgupr/HomeAssistantVersionControl/issues).
