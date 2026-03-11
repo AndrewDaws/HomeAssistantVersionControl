@@ -6479,7 +6479,7 @@ function toggleConfettiMode() {
   localStorage.setItem('confettiModeEnabled', willBeEnabled ? 'true' : 'false');
 }
 
-// Initialize Confetti Mode from localStorage
+// Initialize Confetti Mode from localStorage (defaults to off)
 function initConfettiMode() {
   const saved = localStorage.getItem('confettiModeEnabled');
   const checkbox = document.getElementById('confettiMode');

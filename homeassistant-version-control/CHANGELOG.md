@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.1]
+
+### Added
+- **Confetti Mode:** Added a toggle to celebrate successful restores with a realistic, physics-based confetti animation.
+
 ## [1.2.0]
 
 ### Added
