@@ -10,7 +10,6 @@ Home Assistant Version Control provides complete version history for your setup.
 *   **Track Custom Paths:** Easily include folders like `/share` and `/media` in your version history. Perfect for tracking external configs (like Frigate) using Home Assistant mounts.
 *   **More Than Just Lovelace:** Explicitly whitelist and version control specific files/patterns in the `.storage` directory (e.g., core.entity_registry).
 *   **Keep Your Own Extensions:** Configure any file format to track and backup (.sh, .py, .json, etc.) directly in the config tab.
-*   **Custom File Formats:** Now you can track any file type—scripts, Python files, or custom JSON configs—by simply adding their extension in the settings.
 *   **Enhanced Security:** Securely connect to private repositories using persistent SSH keys and trusted CA certificates.
 *   **Simple Remote Management:** Change your Git remote URL directly from the configuration tab without touching the command line.
 *   **Polished Interface:** Enjoy resizable panels, subtle UI animations, and improved visibility for files tracked outside the main config folder.
