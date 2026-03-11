@@ -6470,14 +6470,6 @@ function stepInput(id, step) {
 // CONFETTI MODE FUNCTIONS
 // ========================================
 
-// Vibrant confetti colors — pairs of fill + stroke
-const CONFETTI_COLORS = [
-  '#ff6b6b', '#ff4757', '#ffa502', '#ff7f50',
-  '#ffdd59', '#ffd32a', '#7bed9f', '#2ed573',
-  '#70a1ff', '#1e90ff', '#eccc68', '#ff6348',
-  '#ff6b81', '#ff4757', '#a29bfe', '#6c5ce7',
-  '#fd79a8', '#e84393', '#55efc4', '#00b894'
-];
 
 // Toggle Confetti Mode preference (saves to localStorage only; no visual effect on toggle)
 function toggleConfettiMode() {
@@ -6502,8 +6494,9 @@ function isConfettiModeEnabled() {
 }
 
 /**
- * triggerConfetti() — fires a colorful burst of particles from the bottom of the screen.
- * Call this after a successful restore, ONLY when confetti mode is on.
+ * triggerConfetti() — realistic falling confetti shower.
+ * Pieces start above the viewport and drift downward with sinusoidal
+ * oscillation and 3-D tumbling rotation that makes them look like real paper.
  */
 function triggerConfetti() {
   if (!isConfettiModeEnabled()) return;
@@ -6511,54 +6504,118 @@ function triggerConfetti() {
   const container = document.getElementById('confettiContainer');
   if (!container) return;
 
-  // Number of particles per burst
-  const COUNT = 120;
+  // Give the container perspective so rotateX looks truly 3-D
+  container.style.perspective = '600px';
+
+  const COUNT    = 160;
+  const W        = window.innerWidth;
+  const H        = window.innerHeight;
+
+  // ── Shape types ──────────────────────────────────────────────────────────
+  // 'rect'     — classic rectangular confetti piece (widest face catches air)
+  // 'circle'   — circular dot
+  // 'streamer' — long thin ribbon
+  const SHAPES   = ['rect', 'rect', 'rect', 'rect', 'circle', 'streamer'];
+
+  const COLORS = [
+    '#ff6b6b','#ff4757','#f9ca24','#f0932b',
+    '#6ab04c','#badc58','#22a6b3','#30336b',
+    '#be2edd','#e056fd','#ff9ff3','#54a0ff',
+    '#ff6348','#ffd32a','#0abde3','#10ac84',
+    '#ff9f43','#ee5a24','#c0392b','#8e44ad'
+  ];
 
   for (let i = 0; i < COUNT; i++) {
-    const particle = document.createElement('div');
-    particle.className = 'confetti-particle';
+    const el    = document.createElement('div');
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
 
-    // Random shape: rect, circle, or ribbon
-    const shapes = ['rect', 'circle', 'ribbon'];
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    particle.dataset.shape = shape;
+    // Size — rects are wider than tall (like a folded bit of paper)
+    let w, h;
+    if (shape === 'circle') {
+      w = h = 5 + Math.random() * 7;
+    } else if (shape === 'streamer') {
+      w = 2 + Math.random() * 2;
+      h = 14 + Math.random() * 18;
+    } else {
+      // rect: wider landscape orientation feels like real confetti
+      w = 9 + Math.random() * 9;
+      h = 4 + Math.random() * 5;
+    }
 
-    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-    const size = 6 + Math.random() * 10; // 6–16 px
+    // Start position — spread across the full width, begin above viewport
+    const startX = Math.random() * W;           // px from left
+    const startY = -(h + Math.random() * 200);  // px above viewport top
 
-    // Base style
-    particle.style.cssText = `
+    el.style.cssText = `
       position: absolute;
-      width: ${shape === 'ribbon' ? size * 0.35 : size}px;
-      height: ${shape === 'ribbon' ? size * 3 : size}px;
+      left: ${startX}px;
+      top: ${startY}px;
+      width: ${w}px;
+      height: ${h}px;
       background: ${color};
-      border-radius: ${shape === 'circle' ? '50%' : shape === 'ribbon' ? '2px' : '2px'};
-      left: ${10 + Math.random() * 80}%;
-      bottom: 0;
-      opacity: 1;
+      border-radius: ${shape === 'circle' ? '50%' : '1px'};
       pointer-events: none;
+      will-change: transform, opacity;
+      transform-origin: center center;
+      transform-style: preserve-3d;
     `;
 
-    // Physics via CSS custom properties and animation
-    const vx    = (Math.random() - 0.5) * 600;  // horizontal velocity (px)
-    const vy    = -(350 + Math.random() * 450);  // upward velocity (px)
-    const spin  = (Math.random() - 0.5) * 900;  // degrees
-    const dur   = 900 + Math.random() * 800;     // ms total
-    const delay = Math.random() * 150;           // stagger
+    container.appendChild(el);
 
-    container.appendChild(particle);
+    // ── Physics parameters ───────────────────────────────────────────────
+    const fallDist   = H + h + 80;           // px to fall (just past bottom)
+    const driftAmp   = 30 + Math.random() * 90;   // max L/R oscillation (px)
+    const oscCycles  = 1.5 + Math.random() * 2.5; // full L/R cycles during fall
+    const oscPhase   = Math.random() * Math.PI * 2;
 
-    // Animate with WAAPI for performance
-    particle.animate([
-      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
-      { transform: `translate(${vx * 0.5}px, ${vy * 0.5}px) rotate(${spin * 0.5}deg)`, opacity: 1, offset: 0.4 },
-      { transform: `translate(${vx}px, ${vy + 600}px) rotate(${spin}deg)`, opacity: 0 }
-    ], {
-      duration: dur,
-      delay: delay,
-      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-      fill: 'forwards'
-    }).onfinish = () => particle.remove();
+    // 3-D tumble — rotateX makes the piece look like a flat paper flipping
+    const spinX      = (Math.random() < 0.5 ? 1 : -1) * (360 + Math.random() * 720);
+    // rotateZ adds an extra in-plane lazy spin
+    const spinZ      = (Math.random() - 0.5) * 360;
+
+    // Fall speed — varies so pieces arrive at different times
+    const duration   = 2800 + Math.random() * 2400;  // ms
+    const delay      = Math.random() * 1200;           // stagger
+
+    // ── Build keyframes that simulate gravity + sinusoidal air drift ─────
+    const STEPS = 40;
+    const keyframes = [];
+
+    for (let s = 0; s <= STEPS; s++) {
+      const p  = s / STEPS;                       // 0 → 1
+
+      // Vertical: ease in (gravity) — quadratic approximation
+      const yNorm = p * p * 0.5 + p * 0.5;       // slightly accelerating
+      const y  = yNorm * fallDist;
+
+      // Horizontal: sinusoidal drift (air resistance flipping the piece)
+      const x  = driftAmp * Math.sin(oscPhase + p * Math.PI * 2 * oscCycles);
+
+      // 3-D rotation
+      const rX = spinX * p;
+      const rZ = spinZ * p;
+
+      // Opacity: fade in over first 4%, stay solid, fade out last 12%
+      const opacity =
+        p < 0.04 ? p / 0.04 :
+        p > 0.88 ? (1 - p) / 0.12 :
+        1;
+
+      keyframes.push({
+        transform: `translate(${x}px, ${y}px) rotateX(${rX}deg) rotateZ(${rZ}deg)`,
+        opacity,
+        offset: p
+      });
+    }
+
+    el.animate(keyframes, {
+      duration,
+      delay,
+      easing:    'linear',
+      fill:      'forwards',
+      composite: 'replace'
+    }).onfinish = () => el.remove();
   }
 }
 
