@@ -1,13 +1,9 @@
 # Changelog
 
-## [1.2.1]
-
-### Added
-- **Confetti Mode:** Added a toggle to celebrate successful restores with a realistic, physics-based confetti animation.
-
 ## [1.2.0]
 
 ### Added
+- **Confetti Mode:** Added a toggle to celebrate successful restores with a realistic, physics-based confetti animation.
 - **Track UI-configured Settings:** Added `include_storage` to track things you set up through the Home Assistant interface (like Areas, Persons, and Zones) that are normally hidden from version control.
 - **Additional Paths Tracking:** Added `additional_paths` option to track files outside `/config` (including mapped paths like `/share` and `/media`) while syncing them into version control.
 - **Remote URL Configuration:** Added `remote_url` option to the addon configuration to allow easily changing the remote repository URL from the Home Assistant UI.
