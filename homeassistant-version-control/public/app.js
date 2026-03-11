@@ -3783,7 +3783,7 @@ function displayAutomations(automations) {
     html = `<div class="empty">${t('automations.empty_state')}</div>`;
   } else {
     automations.forEach(auto => {
-      const autoId = 'auto-' + auto.id.replace(/[:/]/g, '-');
+      const autoId = 'auto-' + auto.id.replace(/[:/\.]/g, '-');
       html += `
             <div class="file" onclick="showAutomationHistory('${auto.id}')" id="${autoId}">
               <div class="file-icon"></div>
@@ -3815,7 +3815,7 @@ async function showAutomationHistory(automationId) {
   if (sortState.automations === 'deleted') {
     autoId = 'deleted-auto-' + automationId.replace(/[:/\.]/g, '-');
   } else {
-    autoId = 'auto-' + automationId.replace(/[:/]/g, '-');
+    autoId = 'auto-' + automationId.replace(/[:/\.]/g, '-');
   }
 
   const element = document.getElementById(autoId);
@@ -4080,7 +4080,10 @@ async function loadAutomationHistoryDiff() {
     rightLabel = formatDateForBanner(currentCommit.date);
   }
 
-  const startLine = (auto && auto.line) ? (auto.line - 1) : 0;
+  // NOTE: startLineOffset must be 0 here. The diff compares the isolated YAML
+  // of a single automation (not the full automations.yaml file), so line numbers
+  // always start at 1. Using auto.line (live file position) was WRONG — it shifts
+  // after automations are deleted, causing diffs to show the wrong automation's content.
 
   // renderDiff expects (commitContent, currentContent) and calls generateDiff(currentContent, commitContent)
   // i.e. generateDiff(Left, Right)
@@ -4088,7 +4091,7 @@ async function loadAutomationHistoryDiff() {
   const diffHtml = renderDiff(rightContent, leftContent, document.getElementById('automationDiffContent'), {
     leftLabel: leftLabel,
     rightLabel: rightLabel,
-    startLineOffset: startLine,
+    startLineOffset: 0,
     filePath: 'automations.yaml'
   });
 
@@ -4135,7 +4138,7 @@ function displayScripts(scripts) {
     html = `<div class="empty">${t('scripts.empty_state')}</div>`;
   } else {
     scripts.forEach(script => {
-      const scriptId = 'script-' + script.id.replace(/[:/]/g, '-');
+      const scriptId = 'script-' + script.id.replace(/[:/\.]/g, '-');
       html += `
             <div class="file" onclick="showScriptHistory('${script.id}')" id="${scriptId}">
               <div class="file-icon"></div>
@@ -4167,7 +4170,7 @@ async function showScriptHistory(scriptId) {
   if (sortState.scripts === 'deleted') {
     scriptElId = 'deleted-script-' + scriptId.replace(/[:/\.]/g, '-');
   } else {
-    scriptElId = 'script-' + scriptId.replace(/[:/]/g, '-');
+    scriptElId = 'script-' + scriptId.replace(/[:/\.]/g, '-');
   }
 
   const element = document.getElementById(scriptElId);
@@ -4428,14 +4431,17 @@ async function loadScriptHistoryDiff() {
     rightLabel = formatDateForBanner(currentCommit.date);
   }
 
-  const startLine = (script && script.line) ? (script.line - 1) : 0;
+  // NOTE: startLineOffset must be 0 here. The diff compares the isolated YAML
+  // of a single script (not the full scripts.yaml file), so line numbers
+  // always start at 1. Using script.line (live file position) was WRONG — it shifts
+  // after scripts are deleted, causing diffs to show the wrong script's content.
 
   // renderDiff expects (commitContent, currentContent) -> generateDiff(currentContent, commitContent)
   // So we pass (Right, Left) to renderDiff
   const diffHtml = renderDiff(rightContent, leftContent, document.getElementById('scriptDiffContent'), {
     leftLabel: leftLabel,
     rightLabel: rightLabel,
-    startLineOffset: startLine,
+    startLineOffset: 0,
     filePath: 'scripts.yaml'
   });
 
@@ -4851,8 +4857,10 @@ async function restoreFileVersion(filePath) {
 
       triggerConfetti();
 
-      // Reload the file history to show the new commit
-      showFileHistory(filePath);
+      // Yield to the browser so the confetti has time to render before heavy diff generation
+      setTimeout(() => {
+        showFileHistory(filePath);
+      }, 50);
     } else {
       showNotification('Error: ' + data.error, 'error');
     }
@@ -4918,8 +4926,10 @@ async function restoreAutomationVersion(automationId) {
       const message = t(key).replace('{name}', auto.name);
       showNotification(message);
       triggerConfetti();
-      // Reload automations
-      loadAutomations();
+      // Yield to the browser so the confetti has time to render
+      setTimeout(() => {
+        loadAutomations();
+      }, 50);
     } else {
       showNotification('Error: ' + data.error, 'error');
     }
@@ -4958,8 +4968,10 @@ async function restoreScriptVersion(scriptId) {
       const message = t(key).replace('{name}', script.name);
       showNotification(message);
       triggerConfetti();
-      // Reload scripts
-      loadScripts();
+      // Yield to the browser so the confetti has time to render
+      setTimeout(() => {
+        loadScripts();
+      }, 50);
     } else {
       showNotification('Error: ' + data.error, 'error');
     }
