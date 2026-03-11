@@ -6494,9 +6494,14 @@ function isConfettiModeEnabled() {
 }
 
 /**
- * triggerConfetti() — realistic falling confetti shower.
- * Pieces start above the viewport and drift downward with sinusoidal
- * oscillation and 3-D tumbling rotation that makes them look like real paper.
+ * triggerConfetti() — realistic falling confetti.
+ *
+ * Physics model (same approach as canvas-confetti):
+ *   • Each piece has an initial (vx, vy) velocity that decays with drag each step
+ *   • Gravity increments vy every step → smooth accelerating fall
+ *   • The visual "flutter" of a paper piece is a rotateY wobble (face→edge→back)
+ *     NOT lateral position oscillation (which causes the zigzag)
+ *   • rotateZ adds a gentle lazy 2-D spin
  */
 function triggerConfetti() {
   if (!isConfettiModeEnabled()) return;
@@ -6504,18 +6509,14 @@ function triggerConfetti() {
   const container = document.getElementById('confettiContainer');
   if (!container) return;
 
-  // Give the container perspective so rotateX looks truly 3-D
-  container.style.perspective = '600px';
+  // Perspective on the container makes rotateY look truly 3-D
+  container.style.perspective = '700px';
 
-  const COUNT    = 160;
-  const W        = window.innerWidth;
-  const H        = window.innerHeight;
+  const COUNT = 160;
+  const W     = window.innerWidth;
+  const H     = window.innerHeight;
 
-  // ── Shape types ──────────────────────────────────────────────────────────
-  // 'rect'     — classic rectangular confetti piece (widest face catches air)
-  // 'circle'   — circular dot
-  // 'streamer' — long thin ribbon
-  const SHAPES   = ['rect', 'rect', 'rect', 'rect', 'circle', 'streamer'];
+  const SHAPES = ['rect', 'rect', 'rect', 'rect', 'circle', 'streamer'];
 
   const COLORS = [
     '#ff6b6b','#ff4757','#f9ca24','#f0932b',
@@ -6530,7 +6531,6 @@ function triggerConfetti() {
     const color = COLORS[Math.floor(Math.random() * COLORS.length)];
     const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
 
-    // Size — rects are wider than tall (like a folded bit of paper)
     let w, h;
     if (shape === 'circle') {
       w = h = 5 + Math.random() * 7;
@@ -6538,14 +6538,12 @@ function triggerConfetti() {
       w = 2 + Math.random() * 2;
       h = 14 + Math.random() * 18;
     } else {
-      // rect: wider landscape orientation feels like real confetti
-      w = 9 + Math.random() * 9;
+      w = 9 + Math.random() * 9;   // landscape rect — wider than tall
       h = 4 + Math.random() * 5;
     }
 
-    // Start position — spread across the full width, begin above viewport
-    const startX = Math.random() * W;           // px from left
-    const startY = -(h + Math.random() * 200);  // px above viewport top
+    const startX = Math.random() * W;
+    const startY = -(h + Math.random() * 120);
 
     el.style.cssText = `
       position: absolute;
@@ -6558,52 +6556,57 @@ function triggerConfetti() {
       pointer-events: none;
       will-change: transform, opacity;
       transform-origin: center center;
-      transform-style: preserve-3d;
     `;
 
     container.appendChild(el);
 
-    // ── Physics parameters ───────────────────────────────────────────────
-    const fallDist   = H + h + 80;           // px to fall (just past bottom)
-    const driftAmp   = 30 + Math.random() * 90;   // max L/R oscillation (px)
-    const oscCycles  = 1.5 + Math.random() * 2.5; // full L/R cycles during fall
-    const oscPhase   = Math.random() * Math.PI * 2;
+    // ── Physics constants ────────────────────────────────────────────────────
+    const GRAVITY      = 9;      // px added to vy each step (feels like ~600 px/s²)
+    const DRAG         = 0.985;  // velocity multiplier per step (air resistance)
+    const STEPS        = 50;
 
-    // 3-D tumble — rotateX makes the piece look like a flat paper flipping
-    const spinX      = (Math.random() < 0.5 ? 1 : -1) * (360 + Math.random() * 720);
-    // rotateZ adds an extra in-plane lazy spin
-    const spinZ      = (Math.random() - 0.5) * 360;
+    // Initial velocity — small random horizontal, slightly downward
+    let vx = (Math.random() - 0.5) * 6;   // px per step, decays fast
+    let vy = 1 + Math.random() * 2;        // px per step, grows with gravity
 
-    // Fall speed — varies so pieces arrive at different times
-    const duration   = 2800 + Math.random() * 2400;  // ms
-    const delay      = Math.random() * 1200;           // stagger
+    // Visual rotation — purely decorative, does NOT affect position
+    const wobbleSpeed  = (2 + Math.random() * 4) * (Math.random() < 0.5 ? 1 : -1);
+    const wobbleStart  = Math.random() * 360; // deg, random start angle
+    const spinZTotal   = (Math.random() - 0.5) * 160; // gentle lazy 2-D spin
 
-    // ── Build keyframes that simulate gravity + sinusoidal air drift ─────
-    const STEPS = 40;
+    // Timing
+    const duration = 1400 + Math.random() * 1200;
+    const delay    = Math.random() * 600;
+
+    // ── Build keyframes via Euler integration ────────────────────────────────
     const keyframes = [];
+    let px = 0, py = 0;
 
     for (let s = 0; s <= STEPS; s++) {
-      const p  = s / STEPS;                       // 0 → 1
+      const p = s / STEPS; // 0 → 1
 
-      // Vertical: ease in (gravity) — quadratic approximation
-      const yNorm = p * p * 0.5 + p * 0.5;       // slightly accelerating
-      const y  = yNorm * fallDist;
+      if (s > 0) {
+        // Apply drag then gravity
+        vx *= DRAG;
+        vy *= DRAG;
+        vy += GRAVITY * (1 - DRAG); // gravity partially offsets drag on vy
+        px += vx;
+        py += vy;
+      }
 
-      // Horizontal: sinusoidal drift (air resistance flipping the piece)
-      const x  = driftAmp * Math.sin(oscPhase + p * Math.PI * 2 * oscCycles);
+      // rotateY: the paper-flip wobble (face→edge→back of piece)
+      const rotY = wobbleStart + wobbleSpeed * s * 7;
+      // rotateZ: slow in-plane tumble
+      const rotZ = spinZTotal * p;
 
-      // 3-D rotation
-      const rX = spinX * p;
-      const rZ = spinZ * p;
-
-      // Opacity: fade in over first 4%, stay solid, fade out last 12%
+      // Opacity: quick fade-in, stay solid, gentle fade-out at bottom
       const opacity =
-        p < 0.04 ? p / 0.04 :
-        p > 0.88 ? (1 - p) / 0.12 :
+        p < 0.05 ? p / 0.05 :
+        p > 0.85 ? (1 - p) / 0.15 :
         1;
 
       keyframes.push({
-        transform: `translate(${x}px, ${y}px) rotateX(${rX}deg) rotateZ(${rZ}deg)`,
+        transform: `translate(${px}px, ${py}px) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`,
         opacity,
         offset: p
       });
