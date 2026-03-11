@@ -939,13 +939,20 @@ async function loadRuntimeSettings() {
       const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
       const fileSettings = JSON.parse(settingsData);
 
-      for (const key of Object.keys(fileSettings)) {
-        if (runtimeSettings.hasOwnProperty(key)) {
+      // Deep merge logic for specific nested objects to avoid losing defaults
+      for (const [key, value] of Object.entries(fileSettings)) {
+        if ((key === 'cloudSync' || key === 'extensions') && value && typeof value === 'object') {
+          // Merge nested properties instead of replacing
+          runtimeSettings[key] = { 
+            ...runtimeSettings[key], 
+            ...value 
+          };
+          settingSources[key] = 'file';
+        } else if (runtimeSettings.hasOwnProperty(key)) {
+          runtimeSettings[key] = value;
           settingSources[key] = 'file';
         }
       }
-
-      runtimeSettings = { ...runtimeSettings, ...fileSettings };
     } catch (e) {
       if (e.code === 'ENOENT') {
         console.log(`[init] No settings file found at ${settingsPath}, using environment and defaults.`);

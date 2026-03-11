@@ -12,6 +12,7 @@ Home Assistant Version Control provides complete version history for your setup.
 *   **Keep Your Own Extensions:** Configure any file format to track and backup (.sh, .py, .json, etc.) directly in the config tab.
 *   **Enhanced Security:** Securely connect to private repositories using persistent SSH keys and trusted CA certificates.
 *   **Simple Remote Management:** Change your Git remote URL directly from the configuration tab without touching the command line.
+*   **Confetti Mode:** Celebrate every successful restore with a realistic confetti burst (opt-in via settings).
 *   **Polished Interface:** Enjoy resizable panels, subtle UI animations, and improved visibility for files tracked outside the main config folder.
 *   **History Control:** New setting to choose exactly how many commits to keep in your history, helping manage storage on smaller devices.
 
