@@ -1,15 +1,11 @@
 # Changelog
 
-## [1.2.0-beta.3]
+## [1.2.0]
 
 ### Added
-- **More Than Just Lovelace:** Added `include_storage` option to explicitly whitelist and version control specific files/patterns in the `.storage` directory (e.g., core.entity_registry).
+- **Track UI-configured Settings:** Added `include_storage` to track things you set up through the Home Assistant interface (like Areas, Persons, and Zones) that are normally hidden from version control.
 - **Additional Paths Tracking:** Added `additional_paths` option to track files outside `/config` (including mapped paths like `/share` and `/media`) while syncing them into version control.
 - **Remote URL Configuration:** Added `remote_url` option to the addon configuration to allow easily changing the remote repository URL from the Home Assistant UI.
-
-## [1.2.0-beta.2]
-
-### Added
 - **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
 - **Trusted CA Certificates:** Automatically sync and trust root CA certificates from `/config/additional_ca` for secure connections to private Git remotes.
 - **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
@@ -25,9 +21,6 @@
 - **Timeline Path Display:** Fixed issue where file paths in the timeline tab were showing the `.havc_external/` prefix for additional paths.
 - **Files Tab External Path Display:** External mirrored paths now render as virtual `/share/...` and `/media/...` paths, with top-level `share` and `media` folders shown directly instead of `.havc_external`.
 - **Documentation:** Fixed Docker image name typo in README.
-
-## [1.2.0-beta.1]
-- Initial beta release with internal refactoring.
 
 ## [1.1.1]
 
