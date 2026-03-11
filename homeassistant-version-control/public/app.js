@@ -6512,7 +6512,7 @@ function triggerConfetti() {
   // Perspective on the container makes rotateY look truly 3-D
   container.style.perspective = '700px';
 
-  const COUNT = 160;
+  const COUNT = 250;
   const W     = window.innerWidth;
   const H     = window.innerHeight;
 
@@ -6543,7 +6543,7 @@ function triggerConfetti() {
     }
 
     const startX = Math.random() * W;
-    const startY = -(h + Math.random() * 120);
+    const startY = -(h + Math.random() * 400); // spread across 400px height for staggered entry
 
     el.style.cssText = `
       position: absolute;
@@ -6561,22 +6561,22 @@ function triggerConfetti() {
     container.appendChild(el);
 
     // ── Physics constants ────────────────────────────────────────────────────
-    const GRAVITY      = 9;      // px added to vy each step (feels like ~600 px/s²)
-    const DRAG         = 0.985;  // velocity multiplier per step (air resistance)
-    const STEPS        = 50;
+    const GRAVITY      = 0.8;    // downward acceleration
+    const DRAG         = 0.96;   // air resistance
+    const STEPS        = 120;    // more steps for full-screen fall
 
-    // Initial velocity — small random horizontal, slightly downward
-    let vx = (Math.random() - 0.5) * 6;   // px per step, decays fast
-    let vy = 1 + Math.random() * 2;        // px per step, grows with gravity
+    // Initial velocity — larger spread
+    let vx = (Math.random() - 0.5) * 15;  // px per step
+    let vy = 1 + Math.random() * 3;        // px per step
 
     // Visual rotation — purely decorative, does NOT affect position
     const wobbleSpeed  = (2 + Math.random() * 4) * (Math.random() < 0.5 ? 1 : -1);
     const wobbleStart  = Math.random() * 360; // deg, random start angle
-    const spinZTotal   = (Math.random() - 0.5) * 160; // gentle lazy 2-D spin
+    const spinZTotal   = (Math.random() - 0.5) * 160; 
 
     // Timing
-    const duration = 1400 + Math.random() * 1200;
-    const delay    = Math.random() * 600;
+    const duration = 2000 + Math.random() * 2000;
+    const delay    = Math.random() * 800;
 
     // ── Build keyframes via Euler integration ────────────────────────────────
     const keyframes = [];
@@ -6586,24 +6586,20 @@ function triggerConfetti() {
       const p = s / STEPS; // 0 → 1
 
       if (s > 0) {
-        // Apply drag then gravity
         vx *= DRAG;
         vy *= DRAG;
-        vy += GRAVITY * (1 - DRAG); // gravity partially offsets drag on vy
+        vy += GRAVITY;
         px += vx;
         py += vy;
       }
 
       // rotateY: the paper-flip wobble (face→edge→back of piece)
-      const rotY = wobbleStart + wobbleSpeed * s * 7;
+      const rotY = wobbleStart + wobbleSpeed * s * 6;
       // rotateZ: slow in-plane tumble
       const rotZ = spinZTotal * p;
 
-      // Opacity: quick fade-in, stay solid, gentle fade-out at bottom
-      const opacity =
-        p < 0.05 ? p / 0.05 :
-        p > 0.85 ? (1 - p) / 0.15 :
-        1;
+      // Opacity: stay solid, gentle fade-out at bottom
+      const opacity = p > 0.8 ? (1 - p) / 0.2 : 1;
 
       keyframes.push({
         transform: `translate(${px}px, ${py}px) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`,
