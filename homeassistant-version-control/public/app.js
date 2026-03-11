@@ -4849,6 +4849,8 @@ async function restoreFileVersion(filePath) {
         showNotification(message, 'success');
       }
 
+      triggerConfetti();
+
       // Reload the file history to show the new commit
       showFileHistory(filePath);
     } else {
@@ -4915,6 +4917,7 @@ async function restoreAutomationVersion(automationId) {
       const key = data.reloaded ? 'automations.automation_restored_reloaded' : 'automations.automation_restored';
       const message = t(key).replace('{name}', auto.name);
       showNotification(message);
+      triggerConfetti();
       // Reload automations
       loadAutomations();
     } else {
@@ -4954,6 +4957,7 @@ async function restoreScriptVersion(scriptId) {
       const key = data.reloaded ? 'scripts.script_restored_reloaded' : 'scripts.script_restored';
       const message = t(key).replace('{name}', script.name);
       showNotification(message);
+      triggerConfetti();
       // Reload scripts
       loadScripts();
     } else {
@@ -6043,6 +6047,7 @@ async function doRestore() {
           showNotification(message, 'success');
         }
 
+        triggerConfetti();
         closeRestorePreview();
         refreshCurrent();
       } else {
@@ -6243,6 +6248,7 @@ async function restoreCommit(sourceHash, targetHash) {
             label: 'Restart Home Assistant',
             callback: restartHomeAssistant
           });
+          triggerConfetti();
           refreshCurrent();
           return; // Exit early since we handled notification
         }
@@ -6258,6 +6264,7 @@ async function restoreCommit(sourceHash, targetHash) {
             label: 'Restart Home Assistant',
             callback: restartHomeAssistant
           });
+          triggerConfetti();
           refreshCurrent();
           return; // Exit early
         }
@@ -6418,6 +6425,8 @@ async function confirmHardReset(hash) {
         'success',
         5000
       );
+
+      triggerConfetti();
 
       // Refresh the view
       setTimeout(() => {
