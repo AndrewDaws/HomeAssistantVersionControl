@@ -1645,6 +1645,10 @@ app.post('/api/runtime-settings', async (req, res) => {
       runtimeSettings.retentionUnit = newSettings.retentionUnit;
     }
 
+    if (newSettings.limitHistory !== undefined) {
+      runtimeSettings.limitHistory = !!newSettings.limitHistory;
+    }
+
     if (newSettings.maxCommits !== undefined) {
       const maxCommits = parseInt(newSettings.maxCommits);
       if (maxCommits >= 0) {
