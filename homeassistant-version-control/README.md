@@ -304,6 +304,9 @@ Invalid values will trigger warnings:
 
 ## How It Works
 
+<details>
+<summary>Technical details about the monitoring and commit workflow</summary>
+
 ### The Workflow
 1.  **File Watcher:** The system continuously monitors your `/config` folder for changes to YAML files.
 2.  **Stabilization:** When a change is detected, it waits **2 seconds** to ensure Home Assistant has finished writing the file (preventing corruption).
@@ -338,7 +341,12 @@ The app is branch-agnostic and will automatically detect the active branch of yo
 > **Excluding Files:**
 > You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the app will automatically ignore them from version control.
 
+</details>
+
 ## Cloud Sync (GitHub/Gitea)
+
+<details>
+<summary>Remote backup and custom Git server setup</summary>
 
 You can automatically sync your configuration to a private remote repository. This is highly recommended for off-site backups.
 
@@ -352,7 +360,12 @@ If you are using a custom Git server like Gitea, follow these steps to ensure a 
     http://YOUR_API_TOKEN@YOUR_SERVER_IP:PORT/YOUR_USERNAME/VersionControlBackup.git
     ```
 
+</details>
+
 ## API
+
+<details>
+<summary>Full API reference for advanced automation</summary>
 
 API for advanced users or automation.
 
@@ -430,6 +443,7 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
+</details>
 ## Related Projects
 
 - **[HomeAssistantEditor](https://github.com/saihgupr/HomeAssistantEditor)**: An intuitive visual editor for Home Assistant that utilizes this repository for advanced version control and history tracking features.

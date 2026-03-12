@@ -95,6 +95,9 @@ There are two ways to install Home Assistant Version Control: as a Home Assistan
 
 ### 2. Standalone Docker Installation
 
+<details>
+<summary>Click to expand Docker deployment options</summary>
+
 For Docker users who aren't using the Home Assistant app, you have three deployment options:
 
 **Option A: Docker Compose (recommended):**
@@ -155,6 +158,8 @@ docker run -d \
 
 Access the interface at `http://localhost:54001`.
 
+</details>
+
 ## Configuration
 
 ### App Options
@@ -204,6 +209,9 @@ additional_paths:
 - **Frigate Configuration Recovery**: If a complex config change breaks your detection, you can instantly see the side-by-side diff and roll back your `config.yml` to a known working state, even if Frigate is running on a completely separate machine or VM.
 
 ### Runtime Settings
+
+<details>
+<summary>Click to view advanced settings and environment variables</summary>
 
 The application can be configured through the web UI Settings page or via environment variables for containerized deployments.
 
@@ -302,7 +310,12 @@ Invalid values will trigger warnings:
 [init] Warning: Invalid DEBOUNCE_TIME='abc', Expected integer, got: 'abc'. Using default: 5
 ```
 
+</details>
+
 ## How It Works
+
+<details>
+<summary>Technical details about the monitoring and commit workflow</summary>
 
 ### The Workflow
 1.  **File Watcher:** The system continuously monitors your `/config` folder for changes to YAML files.
@@ -338,7 +351,12 @@ The app is branch-agnostic and will automatically detect the active branch of yo
 > **Excluding Files:**
 > You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the app will automatically ignore them from version control.
 
+</details>
+
 ## Cloud Sync (GitHub/Gitea)
+
+<details>
+<summary>Remote backup and custom Git server setup</summary>
 
 You can automatically sync your configuration to a private remote repository. This is highly recommended for off-site backups.
 
@@ -352,7 +370,12 @@ If you are using a custom Git server like Gitea, follow these steps to ensure a 
     http://YOUR_API_TOKEN@YOUR_SERVER_IP:PORT/YOUR_USERNAME/VersionControlBackup.git
     ```
 
+</details>
+
 ## API
+
+<details>
+<summary>Full API reference for advanced automation</summary>
 
 API for advanced users or automation.
 
@@ -430,6 +453,7 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -d '{"hours": 24}'
 ```
 
+</details>
 ## Related Projects
 
 - **[HomeAssistantEditor](https://github.com/saihgupr/HomeAssistantEditor)**: An intuitive visual editor for Home Assistant that utilizes this repository for advanced version control and history tracking features.
