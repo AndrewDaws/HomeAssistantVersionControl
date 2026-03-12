@@ -7,11 +7,14 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ##  What's New!
 
-*   **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
-*   **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
-*   **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
-*   **Progressive History Loading:** Versions now load faster, displaying results as they're found.
-*   **Quick Style Toggle:** Tap the header bar of any file diff to instantly cycle through different visual styles (High Contrast, GitHub Classic, Neon, etc.).
+*   **Track Custom Paths:** Easily include folders like `/share` and `/media` in your version history. Perfect for tracking external configs (like Frigate) using Home Assistant mounts.
+*   **More Than Just Lovelace:** Explicitly whitelist and version control specific files/patterns in the `.storage` directory (e.g., core.entity_registry).
+*   **Keep Your Own Extensions:** Configure any file format to track and backup (.sh, .py, .json, etc.) directly in the config tab.
+*   **Enhanced Security:** Securely connect to private repositories using persistent SSH keys and trusted CA certificates.
+*   **Simple Remote Management:** Change your Git remote URL directly from the configuration tab without touching the command line.
+*   **Polished Interface:** Enjoy resizable panels, subtle UI animations, and improved visibility for files tracked outside the main config folder.
+*   **Confetti Mode:** Celebrate every successful restore with a realistic confetti burst (opt-in via settings).
+*   **History Control:** New setting to choose exactly how many commits to keep in your history, helping manage storage on smaller devices.
 
 
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
@@ -24,8 +27,14 @@ Home Assistant Version Control provides complete version history for your setup.
 ###  Automatic & Smart Tracking
 * **Zero-Effort Backups:** Every edit is saved automatically.
 * **Smart Debouncing:** Multiple rapid edits are grouped into a single save snapshot (customizable delay).
-* **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files (both UI and YAML mode).
-* **Efficient Storage:** Uses Git deduplication to minimize disk usage by storing only the differences between versions.
+* **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files.
+* **Custom Extensions:** Track any file format (e.g., `.sh`, `.py`, `.json`, `.conf`) by adding it to the configuration.
+* **Efficient Storage:** Uses Git deduplication to minimize disk usage.
+
+### Cloud Backup & Sync
+* **Remote Storage:** Push your configuration to a private GitHub or Gitea repository.
+* **Sync Modes:** Choose between manual sync, daily backups, or automatic sync after every local change.
+* **Branch Agnostic:** Automatically detects and follows your active local branch.
 
 ### Timeline & History
 * **Chronological Feed:** View changes grouped by "Today," "Yesterday," and "Earlier."
@@ -34,6 +43,7 @@ Home Assistant Version Control provides complete version history for your setup.
 
 ### Instant Restore
 * **Granular Control:** Restore specific files or revert your entire configuration.
+* **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted from your configuration.
 * **Smart Reloads:** Automatically reloads Home Assistant when restoring automation or script files to apply changes immediately.
 * **Instant Rollback:** Long-press the restore button to revert the entire system to a previous point in time.
 
@@ -118,7 +128,7 @@ docker run -d \
   -e SUPERVISOR_TOKEN=your_long_lived_access_token_here \
   -e HA_URL=http://homeassistant.local:8123 \
   --name home-assistant-version-control \
-  ghcr.io/saihgupr/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/home-assistant-version-control:latest
 ```
 
 Replace `/path/to/your/config` with the actual path to your Home Assistant configuration directory.
@@ -146,6 +156,31 @@ docker run -d \
 Access the interface at `http://localhost:54001`.
 
 ## Configuration
+
+### Add-on Options
+
+In Home Assistant add-on mode, you can track files outside `/config` by setting `additional_paths` in the add-on configuration.
+
+Example:
+
+```yaml
+include_extensions:
+  - yaml
+  - yml
+  - conf
+additional_paths:
+  - /share
+  - /share/mqtt
+```
+
+Notes:
+- Paths must be absolute and currently support `/share`, `/media`, `/ssl`, and `/config` prefixes.
+- Paths under `/config` are skipped because `/config` is already tracked automatically.
+- Files are still filtered by `include_extensions` and `exclude_files`.
+- For `.conf` files, add `conf` to `include_extensions`.
+
+Example use case:
+- **Frigate Configuration Recovery**: Use Home Assistant's **Network Mount** feature to mount your Frigate config directory (e.g., from a separate Proxmox VM or NAS) to `/share/frigate`. By adding `/share/frigate` to `additional_paths`, your `config.yml` is now part of your Git history. If a complex config change breaks things, you can instantly see the diff and roll back to a known working state.
 
 ### Runtime Settings
 
@@ -197,7 +232,7 @@ For containerized deployments (especially when not persisting the `/data` direct
 version: '3.8'
 services:
   havc:
-    image: ghcr.io/saihgupr/homeassistantversioncontrol:latest
+    image: ghcr.io/saihgupr/home-assistant-version-control:latest
     ports:
       - "54001:54001"
     volumes:
@@ -225,7 +260,7 @@ docker run -d \
   -e RETENTION_VALUE=30 \
   -e RETENTION_UNIT=days \
   --name home-assistant-version-control \
-  ghcr.io/saihgupr/homeassistantversioncontrol:latest
+  ghcr.io/saihgupr/home-assistant-version-control:latest
 ```
 
 **Validation and Logging:**
@@ -266,6 +301,13 @@ The add-on automatically tracks configuration files while ignoring system files.
 | Lovelace dashboards (`.storage/lovelace*`) | Binary files (Images, Videos) |
 | `esphome/*.yaml` | Temporary files |
 | All other `.yaml` and `.yml` files | Files in `.gitignore` |
+| Files in `.storage/` | Temporary files |
+
+### Automatic Branch Detection
+The add-on is branch-agnostic and will automatically detect the active branch of your repository. 
+- **New Installations:** Automatically default to `main`.
+- **Existing Repositories:** If your repository already uses `master` (or any other branch), the add-on will detect it and continue to use it without intervention.
+- **Manual Branch Swapping:** If you manually rename your branch (e.g., `git branch -m master main`), the add-on will automatically update its sync logic to match the new branch name.
 
 > [!CAUTION]
 > **Secrets Management & Cloud Backup:**
@@ -366,6 +408,11 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
   -H "Content-Type: application/json" \
   -d '{"hours": 24}'
 ```
+
+## Related Projects
+
+- **[HomeAssistantEditor](https://github.com/saihgupr/HomeAssistantEditor)**: An intuitive visual editor for Home Assistant that utilizes this repository for advanced version control and history tracking features.
+- **[HomeAssistantTimeMachine](https://github.com/saihgupr/HomeAssistantTimeMachine)**: A seamless time-travel interface for Home Assistant that backs up individual automations and scripts as YAML files and lets you restore them to an earlier state.
 
 ## Contributing
 
