@@ -300,18 +300,15 @@
             </div>
 
             <div id="maxCommitsOptions" style="margin-bottom: 20px;">
-              <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 12px;">
-                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.limit_history">Limit History Display</span>
+              <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 8px;">
+                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.limit_history">Max Commits to Show</span>
                 <div class="toggle-switch">
                   <input type="checkbox" id="limitHistory" style="display: none;" onchange="handleLimitHistoryToggle()">
                   <label for="limitHistory" class="toggle-slider"></label>
                 </div>
               </label>
               
-              <div id="maxCommitsValueSection">
-                <label style="display: block; margin-bottom: 8px;">
-                  <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.max_commits">Max Commits to Show</span>
-                </label>
+              <div id="maxCommitsValueSection" style="margin-top: 12px;">
                 <div class="custom-number-input-wrapper" style="position: relative;">
                   <input type="number" id="maxCommits" min="50" max="10000" value="50" style="
                     width: 100%;

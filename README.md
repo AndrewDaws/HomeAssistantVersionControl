@@ -229,8 +229,7 @@ The application can be configured through the web UI Settings page or via enviro
 | **Retention Type** | Keep history based on time or number of versions | `time` |
 | **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
 | **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
-| **Limit History** | Only show a specific number of recent versions | `Disabled` |
-| **Max Commits** | Number of versions to display when limiting history | `500` |
+| **Max Commits to Show** | Limit the number of recent versions to display (for performance) | `Disabled` |
 
 #### Environment Variable Configuration
 
