@@ -189,7 +189,7 @@ Example use case:
 ### Tracking Remote Shares (NAS/Network Storage)
 
 <details>
-<summary>Click to view guide on versioning remote shares (like Frigate config)</summary>
+<summary>Click to view guide on versioning remote shares</summary>
 
 You can use the `additional_paths` feature to version control configurations stored on remote shares (like a NAS or another server). This is perfect for tracking Frigate configurations or other Docker-based apps running elsewhere.
 
@@ -475,4 +475,4 @@ Want the latest features? The [develop branch](https://github.com/saihgupr/HomeA
 
 ## Support
 
-If you find this project useful, please consider giving it a star or [buying me a coffee](https://ko-fi.com/saihgupr).
+If you find this project useful, please consider giving it a star ⭐ or [buy me a coffee](https://ko-fi.com/saihgupr) ☕.
