@@ -674,9 +674,10 @@ export async function getAutomationHistory(automationId, configPath, options = {
  * This enables progressive loading by returning commit list quickly
  * @param {string} automationId - The automation ID
  * @param {string} configPath - The config path
+ * @param {Object} options - Optional parameters
  * @returns {Object} List of commit metadata (hash, date, message)
  */
-export async function getAutomationHistoryMetadata(automationId, configPath) {
+export async function getAutomationHistoryMetadata(automationId, configPath, options = {}) {
   const { filePath: gitFilePath, identifier } = parseId(automationId);
 
   try {
@@ -685,7 +686,11 @@ export async function getAutomationHistoryMetadata(automationId, configPath) {
       return { success: false, commits: [], error: 'Not a Git repository' };
     }
 
-    const log = await gitLog({ file: gitFilePath });
+    const logOptions = { file: gitFilePath };
+    if (options.maxCount) {
+      logOptions.maxCount = options.maxCount;
+    }
+    const log = await gitLog(logOptions);
 
     if (log.all.length === 0) {
       return { success: false, commits: [], error: 'No history found' };
@@ -747,9 +752,10 @@ export async function getAutomationAtCommit(automationId, commitHash, configPath
  * Get just the commit metadata for a script's file (fast, no YAML parsing)
  * @param {string} scriptId - The script ID
  * @param {string} configPath - The config path
+ * @param {Object} options - Optional parameters
  * @returns {Object} List of commit metadata
  */
-export async function getScriptHistoryMetadata(scriptId, configPath) {
+export async function getScriptHistoryMetadata(scriptId, configPath, options = {}) {
   const { filePath: gitFilePath, identifier } = parseId(scriptId);
 
   try {
@@ -758,7 +764,11 @@ export async function getScriptHistoryMetadata(scriptId, configPath) {
       return { success: false, commits: [], error: 'Not a Git repository' };
     }
 
-    const log = await gitLog({ file: gitFilePath });
+    const logOptions = { file: gitFilePath };
+    if (options.maxCount) {
+      logOptions.maxCount = options.maxCount;
+    }
+    const log = await gitLog(logOptions);
 
     if (log.all.length === 0) {
       return { success: false, commits: [], error: 'No history found' };
@@ -818,9 +828,11 @@ export async function getScriptAtCommit(scriptId, commitHash, configPath) {
 /**
  * Get the history of changes for a specific script
  * @param {string} scriptId - The script ID
+ * @param {string} configPath - The config path
+ * @param {Object} options - Optional parameters
  * @returns {Array} List of commits that affected this script
  */
-export async function getScriptHistory(scriptId, configPath) {
+export async function getScriptHistory(scriptId, configPath, options = {}) {
   const { filePath: gitFilePath, identifier } = parseId(scriptId);
   const commits = [];
   const debugMessages = [];
@@ -844,7 +856,11 @@ export async function getScriptHistory(scriptId, configPath) {
       debugMessages.push(`[getScriptHistory] File ${gitFilePath} is not currently tracked (might be deleted). Continuing to check logs.`);
     }
 
-    const log = await gitLog({ file: gitFilePath });
+    const logOptions = { file: gitFilePath };
+    if (options.maxCount) {
+      logOptions.maxCount = options.maxCount;
+    }
+    const log = await gitLog(logOptions);
     debugMessages.push(`[getScriptHistory] Found ${log.all.length} commits for file ${gitFilePath}`);
 
     if (log.all.length === 0) {

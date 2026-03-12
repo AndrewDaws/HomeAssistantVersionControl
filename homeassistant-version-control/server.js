@@ -3788,7 +3788,11 @@ app.get('/api/automation/:id/history', async (req, res) => {
 app.get('/api/script/:id/history', async (req, res) => {
   try {
     const { id } = req.params;
-    const { success, history, debugMessages } = await getScriptHistory(id, CONFIG_PATH);
+    const options = {};
+    if (runtimeSettings.limitHistory) {
+      options.maxCount = runtimeSettings.maxCommits;
+    }
+    const { success, history, debugMessages } = await getScriptHistory(id, CONFIG_PATH, options);
     res.json({ success, history, debugMessages });
   } catch (error) {
     console.error('[script history] Error:', error);
@@ -3800,7 +3804,11 @@ app.get('/api/script/:id/history', async (req, res) => {
 app.get('/api/automation/:id/history-metadata', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await getAutomationHistoryMetadata(id, CONFIG_PATH);
+    const options = {};
+    if (runtimeSettings.limitHistory) {
+      options.maxCount = runtimeSettings.maxCommits;
+    }
+    const result = await getAutomationHistoryMetadata(id, CONFIG_PATH, options);
     res.json(result);
   } catch (error) {
     console.error('[automation history-metadata] Error:', error);
@@ -3828,7 +3836,11 @@ app.get('/api/automation/:id/at-commit', async (req, res) => {
 app.get('/api/script/:id/history-metadata', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await getScriptHistoryMetadata(id, CONFIG_PATH);
+    const options = {};
+    if (runtimeSettings.limitHistory) {
+      options.maxCount = runtimeSettings.maxCommits;
+    }
+    const result = await getScriptHistoryMetadata(id, CONFIG_PATH, options);
     res.json(result);
   } catch (error) {
     console.error('[script history-metadata] Error:', error);
