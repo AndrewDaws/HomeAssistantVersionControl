@@ -83,10 +83,24 @@ if (!process.env.HOME) {
 try {
   execSync('git config --global --add safe.directory /config', { stdio: 'pipe' });
   execSync('git config --global --add safe.directory /usr/src/app', { stdio: 'pipe' });
-  execSync('git config --global user.email "havc@local"', { stdio: 'pipe' });
-  execSync('git config --global user.name "Home Assistant Version Control"', { stdio: 'pipe' });
+
+  // Only set default identity if not already configured
+  try {
+    execSync('git config --global user.email', { stdio: 'pipe' });
+  } catch (e) {
+    execSync('git config --global user.email "havc@local"', { stdio: 'pipe' });
+    console.log('[init] Set default git user.email');
+  }
+
+  try {
+    execSync('git config --global user.name', { stdio: 'pipe' });
+  } catch (e) {
+    execSync('git config --global user.name "Home Assistant Version Control"', { stdio: 'pipe' });
+    console.log('[init] Set default git user.name');
+  }
+
   execSync('git config --global init.defaultBranch main', { stdio: 'pipe' });
-  console.log('[init] Git configured: safe.directory, identity, and defaultBranch set');
+  console.log('[init] Git configured: safe.directory and defaultBranch set');
 } catch (e) {
   console.error('[init] Failed to configure git:', e.message);
 }
