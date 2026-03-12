@@ -238,8 +238,8 @@
                   data-i18n="settings.history_retention">History
                   Retention</span>
                 <div class="toggle-switch">
-                  <input type="checkbox" id="historyRetention" style="display: none;">
-                  <label for="historyRetention" class="toggle-slider" onclick="handleRetentionToggle()"></label>
+                  <input type="checkbox" id="historyRetention" style="display: none;" onchange="handleRetentionToggle()">
+                  <label for="historyRetention" class="toggle-slider"></label>
                 </div>
               </label>
               <div id="retentionOptions" style="margin-top: 12px;">
@@ -303,8 +303,8 @@
               <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 12px;">
                 <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.limit_history">Limit History Display</span>
                 <div class="toggle-switch">
-                  <input type="checkbox" id="limitHistory" style="display: none;">
-                  <label for="limitHistory" class="toggle-slider" onclick="handleLimitHistoryToggle()"></label>
+                  <input type="checkbox" id="limitHistory" style="display: none;" onchange="handleLimitHistoryToggle()">
+                  <label for="limitHistory" class="toggle-slider"></label>
                 </div>
               </label>
               
@@ -754,8 +754,8 @@
               <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.confetti_mode">Confetti Mode</span>
             </div>
             <div class="toggle-switch">
-              <input type="checkbox" id="confettiMode" style="display: none;">
-              <label for="confettiMode" class="toggle-slider" onclick="toggleConfettiMode()"></label>
+              <input type="checkbox" id="confettiMode" style="display: none;" onchange="toggleConfettiMode()">
+              <label for="confettiMode" class="toggle-slider"></label>
             </div>
           </div>
         </div>
