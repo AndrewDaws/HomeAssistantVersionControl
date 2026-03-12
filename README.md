@@ -180,7 +180,28 @@ Notes:
 - For `.conf` files, add `conf` to `include_extensions`.
 
 Example use case:
-- **Frigate Configuration Recovery**: Use Home Assistant's **Network Mount** feature to mount your Frigate config directory (e.g., from a separate Proxmox VM or NAS) to `/share/frigate`. By adding `/share/frigate` to `additional_paths`, your `config.yml` is now part of your Git history. If a complex config change breaks things, you can instantly see the diff and roll back to a known working state.
+
+### Tracking Remote Shares (NAS/Network Storage)
+
+You can use the `additional_paths` feature to version control configurations stored on remote shares (like a NAS or another server). This is perfect for tracking Frigate configurations or other Docker-based apps running elsewhere.
+
+**Step 1: Set up Network Storage in Home Assistant**
+1.  Navigate to **Settings** → **System** → **Storage**.
+2.  Click **"Add network storage"**.
+3.  Give it a name (e.g., `frigate`).
+4.  Set **Usage** to `Share` or `Media`.
+5.  Enter your server details and mount point.
+
+**Step 2: Add to Version Control**
+Once mounted, the share will be available at `/share/frigate` (if usage was set to Share) or `/media/frigate` (if set to Media). Add this path to your `additional_paths` in the app configuration:
+
+```yaml
+additional_paths:
+  - /share/frigate
+```
+
+**Benefits:**
+- **Frigate Configuration Recovery**: If a complex config change breaks your detection, you can instantly see the side-by-side diff and roll back your `config.yml` to a known working state, even if Frigate is running on a completely separate machine or VM.
 
 ### Runtime Settings
 
