@@ -454,6 +454,7 @@ curl -X POST http://homeassistant.local:54001/api/retention/cleanup \
 ```
 
 </details>
+
 ## Related Projects
 
 - **[HomeAssistantEditor](https://github.com/saihgupr/HomeAssistantEditor)**: An intuitive visual editor for Home Assistant that utilizes this repository for advanced version control and history tracking features.
