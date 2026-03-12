@@ -229,6 +229,8 @@ The application can be configured through the web UI Settings page or via enviro
 | **Retention Type** | Keep history based on time or number of versions | `time` |
 | **Retention Value** | How much history to keep (number of days/hours/weeks/months or versions) | `90` |
 | **Retention Unit** | Time unit for retention (hours, days, weeks, months) | `days` |
+| **Limit History** | Only show a specific number of recent versions | `Disabled` |
+| **Max Commits** | Number of versions to display when limiting history | `500` |
 
 #### Environment Variable Configuration
 
@@ -252,6 +254,8 @@ For containerized deployments (especially when not persisting the `/data` direct
 | `RETENTION_TYPE` | Retention Type | String | `time`, `versions` | `time` |
 | `RETENTION_VALUE` | Retention Value | Number | ≥ 1 | `90` |
 | `RETENTION_UNIT` | Retention Unit | String | `hours`, `days`, `weeks`, `months` | `days` |
+| `LIMIT_HISTORY` | Limit History | Boolean | `true`, `false`, `yes`, `no`, `1`, `0` | `false` |
+| `MAX_COMMITS` | Max Commits | Number | 50 - 10000 | `500` |
 
 **Notes:**
 - Boolean values are case-insensitive and accept: `true`/`false`, `yes`/`no`, `1`/`0`

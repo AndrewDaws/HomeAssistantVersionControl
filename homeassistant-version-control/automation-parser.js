@@ -542,9 +542,11 @@ async function findYamlFiles(type) {
 /**
  * Get the history of changes for a specific automation
  * @param {string} automationId - The automation ID
+ * @param {string} configPath - The config path
+ * @param {Object} options - Optional parameters
  * @returns {Array} List of commits that affected this automation
  */
-export async function getAutomationHistory(automationId, configPath) {
+export async function getAutomationHistory(automationId, configPath, options = {}) {
   const { filePath: gitFilePath, identifier } = parseId(automationId);
   const commits = [];
   const debugMessages = [];
@@ -572,7 +574,11 @@ export async function getAutomationHistory(automationId, configPath) {
       debugMessages.push(`[getAutomationHistory] File ${gitFilePath} is not currently tracked (might be deleted). Continuing to check logs.`);
     }
 
-    const log = await gitLog({ file: gitFilePath });
+    const logOptions = { file: gitFilePath };
+    if (options.maxCount) {
+      logOptions.maxCount = options.maxCount;
+    }
+    const log = await gitLog(logOptions);
     debugMessages.push(`[getAutomationHistory] Found ${log.all.length} commits for file ${gitFilePath}`);
 
     if (log.all.length === 0) {

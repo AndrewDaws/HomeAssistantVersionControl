@@ -349,9 +349,11 @@ let runtimeSettings = {
   historyRetention: false,
   retentionType: 'age', // 'count' or 'age'
   retentionValue: 30,
-  retentionUnit: 'days', // for age type
-  maxCommits: 50,
+  retentionUnit: 'days', // for time type
+  limitHistory: false,
+  maxCommits: 500,
   // Cloud Sync Settings
+
   cloudSync: {
     enabled: false,
     remoteUrl: '', // Current active URL (set based on authProvider)
@@ -405,6 +407,10 @@ const RUNTIME_SETTINGS_SCHEMA = {
     type: 'enum',
     values: ['hours', 'days', 'weeks', 'months'],
     envKey: 'RETENTION_UNIT'
+  },
+  limitHistory: {
+    type: 'boolean',
+    envKey: 'LIMIT_HISTORY'
   },
   maxCommits: {
     type: 'number',
@@ -2085,7 +2091,11 @@ app.get('/api/scripts/deleted', async (req, res) => {
 // Git History
 app.get('/api/git/history', async (req, res) => {
   try {
-    const log = await gitLog({ maxCount: runtimeSettings.maxCommits });
+    const options = {};
+    if (runtimeSettings.limitHistory) {
+      options.maxCount = runtimeSettings.maxCommits;
+    }
+    const log = await gitLog(options);
     res.json({ success: true, log });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -2161,7 +2171,11 @@ app.get('/api/file-content', async (req, res) => {
 app.get('/api/git/file-history', async (req, res) => {
   try {
     const { filePath } = req.query;
-    const log = await gitLog({ file: filePath, maxCount: runtimeSettings.maxCommits });
+    const logOptions = { file: filePath };
+    if (runtimeSettings.limitHistory) {
+      logOptions.maxCount = runtimeSettings.maxCommits;
+    }
+    const log = await gitLog(logOptions);
 
     // Get current file hash
     let currentHash = '';
@@ -3754,7 +3768,11 @@ app.get('/api/scripts', async (req, res) => {
 app.get('/api/automation/:id/history', async (req, res) => {
   try {
     const { id } = req.params;
-    const { success, history, debugMessages } = await getAutomationHistory(id, CONFIG_PATH);
+    const options = {};
+    if (runtimeSettings.limitHistory) {
+      options.maxCount = runtimeSettings.maxCommits;
+    }
+    const { success, history, debugMessages } = await getAutomationHistory(id, CONFIG_PATH, options);
     res.json({ success, history, debugMessages });
   } catch (error) {
     console.error('[automation history] Error:', error);
