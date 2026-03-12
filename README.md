@@ -188,6 +188,9 @@ Example use case:
 
 ### Tracking Remote Shares (NAS/Network Storage)
 
+<details>
+<summary>Click to view guide on versioning remote shares (like Frigate config)</summary>
+
 You can use the `additional_paths` feature to version control configurations stored on remote shares (like a NAS or another server). This is perfect for tracking Frigate configurations or other Docker-based apps running elsewhere.
 
 **Step 1: Set up Network Storage in Home Assistant**
@@ -207,6 +210,8 @@ additional_paths:
 
 **Benefits:**
 - **Frigate Configuration Recovery**: If a complex config change breaks your detection, you can instantly see the side-by-side diff and roll back your `config.yml` to a known working state, even if Frigate is running on a completely separate machine or VM.
+
+</details>
 
 ### Runtime Settings
 
@@ -470,4 +475,4 @@ Want the latest features? The [develop branch](https://github.com/saihgupr/HomeA
 
 ## Support
 
-If you find this project useful, please consider giving it a star or [buying me a coffee](https://ko-fi.com/saihgupr)!
+If you find this project useful, please consider giving it a star or [buying me a coffee](https://ko-fi.com/saihgupr).
