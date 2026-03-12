@@ -22,6 +22,7 @@
 - **Timeline Path Display:** Fixed issue where file paths in the timeline tab were showing the `.havc_external/` prefix for additional paths.
 - **Files Tab External Path Display:** External mirrored paths now render as virtual `/share/...` and `/media/...` paths, with top-level `share` and `media` folders shown directly instead of `.havc_external`.
 - **Documentation:** Fixed Docker image name typo in README.
+- **Automation Diff Line Numbers:** Corrected line number synchronization in automation and script diff views when comparing isolated YAML content. Diffs now always start at line 1, preventing offsets during history browsing and after file deletions.
 
 ## [1.1.1]
 
