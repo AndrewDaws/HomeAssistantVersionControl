@@ -13,9 +13,9 @@ A clear and concise description of your goal or what you are trying to configure
 **Background context**
 Please provide relevant details:
 - Home Assistant Version:
-- Add-on Version:
+- App Version:
 - Relevant configuration (config.json) snippet:
-- Recent logs from the add-on:
+- Recent logs from the app:
 
 **Ask your question**
 State your question clearly here.

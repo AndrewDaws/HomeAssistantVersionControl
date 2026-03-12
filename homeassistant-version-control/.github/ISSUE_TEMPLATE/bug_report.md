@@ -25,8 +25,8 @@ If applicable, add screenshots to help explain your problem.
 
 **Environment Info:**
  - Home Assistant Version:
- - Add-on Version: (e.g., 1.2.0)
+ - App Version: (e.g., 1.2.0)
  - Browser (if UI bug): (e.g., Chrome, Safari)
 
 **Additional context**
-Add any other context about the problem here (e.g., relevant logs from the add-on).
+Add any other context about the problem here (e.g., relevant logs from the app).

@@ -67,35 +67,35 @@ Home Assistant Version Control provides complete version history for your setup.
 ## Installation
 
 > [!IMPORTANT]
-> 1. **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up first**. The add-on will use your existing repository but may conflict with your workflow through auto-commits and automatic merging of old history. **For best results, delete the existing `.git` folder** and let the add-on create a fresh repository.
-> 2. **Backup Strategy:** While this add-on provides excellent version control, **do not rely on it as your sole backup method**. Always maintain external backups (e.g., Google Drive, Samba) of your Home Assistant instance.
+> 1. **Existing Git Repos:** If you already have a `.git` folder in your `/config` directory, **back it up first**. The app will use your existing repository but may conflict with your workflow through auto-commits and automatic merging of old history. **For best results, delete the existing `.git` folder** and let the app create a fresh repository.
+> 2. **Backup Strategy:** While this app provides excellent version control, **do not rely on it as your sole backup method**. Always maintain external backups (e.g., Google Drive, Samba) of your Home Assistant instance.
 
-There are two ways to install Home Assistant Version Control: as a Home Assistant add-on or as a standalone Docker container.
+There are two ways to install Home Assistant Version Control: as a Home Assistant app or as a standalone Docker container.
 
-### 1. Home Assistant Add-on (Recommended for most users)
+### 1. Home Assistant App (Recommended for most users)
 
 1.  **Add Repository:**
     Click the button below to add the repository to your Home Assistant instance:
 
-    [![Open your Home Assistant instance and show the add-on store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/saihgupr/ha-addons)
+    [![Open your Home Assistant instance and show the app store](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/saihgupr/ha-addons)
 
     **Or manually add it:**
-    - Navigate to **Settings** → **Add-ons** → **Add-on Store**
+    - Navigate to **Settings** → **Apps** → **App Store**
     - Click the three dots (⋮) in the top right corner and select **Repositories**
     - Add the repository URL:
       ```
       https://github.com/saihgupr/ha-addons
       ```
-2.  **Install the Add-on:**
-    The "Home Assistant Version Control" add-on will now appear in the store. Click on it and then click "Install".
+2.  **Install the App:**
+    The "Home Assistant Version Control" app will now appear in the store. Click on it and then click "Install".
 
-3.  **Start:** Start the add-on and click **"Open Web UI"** to access the interface.
+3.  **Start:** Start the app and click **"Open Web UI"** to access the interface.
 
-4.  **Optional (External Access):** To access the UI externally at port `54001`, enable the port in the add-on's **Configuration** tab (disabled by default).
+4.  **Optional (External Access):** To access the UI externally at port `54001`, enable the port in the app's **Configuration** tab (disabled by default).
 
 ### 2. Standalone Docker Installation
 
-For Docker users who aren't using the Home Assistant add-on, you have three deployment options:
+For Docker users who aren't using the Home Assistant app, you have three deployment options:
 
 **Option A: Docker Compose (recommended):**
 
@@ -157,9 +157,9 @@ Access the interface at `http://localhost:54001`.
 
 ## Configuration
 
-### Add-on Options
+### App Options
 
-In Home Assistant add-on mode, you can track files outside `/config` by setting `additional_paths` in the add-on configuration.
+In Home Assistant app mode, you can track files outside `/config` by setting `additional_paths` in the app configuration.
 
 Example:
 
@@ -291,7 +291,7 @@ Invalid values will trigger warnings:
 5.  **Cleanup:** If enabled, old snapshots are consolidated periodically.
 
 ### What is Tracked?
-The add-on automatically tracks configuration files while ignoring system files.
+The app automatically tracks configuration files while ignoring system files.
 
 | Tracked ✅ | Ignored ❌ |
 | :--- | :--- |
@@ -304,10 +304,10 @@ The add-on automatically tracks configuration files while ignoring system files.
 | Files in `.storage/` | Temporary files |
 
 ### Automatic Branch Detection
-The add-on is branch-agnostic and will automatically detect the active branch of your repository. 
+The app is branch-agnostic and will automatically detect the active branch of your repository. 
 - **New Installations:** Automatically default to `main`.
-- **Existing Repositories:** If your repository already uses `master` (or any other branch), the add-on will detect it and continue to use it without intervention.
-- **Manual Branch Swapping:** If you manually rename your branch (e.g., `git branch -m master main`), the add-on will automatically update its sync logic to match the new branch name.
+- **Existing Repositories:** If your repository already uses `master` (or any other branch), the app will detect it and continue to use it without intervention.
+- **Manual Branch Swapping:** If you manually rename your branch (e.g., `git branch -m master main`), the app will automatically update its sync logic to match the new branch name.
 
 > [!CAUTION]
 > **Secrets Management & Cloud Backup:**
@@ -315,7 +315,7 @@ The add-on is branch-agnostic and will automatically detect the active branch of
 
 > [!TIP]
 > **Excluding Files:**
-> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the add-on will automatically ignore them from version control.
+> You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the app will automatically ignore them from version control.
 
 ## Cloud Sync (GitHub/Gitea)
 
