@@ -2603,6 +2603,8 @@ async function loadTimeline() {
 
     if (data.success) {
       allCommits = data.log.all;
+      // Update UI with total count for debugging
+      document.getElementById('leftPanelTitle').textContent = `${t('timeline.title')} (${allCommits.length})`;
       await displayCommits(allCommits);
     }
   } catch (error) {
@@ -2732,17 +2734,14 @@ async function displayCommits(commits) {
       // But since our keys are already translated strings from getDateBucket, we can just use the bucket name
       const displayName = bucket;
 
-      // Determine if expanded by default (Today, Yesterday, This Week)
-      const isExpanded = [
-        t('date_buckets.today'),
-        t('date_buckets.yesterday'),
-        t('date_buckets.this_week')
-      ].includes(bucket);
+      // Determine if expanded by default - ALL expanded by default now to avoid confusion
+      const isExpanded = true;
 
       const collapsedClass = isExpanded ? '' : 'collapsed';
+      const groupCollapsedClass = isExpanded ? '' : 'collapsed';
 
       html += `
-            <div class="date-group">
+            <div class="date-group ${groupCollapsedClass}">
               <div class="date-header ${collapsedClass}" onclick="toggleDateGroup('${bucket}')" id="header-${bucket}">
                 ${displayName} (${groups[bucket].length})
               </div>
