@@ -1732,6 +1732,13 @@ app.post('/api/runtime-settings', async (req, res) => {
           let removedAny = false;
 
           for (const file of newlyExcluded) {
+            // Unwatch if the watcher is active to save resources
+            if (watcher && typeof watcher.unwatch === 'function') {
+              const fullPathToUnwatch = path.isAbsolute(file) ? file : path.join(CONFIG_PATH, file);
+              watcher.unwatch(fullPathToUnwatch);
+              console.log(`[settings] Unwatching newly excluded path: ${fullPathToUnwatch}`);
+            }
+
             const removed = await gitRmCached(file);
             if (removed) {
               console.log(`[settings] Successfully untracked newly excluded file: ${file}`);
@@ -2822,6 +2829,15 @@ function initializeWatcher() {
 
   // Handler function for both 'change' and 'add' events
   const handleFileEvent = async (filePath, eventType) => {
+    // Check if the file should be ignored first to avoid starting Git operations
+    if (shouldIgnoreWatchPath(filePath)) {
+      if (runtimeSettings.debug) {
+        const relPath = filePath.replace(CONFIG_PATH + '/', '');
+        console.log(`[watcher] Ignoring ${eventType} event for: ${relPath} (matched exclusion rules)`);
+      }
+      return;
+    }
+
     const relativePath = filePath.replace(CONFIG_PATH + '/', '');
     console.log(`[watcher] File ${eventType}: ${relativePath}`);
 
