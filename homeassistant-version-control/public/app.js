@@ -1303,6 +1303,13 @@ function openSettings() {
 
   // Load extensions settings
   loadExtensionsSettings();
+
+  // Initialize manual mode checkbox
+  const manualModeCheckbox = document.getElementById('manualMode');
+  if (manualModeCheckbox) {
+    manualModeCheckbox.checked = localStorage.getItem('manualMode') === 'true';
+    handleManualModeToggle();
+  }
 }
 
 function closeSettings() {
@@ -1404,6 +1411,8 @@ async function saveSettings() {
   // Update UI state based on new settings
   try {
     handleRetentionToggle();
+    handleLimitHistoryToggle();
+    handleManualModeToggle();
   } catch (e) {
     console.error('Error updating UI state:', e);
   }
