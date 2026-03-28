@@ -163,7 +163,6 @@
     "retention_unit": "Retention Unit",
     "run_cleanup_on_commit_desc": "Disable this to prevent automatic cleanup after versions (useful for debugging crashes)",
     "manual_mode": "Manual Mode Only",
-    "manual_mode_desc": "Disable automatic versions and file watching. You must trigger versions manually.",
     "picasso_enabled": "Picasso Mode enabled!",
     "picasso_disabled": "Picasso Mode disabled",
     "colors_reset": "Colors reset to default",

@@ -15,6 +15,7 @@ Home Assistant Version Control provides complete version history for your setup.
 *   **Polished Interface:** Enjoy resizable panels, subtle UI animations, and improved visibility for files tracked outside the main config folder.
 *   **Confetti Mode:** Celebrate every successful restore with a realistic confetti burst (opt-in via settings).
 *   **History Control:** New setting to choose exactly how many commits to keep in your history, helping manage storage on smaller devices.
+*   **Manual Mode:** New option to disable automatic file watching and backups. Perfect for users who want full control over when versions are created.
 
 
 ![Screenshot 1](https://github.com/saihgupr/HomeAssistantVersionControl/raw/develop/images/screenshots/1.2.png)
@@ -29,6 +30,7 @@ Home Assistant Version Control provides complete version history for your setup.
 * **Smart Debouncing:** Multiple rapid edits are grouped into a single save snapshot (customizable delay).
 * **Comprehensive Tracking:** Monitors `.yaml`, `.yml`, and `lovelace` dashboard files.
 * **Custom Extensions:** Track any file format (e.g., `.sh`, `.py`, `.json`, `.conf`) by adding it to the configuration.
+* **Manual Mode:** Option to disable file watching and only trigger backups manually via the "Backup Now" button.
 * **Efficient Storage:** Uses Git deduplication to minimize disk usage.
 
 ### Cloud Backup & Sync

@@ -8,10 +8,12 @@
 - **Remote URL Configuration:** Added `remote_url` option to the addon configuration to allow easily changing the remote repository URL from the Home Assistant UI.
 - **Smart SSH Key Loader:** Persistently load SSH keys from `/config/.ssh` into the addon environment.
 - **Trusted CA Certificates:** Automatically sync and trust root CA certificates from `/config/additional_ca` for secure connections to private Git remotes.
-- **Confetti Mode:** Added a toggle to celebrate successful restores with a realistic, physics-based confetti animation.
-- **Max Commits Setting:** Added UI to configure the maximum number of commits retained in history.
+- **Confetti Mode:** Celebrate every successful restore with a realistic confetti burst (opt-in via settings).
+- **History Control:** New setting to choose exactly how many commits to keep in your history, helping manage storage on smaller devices.
+- **Manual Mode:** New option to disable automatic file watching and backups. Perfect for users who want full control over when versions are created.
 - **Resizable Panels:** The side and main panels can now be resized by dragging the gap between them.
 - **Header Palette Cycle:** Clicking the header title or logo now cycles through available accent color palettes.
+- **Manual Mode Only:** Added a new setting to disable automatic versioning and file watching. A "Backup Now" button appears in the sidebar to trigger snapshots manually.
 
 ### Fixed
 - **Dynamic File Formats:** Fixed issue where `.py`, `.json`, and `.txt` formats were hardcoded to `false` in `server.js`, ignoring the `include_extensions` configuration.
@@ -33,7 +35,9 @@
 
 ### Added
 - **Cloud Backup:** Push your configuration to a private GitHub or Gitea repository. Choose to sync manually, daily, or automatically after every change.
-- **Track More than Just YAML:** Now you can select any file format to track and backup! Configure extensions like .sh, .py, .json directly in the add-on's Configuration tab.
+- **Custom Extensions:** Track any file format (e.g., `.sh`, `.py`, `.json`, `.conf`) by adding it to the configuration.
+- **Manual Mode:** Option to disable file watching and only trigger backups manually via the "Backup Now" button.
+- **Efficient Storage:** Uses Git deduplication to minimize disk usage.
 - **Recover Deleted Items:** View and restore files, automations, and scripts that have been deleted. Look for the "Deleted" option in the sort menu.
 - **Progressive History Loading:** Versions now load faster, displaying results as they're found.
 - **Quick Style Toggle:** Tap the header bar of any file diff to cycle through different visual themes instantly.
