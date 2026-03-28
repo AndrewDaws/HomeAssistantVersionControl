@@ -56,8 +56,16 @@
             <div class="panel-header-info">
               <h2 id="leftPanelTitle" data-i18n="timeline.title">Timeline</h2>
             </div>
-            <div class="panel-header-actions" id="leftPanelActions" style="display: none;">
-              <select id="sortSelect" class="sort-select" onchange="handleSortChange(this.value)">
+            <div class="panel-header-actions" id="leftPanelActions">
+              <button id="manualCommitBtn" class="btn-subtle" onclick="triggerManualCommit()" style="display: none; height: 32px; padding: 0 12px; margin-right: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span data-i18n="timeline.backup_now">Backup Now</span>
+              </button>
+              <select id="sortSelect" class="sort-select" onchange="handleSortChange(this.value)" style="display: none;">
                 <option value="default" data-i18n="sort.default">Default</option>
                 <option value="name_asc" data-i18n="sort.name_asc">Name (A-Z)</option>
                 <option value="name_desc" data-i18n="sort.name_desc">Name (Z-A)</option>
@@ -168,6 +176,19 @@
           <!-- Group 2: General -->
           <div class="settings-group">
             <div class="settings-group-title" data-i18n="settings.group_general">General</div>
+
+            <div class="setting-item" style="margin-bottom: 20px;">
+              <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.manual_mode">Manual Mode Only</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="manualMode" style="display: none;" onchange="handleManualModeToggle()">
+                  <label for="manualMode" class="toggle-slider"></label>
+                </div>
+              </label>
+              <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;" data-i18n="settings.manual_mode_desc">
+                Disable automatic versioning and file watching. You must trigger versions manually.
+              </p>
+            </div>
 
             <div id="debounceTimeOptions" style="margin-bottom: 20px;">
               <label style="display: block; margin-bottom: 8px;">

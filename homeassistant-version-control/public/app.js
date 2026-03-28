@@ -231,14 +231,18 @@ async function loadSettings() {
         localStorage.setItem('retentionUnit', settings.retentionUnit);
 
         // Max commits
-        document.getElementById('limitHistory').checked = settings.limitHistory;
-        localStorage.setItem('limitHistory', settings.limitHistory);
         document.getElementById('maxCommits').value = settings.maxCommits;
         localStorage.setItem('maxCommits', settings.maxCommits);
+
+        // Manual mode
+        const manualMode = settings.manualMode === true;
+        document.getElementById('manualMode').checked = manualMode;
+        localStorage.setItem('manualMode', manualMode);
 
         // Update UI state
         handleRetentionToggle();
         handleLimitHistoryToggle();
+        handleManualModeToggle();
 
       }
     }
@@ -1317,6 +1321,7 @@ async function saveSettings() {
   const historyRetention = document.getElementById('historyRetention').checked;
   const limitHistory = document.getElementById('limitHistory').checked;
   const maxCommits = parseInt(document.getElementById('maxCommits').value);
+  const manualMode = document.getElementById('manualMode').checked;
 
   const diffViewSplit = document.getElementById('diffViewSplit').checked;
   const newDiffViewFormat = diffViewSplit ? 'split' : 'unified';
@@ -1333,6 +1338,7 @@ async function saveSettings() {
   localStorage.setItem('historyRetention', historyRetention);
   localStorage.setItem('limitHistory', limitHistory);
   localStorage.setItem('maxCommits', maxCommits);
+  localStorage.setItem('manualMode', manualMode);
   localStorage.setItem('diffViewFormat', newDiffViewFormat);
   localStorage.setItem('diffStyle', newDiffStyle);
 
@@ -1356,6 +1362,7 @@ async function saveSettings() {
         retentionUnit,
         limitHistory,
         maxCommits,
+        manualMode,
         extensions: currentExtensions
       })
     });
@@ -1415,6 +1422,61 @@ function handleLimitHistoryToggle() {
   const maxCommitsValueSection = document.getElementById('maxCommitsValueSection');
   if (limitHistory && maxCommitsValueSection) {
     maxCommitsValueSection.style.display = limitHistory.checked ? 'block' : 'none';
+  }
+}
+
+function handleManualModeToggle() {
+  const manualMode = document.getElementById('manualMode');
+  const debounceTimeOptions = document.getElementById('debounceTimeOptions');
+  const manualCommitBtn = document.getElementById('manualCommitBtn');
+
+  if (manualMode) {
+    if (debounceTimeOptions) {
+      debounceTimeOptions.style.display = manualMode.checked ? 'none' : 'block';
+    }
+    if (manualCommitBtn) {
+      manualCommitBtn.style.display = manualMode.checked ? 'flex' : 'none';
+    }
+  }
+}
+
+async function triggerManualCommit() {
+  const btn = document.getElementById('manualCommitBtn');
+  if (btn) btn.disabled = true;
+
+  showNotification('Creating manual backup...', 'info', 2000);
+
+  try {
+    const response = await fetch(`${API}/git/commit-manual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: 'Manual mode control'
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      if (data.committed) {
+        showNotification('Backup created successfully', 'success', 3000);
+        // Refresh the timeline
+        if (currentMode === 'timeline') {
+          refreshCurrentView();
+        }
+      } else {
+        showNotification('No changes to backup', 'info', 3000);
+      }
+    } else {
+      showNotification(`Failed to create backup: ${data.error}`, 'error', 5000);
+    }
+  } catch (error) {
+    console.error('Manual commit error:', error);
+    showNotification(`Error: ${error.message}`, 'error', 5000);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

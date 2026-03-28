@@ -78,31 +78,38 @@ if (!process.env.HOME) {
   console.log('[init] Set HOME=/tmp for git compatibility');
 }
 
-// Configure git at runtime (safe.directory and identity)
-// This must happen AFTER HOME is set, since git config --global writes to $HOME/.gitconfig
-try {
-  execSync('git config --global --add safe.directory /config', { stdio: 'pipe' });
-  execSync('git config --global --add safe.directory /usr/src/app', { stdio: 'pipe' });
-
-  // Only set default identity if not already configured
-  try {
-    execSync('git config --global user.email', { stdio: 'pipe' });
-  } catch (e) {
-    execSync('git config --global user.email "havc@local"', { stdio: 'pipe' });
-    console.log('[init] Set default git user.email');
+function configureGitIdentity() {
+  if (runtimeSettings.manualMode) {
+    console.log('[init] Manual mode active: skipping global git configuration');
+    return;
   }
 
+  // Configure git at runtime (safe.directory and identity)
+  // This must happen AFTER HOME is set, since git config --global writes to $HOME/.gitconfig
   try {
-    execSync('git config --global user.name', { stdio: 'pipe' });
-  } catch (e) {
-    execSync('git config --global user.name "Home Assistant Version Control"', { stdio: 'pipe' });
-    console.log('[init] Set default git user.name');
-  }
+    execSync('git config --global --add safe.directory /config', { stdio: 'pipe' });
+    execSync('git config --global --add safe.directory /usr/src/app', { stdio: 'pipe' });
 
-  execSync('git config --global init.defaultBranch main', { stdio: 'pipe' });
-  console.log('[init] Git configured: safe.directory and defaultBranch set');
-} catch (e) {
-  console.error('[init] Failed to configure git:', e.message);
+    // Only set default identity if not already configured
+    try {
+      execSync('git config --global user.email', { stdio: 'pipe' });
+    } catch (e) {
+      execSync('git config --global user.email "havc@local"', { stdio: 'pipe' });
+      console.log('[init] Set default git user.email');
+    }
+
+    try {
+      execSync('git config --global user.name', { stdio: 'pipe' });
+    } catch (e) {
+      execSync('git config --global user.name "Home Assistant Version Control"', { stdio: 'pipe' });
+      console.log('[init] Set default git user.name');
+    }
+
+    execSync('git config --global init.defaultBranch main', { stdio: 'pipe' });
+    console.log('[init] Git configured: safe.directory and defaultBranch set');
+  } catch (e) {
+    console.error('[init] Failed to configure git:', e.message);
+  }
 }
 
 app.use(express.json());
@@ -374,7 +381,8 @@ let runtimeSettings = {
     exclude: ['secrets.yaml'], // Specific files to ignore (always ignored regardless of extension)
     storage: ['lovelace', 'lovelace_dashboards', 'lovelace_resources', 'lovelace.*'] // Files in .storage to track
   },
-  additionalPaths: []
+  additionalPaths: [],
+  manualMode: false
 };
 
 // Schema for runtime settings with validation rules and environment variable mapping
@@ -417,6 +425,10 @@ const RUNTIME_SETTINGS_SCHEMA = {
     min: 50,
     max: 10000,
     envKey: 'MAX_COMMITS'
+  },
+  manualMode: {
+    type: 'boolean',
+    envKey: 'MANUAL_MODE'
   }
 };
 
@@ -1295,6 +1307,9 @@ async function initRepo() {
   // Load runtime settings first
   await loadRuntimeSettings();
 
+  // Configure git (respects manualMode loaded in loadRuntimeSettings)
+  configureGitIdentity();
+
   try {
     // Determine CONFIG_PATH
     CONFIG_PATH = process.env.CONFIG_PATH;
@@ -1330,6 +1345,10 @@ async function initRepo() {
           .map(p => String(p || '').trim())
           .filter(Boolean);
         console.log(`[init] Additional tracked paths from config:`, runtimeSettings.additionalPaths);
+      }
+      if (config.manual_mode !== undefined) {
+        runtimeSettings.manualMode = !!config.manual_mode;
+        console.log(`[init] Manual mode from config: ${runtimeSettings.manualMode}`);
       }
 
       // Handle remote_url from config.json
@@ -1412,44 +1431,52 @@ async function initRepo() {
       await gitExec(['init', '-b', 'main']);
 
       // Create .gitignore to limit git to only config files
-      const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-      const gitignoreContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
-      try {
-        await fsPromises.access(gitignorePath, fs.constants.F_OK);
-        console.log('[init] .gitignore already exists in CONFIG_PATH');
-      } catch (error) {
-        console.log('[init] Creating .gitignore in CONFIG_PATH to limit git to config files only...');
-        await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
-        console.log('[init] Created .gitignore in CONFIG_PATH');
-      }
-
-      // Add all files - this respects the .gitignore we just created
-      // Using '.' instead of explicit file list so .gitignore patterns are respected
-      try {
-        await gitAdd('.');
-        console.log(`[init] Added all files (respecting .gitignore patterns)`);
-      } catch (error) {
-        if (error.message.includes('ignored') || error.message.includes('gitignore')) {
-          console.log(`[init] Some files are ignored, trying with --force flag...`);
-          await gitAdd('.');
-          console.log(`[init] Added all files (forced)`);
-        } else {
-          throw error;
+      if (!runtimeSettings.manualMode) {
+        const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
+        const gitignoreContent = generateGitignoreContent(nestedRepos, runtimeSettings.extensions);
+        try {
+          await fsPromises.access(gitignorePath, fs.constants.F_OK);
+          console.log('[init] .gitignore already exists in CONFIG_PATH');
+        } catch (error) {
+          console.log('[init] Creating .gitignore in CONFIG_PATH to limit git to config files only...');
+          await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
+          console.log('[init] Created .gitignore in CONFIG_PATH');
         }
+      } else {
+        console.log('[init] Manual mode active: skipping .gitignore creation');
       }
 
-      // Check status to see what was actually added
-      const status = await gitStatus();
+      if (!runtimeSettings.manualMode) {
+        // Add all files - this respects the .gitignore we just created
+        // Using '.' instead of explicit file list so .gitignore patterns are respected
+        try {
+          await gitAdd('.');
+          console.log(`[init] Added all files (respecting .gitignore patterns)`);
+        } catch (error) {
+          if (error.message.includes('ignored') || error.message.includes('gitignore')) {
+            console.log(`[init] Some files are ignored, trying with --force flag...`);
+            await gitAdd('.');
+            console.log(`[init] Added all files (forced)`);
+          } else {
+            throw error;
+          }
+        }
 
-      // Create initial commit with formatted message
-      const startupMessage = formatCommitMessage(status);
-      await gitCommit(startupMessage);
-      console.log('Initialized Git repo with startup backup');
-      console.log(`[log] ════════════════════════════════════════════════════`);
-      console.log(`[log] Initial commit created (first backup)`);
-      console.log(`[log] Message: ${startupMessage}`);
-      console.log(`[log] Files: ${status.files.length}`);
-      console.log(`[log] ════════════════════════════════════════════════════`);
+        // Check status to see what was actually added
+        const status = await gitStatus();
+
+        // Create initial commit with formatted message
+        const startupMessage = formatCommitMessage(status);
+        await gitCommit(startupMessage);
+        console.log('Initialized Git repo with startup backup');
+        console.log(`[log] ════════════════════════════════════════════════════`);
+        console.log(`[log] Initial commit created (first backup)`);
+        console.log(`[log] Message: ${startupMessage}`);
+        console.log(`[log] Files: ${status.files.length}`);
+        console.log(`[log] ════════════════════════════════════════════════════`);
+      } else {
+        console.log('[init] Manual mode active: skipping initial commit');
+      }
     } else {
       console.log('Using existing Git repo');
     }
@@ -1465,9 +1492,8 @@ async function initRepo() {
     }
 
     // Handle .gitignore for existing repos
-    const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
-
-    if (isRepo) {
+    if (isRepo && !runtimeSettings.manualMode) {
+      const gitignorePath = path.join(CONFIG_PATH, '.gitignore');
       try {
         await fsPromises.access(gitignorePath, fs.constants.F_OK);
 
@@ -1490,11 +1516,13 @@ async function initRepo() {
         await fsPromises.writeFile(gitignorePath, gitignoreContent, 'utf8');
         console.log('[init] Created .gitignore in CONFIG_PATH');
       }
+    } else if (isRepo && runtimeSettings.manualMode) {
+      console.log('[init] Manual mode active: skipping .gitignore update for existing repository');
     }
 
     // Clean up nested repos from index BEFORE doing git add
     // This prevents them from being re-committed in the startup backup
-    if (nestedRepos.length > 0) {
+    if (nestedRepos.length > 0 && !runtimeSettings.manualMode) {
       console.log('[init] Cleaning up nested git repositories from index...');
       for (const repoPath of nestedRepos) {
         // Ensure path uses forward slashes for git command
@@ -1507,7 +1535,7 @@ async function initRepo() {
     }
 
     // Create a startup commit to backup current state (only for existing repos)
-    if (isRepo) {
+    if (isRepo && !runtimeSettings.manualMode) {
       console.log('[init] Creating startup backup commit for existing repository...');
 
       // Add all files - this respects the .gitignore patterns
@@ -1555,8 +1583,8 @@ async function initRepo() {
         console.log(`[init] No changes detected - skipping empty baseline commit`);
         console.log(`[init] Repository is ready (empty baseline commits are disabled to save retention space)`);
       }
-    } else {
-      console.log('[init] No changes to backup for existing repository');
+    } else if (isRepo && runtimeSettings.manualMode) {
+      console.log('[init] Manual mode active: skipping startup backup commit');
     }
 
     // Apply pending remote update from config
@@ -1628,6 +1656,10 @@ app.post('/api/runtime-settings', async (req, res) => {
 
     if (newSettings.historyRetention !== undefined) {
       runtimeSettings.historyRetention = newSettings.historyRetention;
+    }
+
+    if (newSettings.manualMode !== undefined) {
+      runtimeSettings.manualMode = !!newSettings.manualMode;
     }
 
     if (newSettings.retentionType !== undefined) {
@@ -2631,6 +2663,44 @@ app.post('/api/git/soft-reset', async (req, res) => {
 
 
 // Git status
+// Manual commit endpoint
+app.post('/api/git/commit-manual', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // Add all files - this respects .gitignore
+    await gitAdd('.');
+    
+    // Check status to see if there are changes
+    const status = await gitStatus();
+    
+    if (status.isClean()) {
+      return res.json({ 
+        success: true, 
+        message: 'No changes to backup',
+        committed: false
+      });
+    }
+    
+    // Use provided message or generate one
+    const commitMessage = message || 'Manual mode control';
+    
+    await gitCommit(commitMessage);
+    
+    console.log(`[manual] Created commit: ${commitMessage}`);
+    
+    res.json({
+      success: true,
+      message: 'Backup created successfully',
+      committed: true,
+      commitMessage
+    });
+  } catch (error) {
+    console.error('[manual-commit] Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get('/api/git/status', async (req, res) => {
   try {
     const status = await gitStatus();
@@ -2702,6 +2772,22 @@ function shouldIgnoreWatchPath(filePath) {
   if (filePath.includes('/zigbee2mqtt/') &&
     (filePath.includes('/log/') || filePath.endsWith('state.json') || filePath.endsWith('database.db'))) {
     return true;
+  }
+
+  // Handle user-configured exclusions (#29)
+  if (runtimeSettings.extensions.exclude && runtimeSettings.extensions.exclude.length > 0) {
+    // Convert absolute path to relative for prefix matching
+    const relativePath = filePath.startsWith(CONFIG_PATH)
+      ? filePath.substring(CONFIG_PATH.length).replace(/^[\\\/]/, '')
+      : filePath;
+
+    for (const excludePath of runtimeSettings.extensions.exclude) {
+      // Handle directory prefixes (e.g. "www/") or exact matches
+      const normalizedExclude = excludePath.replace(/[\\\/]$/, '');
+      if (relativePath === normalizedExclude || relativePath.startsWith(normalizedExclude + '/') || relativePath.startsWith(normalizedExclude + '\\')) {
+        return true;
+      }
+    }
   }
 
   // Avoid infinite loops - if path has too many repetitions of /config/
@@ -3690,10 +3776,14 @@ const server = app.listen(PORT, HOST, (err) => {
   // Run initialization in background to avoid blocking server startup
   initRepo()
     .then(() => {
-      initializeWatcher();
-      initializeExternalWatchers().catch((error) => {
-        console.error('[external-sync] Failed to initialize external watchers:', error);
-      });
+      if (!runtimeSettings.manualMode) {
+        initializeWatcher();
+        initializeExternalWatchers().catch((error) => {
+          console.error('[external-sync] Failed to initialize external watchers:', error);
+        });
+      } else {
+        console.log('[init] Manual mode active: skipping file watcher initialization');
+      }
 
       // Start cloud sync scheduler (check every hour)
       startCloudSyncScheduler();
