@@ -25,6 +25,9 @@
 - **Files Tab External Path Display:** External mirrored paths now render as virtual `/share/...` and `/media/...` paths, with top-level `share` and `media` folders shown directly instead of `.havc_external`.
 - **Documentation:** Fixed Docker image name typo in README.
 - **Automation Diff Line Numbers:** Corrected line number synchronization in automation and script diff views when comparing isolated YAML content. Diffs now always start at line 1, preventing offsets during history browsing and after file deletions.
+- **File Watcher Ignore Logic:** Fixed issue where excluded files (like camera snapshots) were still triggering Git operations, causing `index.lock` errors and high system load.
+- **Storage File Tracking Cleanup:** Added automatic untracking for `.storage/` files that are removed from the `include_storage` list, ensuring your Git repository accurately reflects your current settings.
+- **Watcher Optimization:** The addon now proactively "unwatches" excluded paths to reduce resource usage.
 
 ## [1.1.1]
 
