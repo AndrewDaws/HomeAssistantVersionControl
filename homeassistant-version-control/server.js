@@ -1702,6 +1702,12 @@ app.post('/api/runtime-settings', async (req, res) => {
           .map(file => file.trim())
           .filter(file => file.length > 0);
       }
+      if (newSettings.extensions.storage !== undefined && Array.isArray(newSettings.extensions.storage)) {
+        runtimeSettings.extensions.storage = newSettings.extensions.storage
+          .map(pattern => pattern.trim())
+          .filter(pattern => pattern.length > 0);
+        console.log(`[settings] Updated include_storage:`, runtimeSettings.extensions.storage);
+      }
 
       // Synchronize format options with updated extensions
       const include = runtimeSettings.extensions.include || [];
@@ -1726,11 +1732,12 @@ app.post('/api/runtime-settings', async (req, res) => {
           console.log(`[external-sync] Re-synced additional paths after extension update: copied=${externalSyncStats.copied}, removed=${externalSyncStats.removed}`);
         }
 
-        // Automatically untrack files that were just added to the exclude list
+        // Handle untracking files when settings change
+        let removedAny = false;
+
+        // 1. Automatically untrack files that were just added to the exclude list
         if (newlyExcluded.length > 0) {
           console.log(`[settings] Newly excluded files detected: ${newlyExcluded.join(', ')}`);
-          let removedAny = false;
-
           for (const file of newlyExcluded) {
             // Unwatch if the watcher is active to save resources
             if (watcher && typeof watcher.unwatch === 'function') {
@@ -1745,30 +1752,48 @@ app.post('/api/runtime-settings', async (req, res) => {
               removedAny = true;
             }
           }
+        }
 
-          if (removedAny || true) { // Always commit if .gitignore changed or files untracked
-            try {
-              await gitAdd('.gitignore');
-              const msg = newlyExcluded.length > 0 ?
-                `Exclude ${newlyExcluded.join(', ')} and update .gitignore` :
-                'Update .gitignore';
-              await gitCommit(msg);
-              console.log(`[settings] Committed exclusion changes: ${msg}`);
-            } catch (e) {
-              console.log('[settings] Failed to commit exclusion changes:', e.message);
+        // 2. Also cleanup tracked .storage files that are no longer in the allowed list
+        try {
+          const trackedStorageFiles = (await gitRaw(['ls-files', '.storage/'])).trim().split('\n').filter(Boolean);
+          for (const file of trackedStorageFiles) {
+            if (!isConfiguredStorageRepoPath(file)) {
+              console.log(`[settings] Untracking .storage file no longer in allowed list: ${file}`);
+              const removed = await gitRmCached(file);
+              if (removed) {
+                removedAny = true;
+                // Unwatch as well
+                if (watcher && typeof watcher.unwatch === 'function') {
+                  const fullPathToUnwatch = path.join(CONFIG_PATH, file);
+                  watcher.unwatch(fullPathToUnwatch);
+                }
+              }
             }
           }
-        } else {
-          // Just commit .gitignore if it changed (though usually newlyExcluded check covers the reason for change)
+        } catch (storageError) {
+          // No .storage files or git error - if it's "not a git repository" etc, but here we assume it is
+          if (!storageError.message.includes('not a git repository')) {
+            console.log('[settings] Checked .storage for cleanup:', storageError.message);
+          }
+        }
+
+        // 3. Commit cleanup changes and .gitignore update
+        if (removedAny || true) { // Always commit if .gitignore changed (which it did at line 1721)
           try {
             await gitAdd('.gitignore');
+            const msg = newlyExcluded.length > 0 ?
+              `Exclude ${newlyExcluded.join(', ')} and update .gitignore` :
+              'Update .gitignore and tracked files';
+            
+            // Check if there are changes to commit
             const status = await gitStatus();
             if (!status.isClean()) {
-              await gitCommit('Update .gitignore');
-              console.log('[settings] Committed .gitignore update');
+              await gitCommit(msg);
+              console.log(`[settings] Committed configuration changes: ${msg}`);
             }
           } catch (e) {
-            // Ignore if nothing to commit
+            console.log('[settings] No changes to commit after update:', e.message);
           }
         }
       } catch (error) {
