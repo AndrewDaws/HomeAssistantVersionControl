@@ -234,15 +234,15 @@ async function loadSettings() {
         document.getElementById('maxCommits').value = settings.maxCommits;
         localStorage.setItem('maxCommits', settings.maxCommits);
 
-        // Manual mode
+        // Manual mode (Internal: manualMode, UI: autoSave)
         const manualMode = settings.manualMode === true;
-        document.getElementById('manualMode').checked = manualMode;
+        document.getElementById('autoSave').checked = !manualMode;
         localStorage.setItem('manualMode', manualMode);
 
         // Update UI state
         handleRetentionToggle();
         handleLimitHistoryToggle();
-        handleManualModeToggle();
+        handleAutoSaveToggle();
 
       }
     }
@@ -1304,11 +1304,11 @@ function openSettings() {
   // Load extensions settings
   loadExtensionsSettings();
 
-  // Initialize manual mode checkbox
-  const manualModeCheckbox = document.getElementById('manualMode');
-  if (manualModeCheckbox) {
-    manualModeCheckbox.checked = localStorage.getItem('manualMode') === 'true';
-    handleManualModeToggle();
+  // Initialize auto save checkbox
+  const autoSaveCheckbox = document.getElementById('autoSave');
+  if (autoSaveCheckbox) {
+    autoSaveCheckbox.checked = localStorage.getItem('manualMode') !== 'true';
+    handleAutoSaveToggle();
   }
 }
 
@@ -1328,7 +1328,7 @@ async function saveSettings() {
   const historyRetention = document.getElementById('historyRetention').checked;
   const limitHistory = document.getElementById('limitHistory').checked;
   const maxCommits = parseInt(document.getElementById('maxCommits').value);
-  const manualMode = document.getElementById('manualMode').checked;
+  const manualMode = !document.getElementById('autoSave').checked;
 
   const diffViewSplit = document.getElementById('diffViewSplit').checked;
   const newDiffViewFormat = diffViewSplit ? 'split' : 'unified';
@@ -1412,7 +1412,7 @@ async function saveSettings() {
   try {
     handleRetentionToggle();
     handleLimitHistoryToggle();
-    handleManualModeToggle();
+    handleAutoSaveToggle();
   } catch (e) {
     console.error('Error updating UI state:', e);
   }
@@ -1503,17 +1503,17 @@ function handleLimitHistoryToggle() {
   }
 }
 
-function handleManualModeToggle() {
-  const manualMode = document.getElementById('manualMode');
+function handleAutoSaveToggle() {
+  const autoSave = document.getElementById('autoSave');
   const debounceTimeOptions = document.getElementById('debounceTimeOptions');
   const manualCommitBtn = document.getElementById('manualCommitBtn');
 
-  if (manualMode) {
+  if (autoSave) {
     if (debounceTimeOptions) {
-      debounceTimeOptions.style.display = manualMode.checked ? 'none' : 'block';
+      debounceTimeOptions.style.display = autoSave.checked ? 'block' : 'none';
     }
     if (manualCommitBtn) {
-      manualCommitBtn.style.display = manualMode.checked ? 'flex' : 'none';
+      manualCommitBtn.style.display = autoSave.checked ? 'none' : 'flex';
     }
   }
 }

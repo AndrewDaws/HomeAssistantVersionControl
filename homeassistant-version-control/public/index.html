@@ -179,72 +179,70 @@
 
             <div class="setting-item" style="margin-bottom: 20px;">
               <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.manual_mode">Manual Mode Only</span>
+                <div>
+                  <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.auto_save">Auto Save</span>
+                </div>
                 <div class="toggle-switch">
-                  <input type="checkbox" id="manualMode" style="display: none;" onchange="handleManualModeToggle()">
-                  <label for="manualMode" class="toggle-slider"></label>
+                  <input type="checkbox" id="autoSave" style="display: none;" onchange="handleAutoSaveToggle()">
+                  <label for="autoSave" class="toggle-slider"></label>
                 </div>
               </label>
-            </div>
 
-            <div id="debounceTimeOptions" style="margin-bottom: 20px;">
-              <label style="display: block; margin-bottom: 8px;">
-                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.debounce_time">Debounce
-                  Time</span>
-              </label>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                <div class="custom-number-input-wrapper" style="position: relative;">
-                  <input type="number" id="debounceTime" min="0" value="3" style="
+              <div id="debounceTimeOptions" style="margin-top: 12px; display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                  <div class="custom-number-input-wrapper" style="position: relative;">
+                    <input type="number" id="debounceTime" min="0" value="3" style="
+                      width: 100%;
+                      padding: 10px 32px 10px 12px;
+                      background: var(--bg-tertiary);
+                      border: 1px solid var(--border-subtle);
+                      border-radius: var(--radius-md);
+                      color: var(--text-primary);
+                      font-size: 14px;
+                      -moz-appearance: textfield;
+                      appearance: textfield;
+                    ">
+                    <div class="custom-spinners"
+                      style="position: absolute; right: 2px; top: 2px; bottom: 2px; display: flex; flex-direction: column; width: 24px;">
+                      <button class="spinner-btn spinner-up" onclick="stepInput('debounceTime', 1)"
+                        style="flex: 1; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                          stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                          style="transform: rotate(180deg);">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                      <button class="spinner-btn spinner-down" onclick="stepInput('debounceTime', -1)"
+                        style="flex: 1; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                          stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <select id="debounceTimeUnit" style="
                     width: 100%;
-                    padding: 10px 32px 10px 12px;
+                    padding: 10px 12px;
                     background: var(--bg-tertiary);
                     border: 1px solid var(--border-subtle);
                     border-radius: var(--radius-md);
                     color: var(--text-primary);
                     font-size: 14px;
-                    -moz-appearance: textfield;
-                    appearance: textfield;
+                    -webkit-appearance: none;
+                    appearance: none;
                   ">
-                  <div class="custom-spinners"
-                    style="position: absolute; right: 2px; top: 2px; bottom: 2px; display: flex; flex-direction: column; width: 24px;">
-                    <button class="spinner-btn spinner-up" onclick="stepInput('debounceTime', 1)"
-                      style="flex: 1; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                        style="transform: rotate(180deg);">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    </button>
-                    <button class="spinner-btn spinner-down" onclick="stepInput('debounceTime', -1)"
-                      style="flex: 1; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
-                    </button>
-                  </div>
+                    <option value="seconds" data-i18n="units.seconds">Seconds</option>
+                    <option value="minutes" data-i18n="units.minutes">Minutes</option>
+                    <option value="hours" data-i18n="units.hours">Hours</option>
+                    <option value="days" data-i18n="units.days">Days</option>
+                  </select>
                 </div>
-                <select id="debounceTimeUnit" style="
-                  width: 100%;
-                  padding: 10px 12px;
-                  background: var(--bg-tertiary);
-                  border: 1px solid var(--border-subtle);
-                  border-radius: var(--radius-md);
-                  color: var(--text-primary);
-                  font-size: 14px;
-                  -webkit-appearance: none;
-                  appearance: none;
-                ">
-                  <option value="seconds" data-i18n="units.seconds">Seconds</option>
-                  <option value="minutes" data-i18n="units.minutes">Minutes</option>
-                  <option value="hours" data-i18n="units.hours">Hours</option>
-                  <option value="days" data-i18n="units.days">Days</option>
-                </select>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
+                  data-i18n="settings.auto_save_desc">
+                  Automatically create a version when files are changed
+                </p>
               </div>
-              <p style="color: var(--text-secondary); font-size: 12px; margin-top: 6px; margin-left: 2px;"
-                data-i18n="settings.debounce_time_desc">
-                Time to wait before creating a version after file changes
-              </p>
             </div>
 
 
@@ -800,7 +798,7 @@
   </div>
 
 
-  <script src="app.js?v=1.2.0-debug.4"></script>
+  <script src="app.js?v=1.2.0-debug.8"></script>
 </body>
 
 </html>
