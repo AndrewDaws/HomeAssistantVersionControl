@@ -351,6 +351,10 @@ The app is branch-agnostic and will automatically detect the active branch of yo
 > **Excluding Files:**
 > You can prevent specific files from being tracked by adding them to a `.gitignore` file in your `/config` directory. Just list the filenames (one per line) that you want to exclude, and the app will automatically ignore them from version control.
 
+> [!TIP]
+> **Managing Repository Size:**
+> Over time, your `.git` folder can grow large if you track binary files or frequently updated storage files. You can "flush" the repository by running `git gc --prune=now --aggressive`. If you need to surgically remove large files from your entire history to reach a target size (e.g., 1-2MB), you can use `git-filter-repo`. **Note:** After rewriting history, other clones of the repository will need a `git pull --rebase` or a fresh clone to sync.
+
 </details>
 
 ## Cloud Sync (GitHub/Gitea)
