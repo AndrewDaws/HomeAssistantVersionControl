@@ -1483,7 +1483,6 @@ async function executeFlush() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = originalText;
     }
   }
 }
