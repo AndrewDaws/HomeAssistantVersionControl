@@ -4466,6 +4466,22 @@ app.post('/api/github/disconnect', async (req, res) => {
   }
 });
 
+// Flush repository (git gc)
+app.post('/api/git/flush', async (req, res) => {
+  try {
+    console.log('[git] Manual flush requested...');
+    // Expire reflog first to make objects unreachable
+    await gitRaw(['reflog', 'expire', '--expire=now', '--all']);
+    // Run aggressive GC with a 5-minute timeout
+    await gitRaw(['gc', '--prune=now', '--aggressive'], { timeout: 300000 });
+    console.log('[git] Flush completed successfully');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[git] Flush failed:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Create GitHub repository
 app.post('/api/github/create-repo', async (req, res) => {
   try {

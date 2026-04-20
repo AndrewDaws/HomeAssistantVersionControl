@@ -1418,6 +1418,49 @@ async function saveSettings() {
   }
 }
 
+/**
+ * Flush repository (git gc)
+ */
+async function flushRepository() {
+  console.log('[UI] flushRepository called');
+  const confirmed = confirm(t('settings.flush_confirm'));
+  if (!confirmed) return;
+
+  const btn = document.getElementById('flushBtn');
+  const originalText = btn ? btn.textContent : 'Flush';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t('app.loading');
+  }
+
+  const notification = showNotification(t('settings.flushing'), 'info', 0);
+
+  try {
+    const response = await fetch(`${API}/git/flush`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+
+    if (notification) notification.remove();
+
+    if (data.success) {
+      showNotification(t('settings.flush_success'), 'success', 3000);
+    } else {
+      showNotification(t('settings.flush_error') + ': ' + (data.error || 'Unknown error'), 'error', 5000);
+    }
+  } catch (error) {
+    if (notification) notification.remove();
+    console.error('[UI] Flush failed:', error);
+    showNotification(t('settings.flush_error'), 'error', 5000);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
 function handleRetentionToggle() {
   const historyRetention = document.getElementById('historyRetention');
   const retentionOptions = document.getElementById('retentionOptions');
@@ -5820,14 +5863,18 @@ function showNotification(message, type = 'success', duration = 3000, action = n
   document.body.appendChild(notification);
 
   // Auto-remove after specified duration
-  setTimeout(() => {
-    notification.style.animation = 'notificationSlideOut 0.3s ease-in';
+  if (duration > 0) {
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.remove();
-      }
-    }, 300);
-  }, duration);
+      notification.style.animation = 'notificationSlideOut 0.3s ease-in';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 300);
+    }, duration);
+  }
+
+  return notification;
 }
 
 async function restartHomeAssistant() {

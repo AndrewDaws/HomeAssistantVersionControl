@@ -365,6 +365,20 @@
               </div>
             </div>
 
+            <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <div>
+                <span style="color: var(--text-primary); font-size: 14px;" data-i18n="settings.flush_repository">Flush Repository</span>
+                <p style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; margin-bottom: 0;" data-i18n="settings.flush_repository_desc">
+                  Consolidate history and reduce disk space usage
+                </p>
+              </div>
+              <button onclick="flushRepository()" id="flushBtn"
+                style="padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px; cursor: pointer; transition: filter 0.15s ease; white-space: nowrap;"
+                onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='brightness(1)'">
+                Flush
+              </button>
+            </div>
+
           </div>
 
           <!-- Group 3: Diff Viewer -->
@@ -786,7 +800,7 @@
   </div>
 
 
-  <script src="app.js?v=1741715719"></script>
+  <script src="app.js?v=1.2.0-debug.1"></script>
 </body>
 
 </html>
