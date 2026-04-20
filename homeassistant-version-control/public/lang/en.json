@@ -217,7 +217,7 @@
     "flush_repository": "Flush Repository",
     "flush_repository_desc": "Consolidate history and reduce disk space usage",
     "flushing": "Flushing repository...",
-    "flush_confirm": "Are you sure you want to flush the repository? This will consolidate history and reduce disk space. It may take a moment.",
+    "flush_confirm": "Are you sure you want to flush the repository? This will consolidate history and reduce disk space.",
     "flush_success": "Repository flushed successfully!",
     "flush_error": "Failed to flush repository"
   },

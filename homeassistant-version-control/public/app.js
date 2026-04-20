@@ -1421,16 +1421,43 @@ async function saveSettings() {
 /**
  * Flush repository (git gc)
  */
-async function flushRepository() {
-  console.log('[UI] flushRepository called');
-  const confirmed = confirm(t('settings.flush_confirm'));
-  if (!confirmed) return;
+function flushRepository() {
+  console.log('[UI] flushRepository (open dynamic modal) called');
+  
+  // Create confirmation dialog (same pattern as Reset Timeline modal)
+  const modalHTML = `
+    <div class="modal-backdrop active" id="flush-confirm-modal" onclick="if(event.target === this) closeFlushConfirmDialog()">
+      <div class="modal-content hard-reset-dialog">
+        <h3 data-i18n="settings.flush_repository">${t('settings.flush_repository')}</h3>
+        <p data-i18n="settings.flush_confirm">${t('settings.flush_confirm')}</p>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeFlushConfirmDialog()" data-i18n="app.cancel">${t('app.cancel')}</button>
+          <button class="btn restore" onclick="executeFlush()" data-i18n="settings.flush_repository">${t('settings.flush_repository')}</button>
+        </div>
+      </div>
+    </div>
+  `;
 
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  console.log('[UI] Flush confirmation dialog created');
+}
+
+function closeFlushConfirmDialog() {
+  const modal = document.getElementById('flush-confirm-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+/**
+ * Execute the actual flush operation
+ */
+async function executeFlush() {
+  closeFlushConfirmDialog();
+  
   const btn = document.getElementById('flushBtn');
-  const originalText = btn ? btn.textContent : 'Flush';
   if (btn) {
     btn.disabled = true;
-    btn.textContent = t('app.loading');
   }
 
   const notification = showNotification(t('settings.flushing'), 'info', 0);
