@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.2]
+
+### Fixed
+- **Multi-Arch Support:** Switched to architecture-agnostic base image in Dockerfile to fix build failures on `aarch64` (HA Green) and newer Home Assistant Supervisor versions (2026.04.0+).
+
+## [1.2.1]
+
+### Fixed
+- UI and stability refinements.
+
 ## [1.2.0]
 
 ### Added
