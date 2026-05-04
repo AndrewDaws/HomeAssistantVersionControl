@@ -1,6 +1,6 @@
 {
   "name": "Home Assistant Version Control",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "slug": "home-assistant-version-control",
   "description": "Git-powered version control and automated backup for your Home Assistant configuration files.",
   "url": "https://github.com/saihgupr/HomeAssistantVersionControl",
@@ -8,7 +8,10 @@
   "boot": "auto",
   "arch": [
     "aarch64",
-    "amd64"
+    "amd64",
+    "armhf",
+    "armv7",
+    "i386"
   ],
   "init": false,
   "hassio_api": true,

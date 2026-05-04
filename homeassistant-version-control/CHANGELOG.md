@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.3]
+
+### Fixed
+- **Multi-Arch Support:** Added `build.yaml` to ensure correct base images are pulled for all supported architectures (aarch64, amd64, armhf, armv7, i386), fixing "failed to install" errors on various platforms.
+
 ## [1.2.2]
 
 ### Fixed
